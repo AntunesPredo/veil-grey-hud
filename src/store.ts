@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 type ThemeColors = {
+  background: string;
   accent: string;
   danger: string;
   warning: string;
@@ -18,6 +19,7 @@ interface SystemState {
 }
 
 const defaultTheme: ThemeColors = {
+  background: "#0a0a0a",
   accent: "#6a8a8e",
   danger: "#8b0000",
   warning: "#cc7a00",

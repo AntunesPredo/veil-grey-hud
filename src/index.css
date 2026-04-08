@@ -47,6 +47,22 @@ textarea,
 }
 
 .crt-overlay {
+  background: var(--theme-background);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.crt-overlay::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
   background:
     linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
     linear-gradient(
@@ -56,8 +72,9 @@ textarea,
       rgba(0, 0, 255, 0.06)
     );
   background-size:
-    100% 3px,
-    3px 100%;
+    100% 4px,
+    6px 100%;
+  pointer-events: none;
 }
 
 .flicker-effect {
@@ -67,12 +84,14 @@ textarea,
 @keyframes crtFlicker {
   0% {
     opacity: 0.95;
+    transform: translateX(1px);
   }
   50% {
     opacity: 0.85;
   }
   100% {
     opacity: 0.95;
+    transform: translateX(0px);
   }
 }
 
