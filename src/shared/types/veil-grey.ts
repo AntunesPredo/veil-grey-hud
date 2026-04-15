@@ -45,6 +45,14 @@ export type InsanityState = "STABLE" | "UNSTABLE" | "INSANE";
 
 export type CrisisState = "COLLAPSE" | "DEATH" | null;
 
+export type CustomEffectTarget =
+  | RollCategory
+  | "FREE_ATTR"
+  | "FREE_SKILL"
+  | "HP"
+  | "INSANITY"
+  | "MOVEMENT";
+
 export interface UniqueAbility {
   title: string;
   description: string;
@@ -55,7 +63,7 @@ export interface Role {
   title: string;
   subtitle: string;
   description: string;
-  photoUrl?: string;
+  photoUrl?: string | URL;
   uniqueAbility: UniqueAbility;
 }
 
@@ -63,7 +71,7 @@ export interface CustomEffect {
   id: number;
   description: string;
   noteId: number | string | null;
-  target: RollCategory | "FREE_ATTR" | "FREE_SKILL" | "HP" | "INSANITY";
+  target: CustomEffectTarget;
   val: number;
 }
 

@@ -78,12 +78,12 @@ export function Booting() {
           glitchIntensity="low"
         />
         <h1 className="text-5xl font-bold tracking-[0.5em] mb-1">ID-SYS</h1>
-        <h2 className="text-sm font-bold tracking-[0.2em] text-[var(--theme-accent)] opacity-70">
+        <h2 className="text-sm font-bold tracking-[0.2em] text-center text-[var(--theme-accent)] opacity-70">
           CONECTANDO VOCÊ A UMA SOCIEDADE MAIS EFICIENTE.
         </h2>
       </motion.div>
 
-      <div className="w-[60vw] p-4 flex flex-col gap-2">
+      <div className="w-[80vw] p-4 flex flex-col gap-2">
         <div className="flex items-center gap-4 w-full">
           <div className="flex-1 h-[2px] bg-[var(--theme-accent)]/10 relative overflow-hidden">
             <motion.div

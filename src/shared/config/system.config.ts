@@ -1,3 +1,6 @@
+import { PLAYER_ROLES } from "./roles";
+import { SKILLS } from "./skills";
+
 export const VG_CONFIG = {
   rules: {
     attrMin: 0,
@@ -18,24 +21,40 @@ export const VG_CONFIG = {
     collapseFailPenalty: 2,
     deathBaseDC: 13,
     deathFailPenalty: 2,
+    characterCreation: {
+      skillPointsGranted: 1,
+      skillPointsToDistribute: 2,
+      initialAttributePoints: 6,
+      initialSkillPoints: 5,
+    },
   },
   progression: {
     xpMultiplier: 100, // current level * 100
     tiers: [
-      { maxLevel: 3, maxAttr: 5, maxSkill: 3 },
-      { maxLevel: 7, maxAttr: 7, maxSkill: 5 },
-      { maxLevel: 10, maxAttr: 10, maxSkill: 5 },
+      { minLevel: 1, maxAttr: 5, maxSkill: 3 },
+      { minLevel: 4, maxAttr: 7, maxSkill: 6 },
+      { minLevel: 9, maxAttr: 10, maxSkill: 8 },
     ],
     rewardsPerLevel: {
       1: { attr: 1, skill: 2, spec: 0 },
+      2: { attr: 1, skill: 2, spec: 0 },
       3: { attr: 1, skill: 2, spec: 1 },
-      // To be expanded as needed
+      4: { attr: 1, skill: 2, spec: 0 },
+      5: { attr: 1, skill: 2, spec: 0 },
+      6: { attr: 1, skill: 2, spec: 1 },
+      7: { attr: 1, skill: 2, spec: 0 },
+      8: { attr: 1, skill: 2, spec: 0 },
+      9: { attr: 1, skill: 2, spec: 0 },
+      10: { attr: 1, skill: 2, spec: 1 },
+      11: { attr: 1, skill: 2, spec: 0 },
+      12: { attr: 1, skill: 2, spec: 0 },
+      13: { attr: 1, skill: 2, spec: 0 },
+      14: { attr: 1, skill: 2, spec: 0 },
+      15: { attr: 1, skill: 2, spec: 1 },
+      16: { attr: 1, skill: 2, spec: 0 },
     },
   },
-  roles: {
-    // Scaffold for future Pre-Started initialization
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as Record<string, any>,
+  roles: PLAYER_ROLES,
   labels: {
     evilness: "MALDADE",
     evilnessLabel: "(0-10)",
@@ -127,300 +146,17 @@ export const VG_CONFIG = {
     physical: {
       label: "FÍSICO",
       rollCategory: "SKILL_PHYSICAL",
-      skills: {
-        athletics: {
-          id: "athletics",
-          label: "ATLETISMO",
-          bases: ["strength", "constitution"],
-        },
-        exotic_weapons: {
-          id: "exotic_weapons",
-          label: "ARMAS EXÓTICAS",
-          bases: ["dexterity", "strength"],
-        },
-        firearms_small: {
-          id: "firearms_small",
-          label: "ARMAS DE FOGO (CURTO ALCANCE)",
-          bases: ["dexterity", "instinct"],
-        },
-        firearms_medium: {
-          id: "firearms_medium",
-          label: "ARMAS DE FOGO (MÉDIO ALCANCE)",
-          bases: ["dexterity"],
-        },
-        lockpick: {
-          id: "lockpick",
-          label: "ARROMBAMENTO",
-          bases: ["dexterity", "instinct"],
-        },
-        throwing: {
-          id: "throwing",
-          label: "ARREMESSO",
-          bases: ["strength", "dexterity"],
-        },
-        street_fighting: {
-          id: "street_fighting",
-          label: "BRIGA DE RUA",
-          bases: ["strength"],
-        },
-        blunt_short: {
-          id: "blunt_short",
-          label: "ARMAS DE IMPACTO (CURTAS)",
-          bases: ["strength"],
-        },
-        blunt_medium: {
-          id: "blunt_medium",
-          label: "ARMAS DE IMPACTO (MÉDIAS)",
-          bases: ["strength", "dexterity"],
-        },
-        blades_short: {
-          id: "blades_short",
-          label: "LÂMINAS (CURTAS)",
-          bases: ["dexterity"],
-        },
-        blades_medium: {
-          id: "blades_medium",
-          label: "LÂMINAS (MÉDIAS)",
-          bases: ["strength", "dexterity"],
-        },
-        light_hands: {
-          id: "light_hands",
-          label: "MÃOS LEVES",
-          bases: ["dexterity"],
-        },
-        maneuvers: {
-          id: "maneuvers",
-          label: "MANOBRAS",
-          bases: ["dexterity", "strength"],
-        },
-        immune_resistance: {
-          id: "immune_resistance",
-          label: "RESISTÊNCIA IMUNE",
-          bases: ["constitution"],
-        },
-        natural_resistance: {
-          id: "natural_resistance",
-          label: "RESISTÊNCIA NATURAL",
-          bases: ["constitution"],
-        },
-        tolerance: {
-          id: "tolerance",
-          label: "TOLERÂNCIA",
-          bases: ["constitution", "instinct"],
-        },
-      },
+      skills: SKILLS.PHYSICAL,
     },
     mental: {
       label: "MENTAL",
       rollCategory: "SKILL_MENTAL",
-      skills: {
-        traps: {
-          id: "traps",
-          label: "ARMADILHAS",
-          bases: ["instinct", "intelligence"],
-        },
-        gunsmithing: {
-          id: "gunsmithing",
-          label: "ARMEIRO",
-          bases: ["intelligence", "dexterity"],
-        },
-        arts: {
-          id: "arts",
-          label: "ARTES",
-          bases: ["intelligence", "instinct"],
-        },
-        self_control: {
-          id: "self_control",
-          label: "AUTOCONTROLE",
-          bases: ["wisdom", "instinct"],
-        },
-        camouflage: {
-          id: "camouflage",
-          label: "CAMUFLAGEM",
-          bases: ["intelligence", "wisdom"],
-        },
-        concentration: {
-          id: "concentration",
-          label: "CONCENTRAÇÃO",
-          bases: ["wisdom", "constitution"],
-        },
-        cooking: {
-          id: "cooking",
-          label: "CULINÁRIA",
-          bases: ["wisdom"],
-        },
-        electronics: {
-          id: "electronics",
-          label: "ELETRÔNICA",
-          bases: ["intelligence", "dexterity"],
-        },
-        encyclopedia: {
-          id: "encyclopedia",
-          label: "ENCICLOPÉDIA",
-          bases: ["intelligence"],
-        },
-        engineering: {
-          id: "engineering",
-          label: "ENGENHARIA",
-          bases: ["intelligence", "wisdom"],
-        },
-        explosives: {
-          id: "explosives",
-          label: "EXPLOSIVOS",
-          bases: ["intelligence", "dexterity"],
-        },
-        falsification: {
-          id: "falsification",
-          label: "FALSIFICAÇÃO",
-          bases: ["intelligence", "manipulation"],
-        },
-        stealth: {
-          id: "stealth",
-          label: "FURTIVIDADE",
-          bases: ["dexterity", "instinct"],
-        },
-        hacking: {
-          id: "hacking",
-          label: "HACKING",
-          bases: ["intelligence"],
-        },
-        instruments: {
-          id: "instruments",
-          label: "INSTRUMENTOS MUSICAIS",
-          bases: ["dexterity", "wisdom"],
-        },
-        investigation: {
-          id: "investigation",
-          label: "INVESTIGAÇÃO",
-          bases: ["intelligence", "wisdom"],
-        },
-        mechanics: {
-          id: "mechanics",
-          label: "MECÂNICA",
-          bases: ["intelligence", "strength"],
-        },
-        medicine: {
-          id: "medicine",
-          label: "MEDICINA",
-          bases: ["intelligence", "wisdom"],
-        },
-        navigation: {
-          id: "navigation",
-          label: "NAVEGAÇÃO",
-          bases: ["wisdom", "instinct"],
-        },
-        crafts: {
-          id: "crafts",
-          label: "OFÍCIOS",
-          bases: ["dexterity", "intelligence"],
-        },
-        first_aid: {
-          id: "first_aid",
-          label: "PRIMEIROS SOCORROS",
-          bases: ["wisdom", "instinct"],
-        },
-        searching: {
-          id: "searching",
-          label: "PROCURA",
-          bases: ["intelligence", "instinct"],
-        },
-        chemistry: {
-          id: "chemistry",
-          label: "QUÍMICA",
-          bases: ["intelligence", "wisdom"],
-        },
-        tracking: {
-          id: "tracking",
-          label: "RASTREIO",
-          bases: ["instinct", "wisdom"],
-        },
-        survival: {
-          id: "survival",
-          label: "SOBREVIVÊNCIA",
-          bases: ["wisdom", "constitution"],
-        },
-        vehicles: {
-          id: "vehicles",
-          label: "VEÍCULOS",
-          bases: ["wisdom", "instinct"],
-        },
-        exotic_machines: {
-          id: "exotic_machines",
-          label: "MÁQUINAS EXÓTICAS",
-          bases: ["intelligence", "instinct"],
-        },
-      },
+      skills: SKILLS.MENTAL,
     },
     social: {
       label: "SOCIAL",
       rollCategory: "SKILL_SOCIAL",
-      skills: {
-        contacts: {
-          id: "contacts",
-          label: "CONTATOS",
-          bases: ["charisma"],
-        },
-        persuasion: {
-          id: "persuasion",
-          label: "CNOVENCIMENTO",
-          bases: ["wisdom", "manipulation"],
-        },
-        popular_culture: {
-          id: "popular_culture",
-          label: "CULTURA POPULAR",
-          bases: ["intelligence", "charisma"],
-        },
-        politics: {
-          id: "politics",
-          label: "POLÍTICA",
-          bases: ["charisma"],
-        },
-        distraction: {
-          id: "distraction",
-          label: "DISTRAÇÃO",
-          bases: ["intelligence", "manipulation"],
-        },
-        education: {
-          id: "education",
-          label: "EDUCAÇÃO",
-          bases: ["intelligence", "charisma"],
-        },
-        animal_empathy: {
-          id: "animal_empathy",
-          label: "EMPATIA COM ANIMAIS",
-          bases: ["instinct", "charisma"],
-        },
-        intimidation: {
-          id: "intimidation",
-          label: "INTIMIDAÇÃO",
-          bases: ["manipulation"],
-        },
-        gambling: {
-          id: "gambling",
-          label: "JOGATINA",
-          bases: ["manipulation", "intelligence"],
-        },
-        corp_language: {
-          id: "corp_language",
-          label: "LINGUAGEM DOS CORPS",
-          bases: ["wisdom", "manipulation"],
-        },
-        lying: {
-          id: "lying",
-          label: "MENTIRA",
-          bases: ["manipulation", "intelligence"],
-        },
-        cold_reading: {
-          id: "cold_reading",
-          label: "LEITURA FRIA",
-          bases: ["wisdom", "instinct"],
-        },
-        seduction: {
-          id: "seduction",
-          label: "SEDUÇÃO",
-          bases: ["charisma", "manipulation"],
-        },
-      },
+      skills: SKILLS.SOCIAL,
     },
   },
 } as const;

@@ -10,6 +10,7 @@ interface ThemeColors {
   warning: string;
   success: string;
   border: string;
+  text: string;
 }
 
 interface SystemState {
@@ -20,12 +21,13 @@ interface SystemState {
 }
 
 const defaultTheme: ThemeColors = {
-  background: "#0a0a0a",
-  accent: "#6a8a8e",
+  accent: "#ffffff",
   danger: "#8b0000",
   warning: "#cc7a00",
-  success: "#004d00",
+  success: "#099709",
+  background: "#0a0a0a",
   border: "#2c2c2c",
+  text: "#FFF000",
 };
 
 export const useSystemStore = create<SystemState>()(
