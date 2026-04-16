@@ -35,7 +35,7 @@ export type CreationStatus =
   | "PRE_STARTED"
   | "STARTED"
   | "LEVEL_UP"
-  | "FINISHED";
+  | "CLOSED";
 
 export type EnergyLevel = "rested" | "tired" | "exhausted";
 
@@ -97,50 +97,15 @@ export interface Note {
   height: number;
 }
 
-export interface CharacterState {
-  name: string;
-  level: number;
-  settings: {
-    lockPoints: boolean;
-    showRollDetails: boolean;
-  };
+export interface SnapshotStats {
   attributes: Record<Attribute, number>;
-  secondaryAttributes: Record<SecondaryAttribute, number>;
   skills: Record<Skill, number>;
-  customEffects: CustomEffect[];
-  hp: {
-    max_mod: number;
-    max: number;
-    current: number;
-    isInjured: boolean;
-    isVeryInjured: boolean;
-    autoApplyInjury: boolean;
-  };
-  sustenance: {
-    limit: number;
-    current: number;
-    state: "STARVING" | "HUNGRY" | "SATIATED" | "FULL";
-  };
-  insanity: {
-    limit: number;
-    current: number;
-    state: "STABLE" | "UNSTABLE" | "INSANE";
-    volatile: boolean;
-  };
-  modifiers: {
-    [key: string]: number;
-  };
-  energy: "rested" | "tired" | "exhausted";
-  evilness: number;
-  isOverweight: boolean;
-  inventory: Item[];
-  notes: Note[];
-  isMainNoteEditing: boolean;
-  mainNote: string;
-  mainNoteHeight: number;
-  crisis: {
-    state: "COLLAPSE" | "DEATH" | null;
-    fails: number;
-    ignore: boolean;
-  };
+}
+
+export interface SkillData {
+  label: string;
+  bases: string[];
+  id: string;
+  groupLabel?: string;
+  description: string;
 }

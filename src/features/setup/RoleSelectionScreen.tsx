@@ -157,7 +157,7 @@ export function RoleSelectionScreen() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex-1 flex items-center justify-center border border-[#222] bg-[#020202]"
+                className="flex-1 flex items-center justify-center border border-[var(--theme-border)] bg-[var(--theme-background)]"
               >
                 <div className="text-[var(--theme-border)] tracking-widest text-xs animate-pulse font-mono border border-[var(--theme-border)] p-4">
                   AGUARDANDO SELEÇÃO DE ARQUÉTIPO...

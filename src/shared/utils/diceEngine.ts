@@ -1,5 +1,6 @@
 export function vg_roll(faces: number): number {
-  if (faces <= 1) return 1;
+  if (faces <= 0) return 0;
+  if (faces === 1) return 1;
   const arr = new Uint32Array(1);
   const limit = 4294967295 - (4294967295 % faces);
   do {

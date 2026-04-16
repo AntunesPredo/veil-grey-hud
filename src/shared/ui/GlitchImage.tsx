@@ -26,7 +26,7 @@ export function GlitchImage({
     >
       {!isLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
-          <span className="text-[9px] text-[var(--theme-accent)] font-mono tracking-[0.3em] animate-pulse text-nowrap">
+          <span className="text-[9px] text-[var(--theme-accent)] font-mono tracking-[0.15em] animate-pulse text-nowrap">
             [ READING DATA ]
           </span>
           <div className="w-1/2 h-[1px] bg-[var(--theme-accent)]/20 overflow-hidden relative">
