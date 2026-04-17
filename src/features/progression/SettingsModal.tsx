@@ -24,6 +24,8 @@ export function SettingsModal({
 
   const [xpInput, setXpInput] = useState("");
   const wipeModal = useDisclosure();
+  const errorModal = useDisclosure();
+  const [confirmModalMessage, setConfirmModalMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isDev = import.meta.env.DEV;
@@ -59,16 +61,10 @@ export function SettingsModal({
         RetroToast.success("IMPORTADO COM SUCESSO.");
         onClose();
       } catch (error) {
-        ConfirmModal({
-          isOpen: true,
-          onClose: () => {},
-          title: "ERRO AO IMPORTAR",
-          message:
-            "O arquivo selecionado é inválido ou corrompido. <br />" +
-            (error as Error).message,
-          isDanger: true,
-          onConfirm: () => {},
-        });
+        errorModal.onOpen();
+        setConfirmModalMessage(
+          `Erro durante o processamento do arquivo - ${(error as Error).message ?? "Desconhecido"}`,
+        );
       }
     };
     reader.readAsText(file);
@@ -94,8 +90,8 @@ export function SettingsModal({
               viewBox="0 0 16 16"
             >
               <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
+                fillRule="evenodd"
+                clipRule="evenodd"
                 d="M8 0C4.13401 0 1 3.13401 1 7V10L4 13L3 15V16H13V15L12 13L15 10V7C15 3.13401 11.866 0 8 0ZM6.5 7.5C6.5 8.32843 5.82843 9 5 9C4.17157 9 3.5 8.32843 3.5 7.5C3.5 6.67157 4.17157 6 5 6C5.82843 6 6.5 6.67157 6.5 7.5ZM11 9C11.8284 9 12.5 8.32843 12.5 7.5C12.5 6.67157 11.8284 6 11 6C10.1716 6 9.5 6.67157 9.5 7.5C9.5 8.32843 10.1716 9 11 9Z"
               />
             </svg>
@@ -225,6 +221,18 @@ export function SettingsModal({
         onConfirm={() => {
           resetCharacterData();
           onClose();
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={errorModal.isOpen}
+        onClose={errorModal.onClose}
+        title="XP ERROR"
+        message={confirmModalMessage}
+        isDanger
+        onConfirm={() => {
+          setConfirmModalMessage("");
+          errorModal.onClose();
         }}
       />
     </>

@@ -11,7 +11,7 @@ import { buildSustenanceStages } from "../../shared/utils/mathUtils";
 export interface ProgressionSlice {
   name: string;
   level: number;
-  xp: { current: number; max: number };
+  xp: { current: number; max: number; usedXpLogs: string[] };
   creationStatus: CreationStatus;
   sandboxMode: boolean;
   freePoints: { attributes: number; skills: number; specializations: number };
@@ -20,7 +20,7 @@ export interface ProgressionSlice {
   lockedSnapshot: SnapshotStats | null;
 
   updateProgression: (data: Partial<ProgressionSlice>) => void;
-  addXp: (amount: number) => void;
+  addXp: (amount: number, log?: string) => void;
   triggerLevelUp: () => void;
   confirmDistribution: () => void;
   updateCreationStatus: (status: CreationStatus) => void;
@@ -38,7 +38,7 @@ export const createProgressionSlice: StateCreator<
 > = (set, get) => ({
   name: "",
   level: 1,
-  xp: { current: 0, max: 100 },
+  xp: { current: 0, max: 100, usedXpLogs: [] },
   creationStatus: "NOT_STARTED",
   sandboxMode: false,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
@@ -53,10 +53,16 @@ export const createProgressionSlice: StateCreator<
     get().recalculateAll();
   },
 
-  addXp: (amount) =>
-    set((state) => ({
-      xp: { ...state.xp, current: state.xp.current + amount },
-    })),
+  addXp: (amount, log) =>
+    set((state) => {
+      const updates = state;
+      updates.xp = {
+        ...state.xp,
+        current: state.xp.current + amount,
+        usedXpLogs: [...state.xp.usedXpLogs, ...(log ? [log] : [])],
+      };
+      return updates;
+    }),
 
   triggerLevelUp: () => {
     set((state) => {
@@ -82,7 +88,7 @@ export const createProgressionSlice: StateCreator<
       };
     });
   },
-  //ok
+
   confirmDistribution: () => {
     const { creationStatus, attributes } = get();
 
@@ -116,6 +122,7 @@ export const createProgressionSlice: StateCreator<
       if (state.creationStatus === "LEVEL_UP") {
         updates.level = state.level + 1;
         updates.xp = {
+          ...state.xp,
           current: state.xp.current - state.xp.max,
           max: (state.level + 1) * VG_CONFIG.progression.xpMultiplier,
         };

@@ -12,6 +12,7 @@ import { ConfirmModal, Modal } from "../../shared/ui/Overlays";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
 import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
+import { XpInjectionModal } from "../../features/progression/XpInjectionModal";
 
 export function Header() {
   const {
@@ -23,10 +24,12 @@ export function Header() {
     freePoints,
     triggerLevelUp,
     confirmDistribution,
+    sandboxMode,
   } = useCharacterStore();
 
   const settingsModal = useDisclosure();
   const confirmModal = useDisclosure();
+  const xpModal = useDisclosure();
 
   const isDistributing =
     creationStatus === "STARTED" || creationStatus === "LEVEL_UP";
@@ -87,13 +90,33 @@ export function Header() {
 
       <div className="flex flex-col items-center w-full md:w-auto flex-1 max-w-md px-2">
         <div className="flex justify-between items-end w-full text-[11px] font-bold text-[var(--theme-accent)] mb-1.5">
-          <span className="tracking-widest">NÍVEL {level}</span>
+          <span className="pl-[2px] tracking-widest">NÍVEL {level}</span>
           <span className="text-[var(--theme-text)]/40 text-[9px] tracking-widest">
             MAX: ATT {currentTier.maxAttr} | SKL {currentTier.maxSkill}
           </span>
-          <span className="tracking-widest">
-            {xp.current} / {xp.max} XP
-          </span>
+          <div className="flex items-center gap-1 tracking-widest">
+            <span>
+              {xp.current} / {xp.max} XP
+            </span>
+            {!sandboxMode && (
+              <button
+                onClick={xpModal.onOpen}
+                className="flex items-center justify-center w-4 h-4 ml-1 border border-[var(--theme-accent)]/50 bg-[var(--theme-accent)]/10 hover:bg-[var(--theme-accent)] hover:text-black transition-colors text-[10px] font-bold pb-0.5"
+              >
+                <svg
+                  className="w-2 h-2"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="w-full h-1.5 bg-[var(--theme-background)] border border-[var(--theme-border)] relative overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)_inset]">
@@ -215,6 +238,7 @@ export function Header() {
             : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e travar os pontos?"
         }
       />
+      <XpInjectionModal isOpen={xpModal.isOpen} onClose={xpModal.onClose} />
     </header>
   );
 }
