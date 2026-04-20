@@ -161,9 +161,10 @@ export function ItemActions({
                 size="sm"
                 variant="warning"
                 onClick={onUse}
+                disabled={disableUse}
                 className="w-full mt-1 border-dashed text-[10px]"
               >
-                [ EXECUTAR USO ]
+                {itemSkill ? `RODAR [${itemSkill.label}]` : "[ EXECUTAR USO ]"}
               </Button>
             )}
           </div>
@@ -174,31 +175,33 @@ export function ItemActions({
           <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest mb-1">
             UNIDADES NA STACK:
           </span>
-          {Array.from({ length: item.quantity }).map((_, i) => (
-            <div
-              key={i}
-              className="flex justify-between items-center bg-[var(--theme-background)] p-1 border border-[var(--theme-border)] shadow-[0_0_5px_rgba(0,0,0,0.5)_inset]"
-            >
-              <span className="text-[9px] font-mono text-[var(--theme-text)] font-bold px-1">
-                UNID. {i + 1}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[8px] text-[var(--theme-warning)] tracking-widest">
-                  {renderBlocks(currentUses, maxUses)}
+          <div className="flex flex-row gap-1 flex-wrap">
+            {Array.from({ length: item.quantity }).map((_, i) => (
+              <div
+                key={i}
+                className="flex flex-1 justify-between items-center bg-[var(--theme-background)] p-1 border border-[var(--theme-border)] shadow-[0_0_5px_rgba(0,0,0,0.5)_inset]"
+              >
+                <span className="text-[9px] font-mono text-[var(--theme-text)] font-bold px-1">
+                  UNID. {i + 1}
                 </span>
-                {!isNestedAmmo && (
-                  <Button
-                    size="sm"
-                    variant="warning"
-                    onClick={onUse}
-                    className="h-5 px-2 text-[8px] border-dashed"
-                  >
-                    USAR
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] text-[var(--theme-warning)] tracking-widest">
+                    {renderBlocks(currentUses, maxUses)}
+                  </span>
+                  {!isNestedAmmo && (
+                    <Button
+                      size="sm"
+                      variant="warning"
+                      onClick={onUse}
+                      className="h-5 px-2 text-[8px] border-dashed"
+                    >
+                      USAR
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

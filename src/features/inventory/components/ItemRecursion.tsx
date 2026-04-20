@@ -332,7 +332,9 @@ export function ItemRecursion({
             onRename={handleRenameDrawer}
             onRemoveDrawer={handleDeleteDrawer}
             isNestedAmmo={
-              item.type === "RECHARGEABLE" || item.type === "ACTIVE"
+              item.type === "RECHARGEABLE" ||
+              item.type === "ACTIVE" ||
+              item.type === "KIT"
             }
           />
         ))}

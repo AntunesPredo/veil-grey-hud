@@ -158,10 +158,14 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
     try {
       const finalItem = buildFinalItem(formData);
 
-      if (finalItem.type === "RECHARGEABLE" && !itemToEdit) {
+      if (
+        (finalItem.type === "RECHARGEABLE" || finalItem.type === "KIT") &&
+        !itemToEdit
+      ) {
         const initialUses = formData.fullCharge
           ? formData.maxUses
-          : formData.uses;
+          : Math.min(formData.uses, formData.maxUses);
+
         finalItem.uses = 0;
 
         addInventoryItem(finalItem);
@@ -174,7 +178,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
             slots: 0,
             quantity: initialUses,
             type: "CONSUMABLE",
-            svgId: finalItem.svgId,
+            svgId: finalItem.type === "KIT" ? "cons_pill" : "cons_ammo",
             uses: 1,
             maxUses: 1,
             commsType: finalItem.commsType,

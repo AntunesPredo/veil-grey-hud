@@ -140,7 +140,7 @@ export function ItemHeader({
             )}
 
             {hasUses && isActive && (
-              <span className="text-[9px] px-1 bg-black/40 border border-[var(--theme-border)] whitespace-nowrap">
+              <span className="text-[9px] px-1 bg-[var(--theme-background)]/40 border border-[var(--theme-border)] whitespace-nowrap">
                 {renderIntegrityBlocks(pct)}
               </span>
             )}

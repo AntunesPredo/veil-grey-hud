@@ -81,7 +81,6 @@ export function InventoryManager({
     let targetId = over.id;
     let targetDrawer: string | null = null;
 
-    // Tratamento para interceptar áreas de droppable de Gavetas
     if (typeof targetId === "string" && targetId.startsWith("drawer::")) {
       const parts = targetId.split("::");
       targetId = parseInt(parts[1], 10);
@@ -105,7 +104,9 @@ export function InventoryManager({
         overItem.type === "CONTAINER" ||
         overItem.type === "EQUIPABLE" ||
         overItem.type === "ACTIVE" ||
-        overItem.type === "RECHARGEABLE";
+        overItem.type === "RECHARGEABLE" ||
+        overItem.type === "KIT";
+
       if (isContainerTarget) {
         const res = moveInventoryItem(itemId, overItem.id, targetDrawer);
         if (!res.success) RetroToast.error(res.message);
@@ -133,7 +134,6 @@ export function InventoryManager({
       <div
         className={`flex flex-col h-full relative transition-all duration-300 ${activeDragId ? "z-50" : "z-10"}`}
       >
-        {/* BARRA DE FERRAMENTAS SUPERIOR */}
         <div className="flex gap-2 mb-4 shrink-0 bg-[var(--theme-background)]/80 p-2 border border-[var(--theme-border)]">
           <Button
             className={`flex-1 transition-colors ${isEditMode ? "bg-[var(--theme-accent)] text-[var(--theme-background)] border-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]" : "border-dashed text-[var(--theme-text)] border-[var(--theme-border)] hover:border-[var(--theme-accent)] hover:text-[var(--theme-accent)]"}`}
@@ -174,7 +174,6 @@ export function InventoryManager({
 
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden pb-4">
-            {/* COLUNA: LEVANDO CONSIGO */}
             <InventoryDropColumn
               id="zone-carried"
               title="LEVANDO CONSIGO"
@@ -197,7 +196,6 @@ export function InventoryManager({
               isEditMode={isEditMode}
             />
 
-            {/* COLUNA: BASE / ARMAZÉM */}
             <div className="relative flex-1 flex flex-col">
               <InventoryDropColumn
                 id="zone-base"

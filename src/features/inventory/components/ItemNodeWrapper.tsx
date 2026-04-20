@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useCharacterStore } from "../../character/store";
-import type { Item } from "../../../shared/types/veil-grey";
+import type { Item, Skill } from "../../../shared/types/veil-grey";
 import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
 import { RetroToast } from "../../../shared/ui/RetroToast";
 import { ItemHeader } from "./ItemHeader";
@@ -10,6 +10,7 @@ import { ItemActions } from "./ItemActions";
 import { ItemDetails } from "./ItemDetails";
 import { ItemRecursion } from "./ItemRecursion";
 import { executeRawRoll } from "../../../shared/utils/diceEngine";
+import { useSystemData } from "../../../shared/hooks/useSystemData";
 
 type ItemNodeWrapperProps = {
   item: Item;
@@ -41,6 +42,7 @@ export const ItemNodeWrapper = React.memo(
       name,
       skills,
     } = useCharacterStore();
+    const { getSkillById } = useSystemData();
     const [isDescOpen, setIsDescOpen] = useState(false);
 
     const childrenItems = allInventory.filter((i) => i.parentId === item.id);
@@ -56,7 +58,7 @@ export const ItemNodeWrapper = React.memo(
       item.type === "EQUIPABLE" || item.type === "ACTIVE";
 
     const currentUses =
-      item.type === "RECHARGEABLE"
+      item.type === "RECHARGEABLE" || item.type === "KIT"
         ? childrenItems
             .filter((i) => i.type === "CONSUMABLE")
             .reduce((sum, i) => sum + i.uses * i.quantity, 0)
@@ -138,29 +140,34 @@ export const ItemNodeWrapper = React.memo(
         return;
       }
 
-      if (item.type === "RECHARGEABLE") {
+      if (item.type === "RECHARGEABLE" || item.type === "KIT") {
         if (currentUses > 0) {
           consumeRechargeable(item.id);
-          dispatchDiscordLog(
-            "INVENTORY",
-            name,
-            ` **AÇÃO:** [${name}] realizou descarga de **${item.name}**.`,
-          );
-          RetroToast.success(`DESCARGA: ${item.name}`);
+          let msg = ` **AÇÃO:** [${name}] utilizou **${item.name}**.`;
+          if (item.type === "KIT" && item.skillId) {
+            const itemSkill = getSkillById(item.skillId);
+            const skillVal = skills[item.skillId as keyof typeof skills] || 0;
+            const rollRes = executeRawRoll(`1d20+${skillVal}`);
+            msg += `\n **ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
+          }
+          dispatchDiscordLog("INVENTORY", name, msg);
+          RetroToast.success(`USADO: ${item.name}`);
         } else {
           RetroToast.error("COMPARTIMENTO VAZIO. RECARREGUE.");
         }
       } else {
         const res = consumeItem(item.id);
         if (res.success) {
-          let msg = ` **AÇÃO:** [${name}] usou **${item.name}**.`;
+          let msg = `  **AÇÃO:** [${name}] usou **${item.name}**.`;
 
           if (item.type === "ACTIVE") {
             if (res.rollData?.skillId) {
+              const itemSkill = getSkillById(res.rollData.skillId as Skill);
               const skillVal =
                 skills[res.rollData.skillId as keyof typeof skills] || 0;
+
               const rollRes = executeRawRoll(`1d20+${skillVal}`);
-              msg += `\n **ROLAGEM (${res.rollData.skillId.toUpperCase()}):** ${rollRes.total}`;
+              msg += `\n **ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
             }
             msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
           }
@@ -240,17 +247,19 @@ export const ItemNodeWrapper = React.memo(
                   />
                 )}
 
-                <ItemRecursion
-                  item={item}
-                  childrenItems={childrenItems}
-                  allInventory={allInventory}
-                  isAbleToContain={isAbleToContain}
-                  isMicroContainer={isMicroContainer}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  activeDragId={activeDragId}
-                  isEditMode={isEditMode}
-                />
+                {(!isEditMode || isOverlay) && (
+                  <ItemRecursion
+                    item={item}
+                    childrenItems={childrenItems}
+                    allInventory={allInventory}
+                    isAbleToContain={isAbleToContain}
+                    isMicroContainer={isMicroContainer}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    activeDragId={activeDragId}
+                    isEditMode={isEditMode}
+                  />
+                )}
               </div>
             </motion.div>
           )}

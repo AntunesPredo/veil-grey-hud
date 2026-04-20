@@ -39,6 +39,7 @@ export interface InventorySlice {
     oldName?: string,
     newName?: string,
   ) => void;
+
   consumeItem: (id: number) => {
     success: boolean;
     message: string;
@@ -169,7 +170,7 @@ export const createInventorySlice: StateCreator<
         return { success: true, message: "ARMAZENADO NO EQUIPAMENTO." };
       }
 
-      if (container?.type === "RECHARGEABLE") {
+      if (container?.type === "RECHARGEABLE" || container?.type === "KIT") {
         if (item.type !== "CONSUMABLE")
           return {
             success: false,
@@ -236,9 +237,8 @@ export const createInventorySlice: StateCreator<
       const isAbleToContain =
         (container?.type === "CONTAINER" || container?.type === "EQUIPABLE") &&
         !!container.containerProps;
-      const isMicro = container?.type === "KIT";
 
-      if (!container || (!isAbleToContain && !isMicro))
+      if (!container || !isAbleToContain)
         return { success: false, message: "ALVO INCOMPATÍVEL." };
 
       let depth = 1;
@@ -539,6 +539,13 @@ export const createInventorySlice: StateCreator<
           };
         } else {
           result = { success: true, message: "OK" };
+          if (item.type === "KIT") {
+            return {
+              inventory: state.inventory.map((i) =>
+                i.id === id ? { ...i, uses: 0 } : i,
+              ),
+            };
+          }
           return { inventory: state.inventory.filter((i) => i.id !== id) };
         }
       }
@@ -553,19 +560,23 @@ export const createInventorySlice: StateCreator<
     const children = state.inventory.filter(
       (i) => i.parentId === id && i.type === "CONSUMABLE",
     );
+
     if (children.length === 0) return;
 
     const sortedChildren = children.sort((a, b) => {
       if ("uses" in a && "uses" in b) {
         const aUses = a.uses || 1;
         const bUses = b.uses || 1;
+
         if (aUses !== bUses) return aUses - bUses;
         return a.quantity - b.quantity;
       }
       return 0;
     });
 
-    get().consumeItem(sortedChildren[0].id);
+    const targetChild = sortedChildren[0];
+
+    get().consumeItem(targetChild.id);
   },
 
   repairActiveItem: (id, multiplier) => {
