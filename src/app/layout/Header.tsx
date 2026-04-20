@@ -79,7 +79,7 @@ export function Header() {
             {name || "UNKNOWN"}
           </h1>
 
-          <span className="pl-0 md:pl-2 text-[10px] text-gray-400 tracking-widest font-mono mt-0.5">
+          <span className="pl-0 md:pl-2 text-[10px] text-[var(--theme-text)]/50 tracking-widest font-mono mt-0.5">
             FUNÇÃO:{" "}
             <span className="text-[var(--theme-text)]">
               {role?.title || "NÃO ATRIBUÍDA"}
@@ -101,7 +101,7 @@ export function Header() {
             {!sandboxMode && (
               <button
                 onClick={xpModal.onOpen}
-                className="flex items-center justify-center w-4 h-4 ml-1 border border-[var(--theme-accent)]/50 bg-[var(--theme-accent)]/10 hover:bg-[var(--theme-accent)] hover:text-black transition-colors text-[10px] font-bold pb-0.5"
+                className="flex items-center justify-center w-4 h-4 ml-1 border border-[var(--theme-accent)]/50 bg-[var(--theme-accent)]/10 hover:bg-[var(--theme-accent)] hover:text-[var(--theme-background)] transition-colors text-[10px] font-bold pb-0.5"
               >
                 <svg
                   className="w-2 h-2"

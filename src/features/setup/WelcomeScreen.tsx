@@ -121,7 +121,7 @@ export function WelcomeScreen() {
               glitchIntensity="low"
             />
 
-            <div className="w-full flex flex-col gap-4 mt-8 mb-6 bg-black/50 p-6 border border-[var(--theme-border)] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <div className="w-full flex flex-col gap-4 mt-8 mb-6 bg-[var(--theme-background)]/80 p-6 border border-[var(--theme-border)] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
               <div className="flex flex-col gap-2 text-center">
                 <label className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
                   IDENTIFIQUE-SE

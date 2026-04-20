@@ -148,8 +148,8 @@ export function XpInjectionModal({
           </div>
 
           {isDev && (
-            <div className="flex flex-col gap-3 p-3 bg-yellow-900/10 border border-yellow-700/30">
-              <div className="flex items-center gap-2 border-b border-yellow-700/30 pb-2">
+            <div className="flex flex-col gap-3 p-3 bg-[var(--theme-warning)]/10 border border-[var(--theme-warning)]/30">
+              <div className="flex items-center gap-2 border-b border-[var(--theme-warning)]/30 pb-2">
                 <svg
                   className="w-4 h-4 text-[var(--theme-warning)]"
                   viewBox="0 0 16 16"

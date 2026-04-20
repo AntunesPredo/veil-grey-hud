@@ -51,7 +51,7 @@ export function ShowRoleDetails({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 flex flex-col gap-6">
         <div className="flex flex-col md:flex-row gap-6 items-start">
           {currentRoleData.photoUrl && (
-            <div className="w-full md:w-[40%] aspect-[3/4] shrink-0 border-2 border-[var(--theme-border)] relative group overflow-hidden bg-black">
+            <div className="w-full md:w-[40%] aspect-[3/4] shrink-0 border-2 border-[var(--theme-border)] relative group overflow-hidden bg-[var(--theme-background)]">
               <GlitchImage
                 src={currentRoleData.photoUrl as string}
                 alt={currentRoleData.title}
@@ -59,7 +59,7 @@ export function ShowRoleDetails({
                 className="object-cover object-top grayscale group-hover:grayscale-0 transition-all duration-700"
                 glitchIntensity="low"
               />
-              <div className="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black to-transparent">
+              <div className="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-[var(--theme-background)] to-transparent">
                 <span className="text-[9px] font-mono text-[var(--theme-accent)]">
                   ID: {btoa(currentRoleData.id.toUpperCase())}
                 </span>
@@ -167,7 +167,7 @@ export function ShowRoleDetails({
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      <span className="text-xs font-bold text-[var(--theme-background)] uppercase tracking-wider">
                         {skillLabel}
                       </span>
                       <span className="text-[11px] text-[var(--theme-text)] line-clamp-7 mt-1">
@@ -190,7 +190,7 @@ export function ShowRoleDetails({
                     ).map((points) => (
                       <div
                         key={points}
-                        className={`flex-1 h-full ${points <= baseVal ? "bg-[var(--theme-accent)]/40" : points <= totalVal ? "bg-[var(--theme-accent)] shadow-[0_0_5px_var(--theme-accent)]" : "bg-[#111]"}`}
+                        className={`flex-1 h-full ${points <= baseVal ? "bg-[var(--theme-accent)]/40" : points <= totalVal ? "bg-[var(--theme-accent)] shadow-[0_0_5px_var(--theme-accent)]" : "bg-[var(--theme-background)]/40"}`}
                       />
                     ))}
                   </div>
@@ -203,7 +203,7 @@ export function ShowRoleDetails({
 
       <div className="p-4 border-t border-[var(--theme-border)] bg-[var(--theme-background)] shrink-0">
         <Button
-          className={`w-full py-4 text-base transition-all duration-500 ${pointsRemaining === 0 ? "bg-[var(--theme-accent)] text-black shadow-[0_0_20px_var(--theme-accent)] animate-none" : "opacity-40 grayscale border-dashed border-[var(--theme-border)] bg-transparent text-[var(--theme-text)]"}`}
+          className={`w-full py-4 text-base transition-all duration-500 ${pointsRemaining === 0 ? "bg-[var(--theme-accent)] text-[var(--theme-background)] shadow-[0_0_20px_var(--theme-accent)] animate-none" : "opacity-40 grayscale border-dashed border-[var(--theme-border)] bg-transparent text-[var(--theme-text)]"}`}
           onClick={handleConfirmClick}
         >
           {pointsRemaining === 0

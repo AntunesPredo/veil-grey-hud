@@ -80,7 +80,7 @@ export function RoleSelectionScreen() {
 
   return (
     <div className="flex flex-col h-full w-full max-w-7xl mx-auto p-2 md:p-6">
-      <div className="flex justify-between items-center bg-black/80 border border-[var(--theme-border)] p-4 mb-4 shrink-0 shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+      <div className="flex justify-between items-center bg-[var(--theme-background)]/90 border border-[var(--theme-border)] p-4 mb-4 shrink-0 shadow-[0_0_15px_rgba(0,0,0,0.8)]">
         <Button
           variant="primary"
           onClick={handleBackToWelcome}
@@ -148,7 +148,7 @@ export function RoleSelectionScreen() {
         </div>
 
         <div
-          className={`flex-1 flex-col h-full relative overflow-hidden ${!selectedRole ? "hidden md:flex" : "flex absolute inset-0 z-20 bg-black md:static md:bg-transparent"}`}
+          className={`flex-1 flex-col h-full relative overflow-hidden ${!selectedRole ? "hidden md:flex" : "flex absolute inset-0 z-20 bg-[var(--theme-background)] md:static md:bg-transparent"}`}
         >
           <AnimatePresence mode="wait">
             {!currentRoleData ? (

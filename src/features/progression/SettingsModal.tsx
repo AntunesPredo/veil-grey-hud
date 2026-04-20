@@ -96,13 +96,13 @@ export function SettingsModal({
               />
             </svg>
             <div className="flex flex-col flex-1 gap-1">
-              <span className="text-[9px] font-bold text-gray-500 tracking-widest uppercase">
+              <span className="text-[9px] font-bold text-[var(--theme-text)]/50 tracking-widest uppercase">
                 IDENTIFICADOR:
               </span>
               <Input
                 value={name}
                 onChange={(e) => updateProgression({ name: e.target.value })}
-                className="w-full text-sm font-bold text-[var(--theme-accent)] bg-[#0a0a0a]"
+                className="w-full text-sm font-bold text-[var(--theme-accent)] bg-[var(--theme-background)]/50"
                 placeholder="Identificador de Unidade"
               />
             </div>
@@ -122,13 +122,6 @@ export function SettingsModal({
                   })
                 }
               />
-              {/* <Checkbox
-                label="HABILITAR MODO SANDBOX"
-                checked={sandboxMode}
-                onChange={() =>
-                  updateProgression({ sandboxMode: !sandboxMode })
-                }
-              /> */}
               {sandboxMode && (
                 <Checkbox
                   label="FORÇAR TRAVAMENTO DE PONTOS"
@@ -172,7 +165,7 @@ export function SettingsModal({
           )}
 
           <div className="flex flex-col gap-3 p-3 bg-[var(--theme-danger)]/10 border-l-4 border-l-[var(--theme-danger)]">
-            <span className="text-[10px] font-bold text-[var(---theme-accent)] tracking-widest">
+            <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest">
               AREA DE RISCO
             </span>
 
@@ -180,14 +173,14 @@ export function SettingsModal({
               <Button
                 size="sm"
                 onClick={handleExportJSON}
-                className="border-dashed text-[var(---theme-accent)]"
+                className="border-dashed text-[var(--theme-accent)]"
               >
                 EXPORTAR (.JSON)
               </Button>
               <Button
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="border-dashed text-[var(---theme-accent)]"
+                className="border-dashed text-[var(--theme-accent)]"
               >
                 IMPORTAR (.JSON)
               </Button>

@@ -121,7 +121,7 @@ export function ExtraNoteBlock({
               exit="exit"
               ref={noteRef}
               style={{ height: note.height || 80, minHeight: 60 }}
-              className="w-full overflow-y-auto resize-y bg-transparent hover:bg-[#0a0a0a] transition-colors p-1 custom-scrollbar"
+              className="w-full overflow-y-auto resize-y bg-transparent hover:bg-[var(--theme-accent)]/5 transition-colors p-1 custom-scrollbar"
             >
               <div className="prose prose-invert prose-sm prose-p:my-1 prose-headings:my-2 max-w-none text-[var(--theme-accent)]">
                 {note.content ? (

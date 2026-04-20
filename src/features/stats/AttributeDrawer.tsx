@@ -63,7 +63,6 @@ export function AttributeDrawer() {
       targetVal > VG_CONFIG.rules.attrMax
     )
       return;
-    // TODO: Toasts will be tooltips
     if (delta > 0 && targetVal > currentTier.maxAttr) {
       RetroToast.warning(
         `CAP ATINGIDO. MÁXIMO NÍVEL ${level} É ${currentTier.maxAttr}`,
@@ -104,7 +103,7 @@ export function AttributeDrawer() {
       {!isPinned && (
         <button
           onClick={() => setDrawerState("left", { isOpen: !isOpen })}
-          className="absolute top-1/2 -translate-y-1/2 right-[-24px] w-6 h-16 bg-[var(--theme-background)] border border-l-0 border-[var(--theme-accent)] text-[var(--theme-accent)] font-bold shadow-[5px_0_10px_rgba(0,0,0,0.8)] flex items-center justify-center hover:bg-[var(--theme-accent)] hover:text-black transition-colors rounded-r-md"
+          className="absolute top-1/2 -translate-y-1/2 right-[-24px] w-6 h-16 bg-[var(--theme-background)] border border-l-0 border-[var(--theme-accent)] text-[var(--theme-accent)] font-bold shadow-[5px_0_10px_rgba(0,0,0,0.8)] flex items-center justify-center hover:bg-[var(--theme-accent)] hover:text-[var(--theme-background)] transition-colors rounded-r-md"
         >
           {isOpen ? "◀" : "▶"}
         </button>
@@ -116,7 +115,7 @@ export function AttributeDrawer() {
         </span>
         <Button
           size="sm"
-          className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-black" : "hover:text-[var(--theme-accent)]"}`}
+          className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-[var(--theme-background)]" : "hover:text-[var(--theme-accent)]"}`}
           onClick={() =>
             setDrawerState("left", { isPinned: !isPinned, isOpen: true })
           }
@@ -161,7 +160,7 @@ export function AttributeDrawer() {
                 return (
                   <div
                     key={attrKey}
-                    className="flex justify-between items-center bg-black/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
+                    className="flex justify-between items-center bg-[var(--theme-background)]/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
                   >
                     <span className="text-[12px] uppercase font-bold">
                       {attr.label}
@@ -286,7 +285,7 @@ function SecondaryStatRow({
         <span className="text-[12px] uppercase font-bold">{label}</span>
       </div>
       <div className="flex gap-2 items-center shrink-0">
-        <span className="font-mono text-[var(--theme-text)] bg-black px-2 py-1 border border-[#333] text-xs min-w-[32px] text-center">
+        <span className="font-mono text-[var(--theme-text)] bg-[var(--theme-background)]/80 px-2 py-1 border border-[var(--theme-border)] text-xs min-w-[32px] text-center">
           {value}
         </span>
         {!isDistributing && (

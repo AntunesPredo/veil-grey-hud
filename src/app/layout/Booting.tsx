@@ -59,7 +59,7 @@ export function Booting() {
   }, [isStarted, setPowerState, logs]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative w-full h-full bg-black overflow-hidden">
+    <div className="flex-1 flex flex-col items-center justify-center relative w-full h-full bg-[var(--theme-background)] overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -126,7 +126,7 @@ export function NotesManager() {
 
           <EffectsList
             effects={
-              customEffects?.filter((e: CustomEffect) => e.noteId === "MAIN") ||
+              customEffects?.filter((e: CustomEffect) => e.link === "MAIN") ||
               []
             }
             onRemove={removeCustomEffect}
@@ -161,7 +161,7 @@ export function NotesManager() {
               onAddEffect={() => handleOpenEffectModal(note.id)}
               effects={
                 customEffects?.filter(
-                  (e: CustomEffect) => e.noteId === note.id,
+                  (e: CustomEffect) => e.link === note.id,
                 ) || []
               }
               onRemoveEffect={removeCustomEffect}
@@ -174,7 +174,7 @@ export function NotesManager() {
       <CustomEffectModal
         isOpen={effectModal.isOpen}
         onClose={effectModal.onClose}
-        noteId={targetNoteId}
+        link={targetNoteId}
       />
 
       <ConfirmModal
