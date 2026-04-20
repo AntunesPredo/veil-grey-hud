@@ -43,6 +43,7 @@ export interface ItemFormData {
   effects: CustomEffect[];
   singleUse: boolean;
   fullCharge: boolean;
+  requiresAmmo: boolean;
 }
 
 const defaultFormData: ItemFormData = {
@@ -65,6 +66,7 @@ const defaultFormData: ItemFormData = {
   effects: [],
   singleUse: true,
   fullCharge: true,
+  requiresAmmo: false,
 };
 
 interface ItemModalProps {
@@ -172,7 +174,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
             slots: 0,
             quantity: initialUses,
             type: "CONSUMABLE",
-            svgId: "cons_ammo",
+            svgId: finalItem.svgId,
             uses: 1,
             maxUses: 1,
             commsType: finalItem.commsType,

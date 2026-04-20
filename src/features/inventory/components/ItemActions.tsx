@@ -3,6 +3,8 @@ import { Button, NumberStepper } from "../../../shared/ui/Form";
 import { useDisclosure } from "../../../shared/hooks/useDisclosure";
 import { SplitStackModal } from "./SplitStackModal";
 import { MergeStackModal } from "./MergeStackModal";
+import { RepairActiveModal } from "./RepairActiveModal";
+import { useSystemData } from "../../../shared/hooks/useSystemData";
 
 interface ItemActionsProps {
   item: Item;
@@ -10,7 +12,8 @@ interface ItemActionsProps {
   currentUses: number;
   onUse: (e: React.MouseEvent) => void;
   onUpdateQty: (newVal: number) => void;
-  isInsideRechargeable?: boolean;
+  isNestedAmmo?: boolean;
+  disableUse?: boolean;
 }
 
 const renderBlocks = (uses: number, maxUses: number) => {
@@ -25,14 +28,22 @@ export function ItemActions({
   currentUses,
   onUse,
   onUpdateQty,
-  isInsideRechargeable,
+  isNestedAmmo = false,
+  disableUse = false,
 }: ItemActionsProps) {
+  const { getSkillById } = useSystemData();
   const hasUses = "maxUses" in item;
   const maxUses = hasUses ? item.maxUses : 1;
   const canStack = item.type === "MATERIAL" || item.type === "CONSUMABLE";
 
+  const itemSkill =
+    (item.type === "ACTIVE" || item.type === "KIT") && item.skillId
+      ? getSkillById(item.skillId)
+      : null;
+
   const splitModal = useDisclosure();
   const mergeModal = useDisclosure();
+  const repairModal = useDisclosure();
 
   const compatibleMergeItems = canStack
     ? allInventory.filter(
@@ -41,7 +52,7 @@ export function ItemActions({
     : [];
 
   return (
-    <div className="flex flex-col gap-2 bg-[var(--theme-background)]/40 p-2 border border-[var(--theme-border)]">
+    <div className="flex flex-col gap-2 bg-[var(--theme-background)]/40 p-2 border border-[var(--theme-border)] mt-1">
       {canStack && (
         <div className="flex items-center gap-2">
           {item.quantity > 1 && (
@@ -88,36 +99,75 @@ export function ItemActions({
         </div>
       )}
 
-      {hasUses && !(item.type === "CONSUMABLE" && item.quantity > 1) && (
-        <div className="flex flex-col w-full gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
-          <div className="flex justify-between items-center w-full">
-            <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest">
-              CARGAS
-            </span>
-            <span className="text-[9px] font-mono text-[var(--theme-warning)]">
-              {currentUses} / {maxUses}
-            </span>
-          </div>
-          <div className="w-full h-1 bg-[var(--theme-background)] border border-[var(--theme-border)]">
+      {hasUses && item.type === "ACTIVE" && (
+        <div className="flex flex-col w-full gap-1">
+          <span className="text-[12px] font-bold border-b border-dashed mb-2 pb-2 text-[var(--theme-warning)] text-center uppercase tracking-widest">
+            INTEGRIDADE
+          </span>
+          <div className="w-full h-2 bg-[var(--theme-background)] border border-[var(--theme-border)]">
             <div
-              className="h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)]"
+              className="h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)] transition-all"
               style={{
                 width: `${Math.min((currentUses / maxUses) * 100, 100)}%`,
               }}
             />
           </div>
-          {!isInsideRechargeable && (
-            <Button
-              size="sm"
-              variant="warning"
-              onClick={onUse}
-              className="w-full mt-1 border-dashed text-[10px]"
-            >
-              [ EXECUTAR USO ]
-            </Button>
+          {!isNestedAmmo && (
+            <div className="flex gap-2 mt-1">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={repairModal.onOpen}
+                className="border-dashed text-[10px] px-2"
+              >
+                CONSERTAR
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={onUse}
+                disabled={disableUse}
+                className="flex-1 border-dashed text-[10px]"
+              >
+                {itemSkill ? `RODAR [${itemSkill.label}]` : "EXECUTAR USO"}
+              </Button>
+            </div>
           )}
         </div>
       )}
+
+      {hasUses &&
+        item.type !== "ACTIVE" &&
+        !(item.type === "CONSUMABLE" && item.quantity > 1) && (
+          <div className="flex flex-col w-full gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
+            <div className="flex justify-between items-center w-full">
+              <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest">
+                CARGAS
+              </span>
+              <span className="text-[9px] font-mono text-[var(--theme-warning)]">
+                {currentUses} / {maxUses}
+              </span>
+            </div>
+            <div className="w-full h-1 bg-[var(--theme-background)] border border-[var(--theme-border)]">
+              <div
+                className="h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)]"
+                style={{
+                  width: `${Math.min((currentUses / maxUses) * 100, 100)}%`,
+                }}
+              />
+            </div>
+            {!isNestedAmmo && (
+              <Button
+                size="sm"
+                variant="warning"
+                onClick={onUse}
+                className="w-full mt-1 border-dashed text-[10px]"
+              >
+                [ EXECUTAR USO ]
+              </Button>
+            )}
+          </div>
+        )}
 
       {item.type === "CONSUMABLE" && item.quantity > 1 && (
         <div className="flex flex-col gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
@@ -136,7 +186,7 @@ export function ItemActions({
                 <span className="text-[8px] text-[var(--theme-warning)] tracking-widest">
                   {renderBlocks(currentUses, maxUses)}
                 </span>
-                {!isInsideRechargeable && (
+                {!isNestedAmmo && (
                   <Button
                     size="sm"
                     variant="warning"
@@ -162,6 +212,11 @@ export function ItemActions({
         onClose={mergeModal.onClose}
         targetItem={item}
         allInventory={allInventory}
+      />
+      <RepairActiveModal
+        isOpen={repairModal.isOpen}
+        onClose={repairModal.onClose}
+        item={item}
       />
     </div>
   );

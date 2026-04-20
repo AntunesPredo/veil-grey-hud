@@ -131,6 +131,8 @@ export interface ActiveItem extends BaseItem {
   quality: number;
   condition: number;
   commsType: string;
+  requiresAmmo: boolean;
+  skillId: Skill | null;
 }
 
 export interface KitItem extends BaseItem {
@@ -159,7 +161,6 @@ export interface EquipableItem extends BaseItem {
   };
 }
 
-// A união que exportamos para o sistema
 export type Item =
   | MaterialItem
   | ConsumableItem

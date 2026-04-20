@@ -22,7 +22,7 @@ interface DrawerZoneProps {
   setDrawerInput: (val: string) => void;
   onRename: (oldName: string) => void;
   onRemoveDrawer: (name: string) => void;
-  isInsideRechargeable: boolean;
+  isNestedAmmo: boolean;
 }
 
 function DrawerZone({
@@ -41,7 +41,7 @@ function DrawerZone({
   setDrawerInput,
   onRename,
   onRemoveDrawer,
-  isInsideRechargeable,
+  isNestedAmmo,
 }: DrawerZoneProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -159,7 +159,7 @@ function DrawerZone({
                 onDelete={onDelete}
                 activeDragId={activeDragId}
                 isEditMode={isEditMode}
-                isInsideRechargeable={isInsideRechargeable}
+                isNestedAmmo={isNestedAmmo}
               />
             ))}
             {items.length === 0 && (
@@ -263,9 +263,11 @@ export function ItemRecursion({
     <div className="mt-2 border-t border-dashed border-[var(--theme-border)] pt-2">
       <div className="flex justify-between items-center mb-2">
         <span className="text-[8px] font-bold text-[var(--theme-success)] tracking-widest uppercase">
-          {isMicroContainer
-            ? "COMPARTIMENTO DE RECARGA:"
-            : `ARMAZENAMENTO INTERNO (${childrenItems.length}/${capacity}):`}
+          {item.type === "ACTIVE"
+            ? "COMPARTIMENTO DE MUNIÇÃO:"
+            : isMicroContainer
+              ? "COMPARTIMENTO DE RECARGA:"
+              : `ARMAZENAMENTO INTERNO (${childrenItems.length}/${capacity}):`}
         </span>
         {!isMicroContainer && (
           <Button
@@ -329,7 +331,9 @@ export function ItemRecursion({
             setDrawerInput={setDrawerInput}
             onRename={handleRenameDrawer}
             onRemoveDrawer={handleDeleteDrawer}
-            isInsideRechargeable={item.type === "RECHARGEABLE"}
+            isNestedAmmo={
+              item.type === "RECHARGEABLE" || item.type === "ACTIVE"
+            }
           />
         ))}
       </div>

@@ -3,6 +3,7 @@ import { Button } from "../../../shared/ui/Form";
 import { useCustomSvgIcons } from "../../../shared/hooks/useCustomSvgIcons";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import { useSystemData } from "../../../shared/hooks/useSystemData";
 
 interface ItemHeaderProps {
   item: Item;
@@ -11,13 +12,14 @@ interface ItemHeaderProps {
   currentUses: number;
   onToggleEquip: (e: React.MouseEvent) => void;
   onWebhook: (e: React.MouseEvent) => void;
-  onQuickUse: (e: React.MouseEvent) => void; // Novo
+  onQuickUse: (e: React.MouseEvent) => void;
   onEdit: () => void;
   onDelete: () => void;
   setDragRef: (element: HTMLElement | null) => void;
   listeners: SyntheticListenerMap | undefined;
   attributes: DraggableAttributes | undefined;
-  isInsideRechargeable?: boolean;
+  isNestedAmmo?: boolean;
+  disableUse?: boolean;
 }
 
 const renderUseBlocks = (uses: number, maxUses: number) => {
@@ -26,6 +28,23 @@ const renderUseBlocks = (uses: number, maxUses: number) => {
     blocks.push(i < uses ? "■" : "□");
   }
   return blocks.join(" ");
+};
+
+const renderIntegrityBlocks = (condition: number) => {
+  let activeCount = 1;
+  if (condition > 75) activeCount = 4;
+  else if (condition > 50) activeCount = 3;
+  else if (condition > 25) activeCount = 2;
+
+  let colorClass = "text-[var(--theme-accent)]";
+  if (condition <= 25) colorClass = "text-[var(--theme-danger)] animate-pulse";
+  else if (condition <= 50) colorClass = "text-[var(--theme-warning)]";
+
+  const blocks = [];
+  for (let i = 0; i < 4; i++) {
+    blocks.push(i < activeCount ? "■" : "□");
+  }
+  return <span className={`font-mono ${colorClass}`}>{blocks.join(" ")}</span>;
 };
 
 export function ItemHeader({
@@ -41,20 +60,24 @@ export function ItemHeader({
   setDragRef,
   listeners,
   attributes,
-  isInsideRechargeable = false,
+  isNestedAmmo = false,
+  disableUse = false,
 }: ItemHeaderProps) {
   const { getSpecificSvg } = useCustomSvgIcons();
+  const { getSkillById } = useSystemData();
 
-  const hasUses =
-    "maxUses" in item &&
-    (item.type === "CONSUMABLE" ||
-      item.type === "ACTIVE" ||
-      item.type === "RECHARGEABLE" ||
-      item.type === "KIT");
+  const hasUses = "maxUses" in item;
   const maxUses = hasUses ? item.maxUses : 1;
+  const isActive = item.type === "ACTIVE";
+  const itemSkill =
+    (item.type === "ACTIVE" || item.type === "KIT") && item.skillId
+      ? getSkillById(item.skillId)
+      : null;
+
+  const pct = hasUses ? Math.min((currentUses / maxUses) * 100, 100) : 0;
 
   return (
-    <div className="flex items-center justify-between p-2 cursor-pointer group">
+    <div className="flex items-center justify-between p-2 cursor-pointer group hover:bg-[var(--theme-accent)]/5 transition-colors">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex items-center shrink-0">
           {isEditMode ? (
@@ -82,8 +105,8 @@ export function ItemHeader({
           )}
         </div>
 
-        <div className="flex flex-col min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col min-w-0 flex-1 pr-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className={`font-bold uppercase truncate text-xs tracking-wider ${item.isEquipped ? "text-[var(--theme-success)]" : "text-[var(--theme-accent)]"}`}
             >
@@ -93,25 +116,32 @@ export function ItemHeader({
               <Button
                 size="sm"
                 onClick={onToggleEquip}
-                className={`h-5 px-1.5 text-[8px] border-dashed ${item.isEquipped ? "bg-[var(--theme-success)]/20 border-[var(--theme-success)] text-[var(--theme-success)]" : "border-[var(--theme-border)] text-[var(--theme-text)]/50"}`}
+                className={`h-6 text-[10px] border-dashed shrink-0 ${item.isEquipped ? "bg-[var(--theme-success)]/20 border-[var(--theme-success)] text-[var(--theme-success)]" : "border-[var(--theme-border)] text-[var(--theme-text)]/50"}`}
               >
                 {item.isEquipped ? "[EQUIPADO]" : "[DESEQUIPADO]"}
               </Button>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <span className="text-[9px] font-mono text-[var(--theme-text)]/60 bg-[var(--theme-background)]/60 px-1 border border-[var(--theme-border)]">
+            <span className="text-[9px] font-mono text-[var(--theme-text)]/60 bg-[var(--theme-background)]/60 px-1 border border-[var(--theme-border)] shrink-0">
               SLOTS: {item.slots * item.quantity}{" "}
               {item.quantity > 1 && `(${item.slots}/UN)`}
             </span>
             {item.quantity > 1 && (
-              <span className="text-[9px] font-mono text-[var(--theme-accent)] bg-[var(--theme-accent)]/10 px-1 border border-[var(--theme-accent)]/30">
+              <span className="text-[9px] font-mono text-[var(--theme-accent)] bg-[var(--theme-accent)]/10 px-1 border border-[var(--theme-accent)]/30 shrink-0">
                 QTD: {item.quantity}
               </span>
             )}
-            {hasUses && maxUses > 1 && (
-              <span className="text-[9px] font-mono text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 px-1 border border-[var(--theme-warning)]/30">
+
+            {hasUses && maxUses > 1 && !isActive && (
+              <span className="text-[9px] font-mono text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 px-1 border border-[var(--theme-warning)]/30 whitespace-nowrap">
                 {renderUseBlocks(currentUses, maxUses)}
+              </span>
+            )}
+
+            {hasUses && isActive && (
+              <span className="text-[9px] px-1 bg-black/40 border border-[var(--theme-border)] whitespace-nowrap">
+                {renderIntegrityBlocks(pct)}
               </span>
             )}
           </div>
@@ -123,12 +153,12 @@ export function ItemHeader({
         onClick={(e) => e.stopPropagation()}
       >
         {isEditMode ? (
-          <>
+          <div className="flex flex-col gap-1">
             <Button
               size="sm"
               variant="primary"
               onClick={onEdit}
-              className="px-2 h-7 border-dashed"
+              className="px-2 h-5 border-dashed text-[9px]"
             >
               MOD
             </Button>
@@ -136,21 +166,22 @@ export function ItemHeader({
               size="sm"
               variant="danger"
               onClick={onDelete}
-              className="px-2 h-7 border-dashed"
+              className="px-2 h-5 border-dashed text-[9px]"
             >
-              X
+              DEL
             </Button>
-          </>
+          </div>
         ) : (
           <>
-            {hasUses && !isInsideRechargeable && (
+            {hasUses && !isNestedAmmo && (
               <Button
                 size="sm"
                 variant="warning"
                 onClick={onQuickUse}
+                disabled={disableUse}
                 className="h-6 px-1.5 border-dashed text-[10px] mr-1 shadow-[0_0_8px_rgba(204,122,0,0.2)]"
               >
-                USAR
+                {itemSkill ? `USAR - ${itemSkill.label}` : "USAR"}
               </Button>
             )}
             <Button

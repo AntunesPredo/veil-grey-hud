@@ -17,7 +17,7 @@ export function Checkbox({
 }: {
   label: string;
   checked: boolean;
-  onChange: () => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
 }) {
   return (

@@ -1,7 +1,11 @@
 import type { Item, CustomEffect } from "../../../shared/types/veil-grey";
 
 export function ItemDetails({ item }: { item: Item }) {
-  if (!item.description && (!item.effects || item.effects.length === 0))
+  if (
+    !item.description &&
+    (!item.effects || item.effects.length === 0) &&
+    item.type !== "ACTIVE"
+  )
     return null;
 
   return (
@@ -9,6 +13,11 @@ export function ItemDetails({ item }: { item: Item }) {
       {item.description && (
         <span className="text-[10px] text-[var(--theme-text)]/80 italic leading-relaxed border-l-2 border-[var(--theme-accent)]/30 pl-2">
           {item.description}
+        </span>
+      )}
+      {item.type === "ACTIVE" && item.requiresAmmo && (
+        <span className="text-[9px] bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] border border-[var(--theme-warning)]/30 px-2 py-1 w-fit font-bold tracking-widest">
+          REQUER MUNIÇÃO: {item.commsType}
         </span>
       )}
 

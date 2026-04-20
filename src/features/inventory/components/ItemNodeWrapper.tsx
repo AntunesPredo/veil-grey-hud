@@ -9,6 +9,7 @@ import { ItemHeader } from "./ItemHeader";
 import { ItemActions } from "./ItemActions";
 import { ItemDetails } from "./ItemDetails";
 import { ItemRecursion } from "./ItemRecursion";
+import { executeRawRoll } from "../../../shared/utils/diceEngine";
 
 type ItemNodeWrapperProps = {
   item: Item;
@@ -18,7 +19,7 @@ type ItemNodeWrapperProps = {
   activeDragId: number | null;
   isEditMode: boolean;
   isOverlay?: boolean;
-  isInsideRechargeable?: boolean;
+  isNestedAmmo?: boolean;
 };
 
 export const ItemNodeWrapper = React.memo(
@@ -30,7 +31,7 @@ export const ItemNodeWrapper = React.memo(
     activeDragId,
     isEditMode,
     isOverlay = false,
-    isInsideRechargeable = false,
+    isNestedAmmo = false,
   }: ItemNodeWrapperProps) => {
     const {
       updateInventoryItem,
@@ -38,6 +39,7 @@ export const ItemNodeWrapper = React.memo(
       consumeItem,
       consumeRechargeable,
       name,
+      skills,
     } = useCharacterStore();
     const [isDescOpen, setIsDescOpen] = useState(false);
 
@@ -46,7 +48,9 @@ export const ItemNodeWrapper = React.memo(
       (item.type === "CONTAINER" || item.type === "EQUIPABLE") &&
       !!item.containerProps;
     const isMicroContainer =
-      item.type === "RECHARGEABLE" || item.type === "KIT";
+      item.type === "RECHARGEABLE" ||
+      item.type === "KIT" ||
+      (item.type === "ACTIVE" && item.requiresAmmo);
     const canEquip = item.parentId === null && item.isCarried;
     const isEquippableType =
       item.type === "EQUIPABLE" || item.type === "ACTIVE";
@@ -59,6 +63,26 @@ export const ItemNodeWrapper = React.memo(
         : "uses" in item
           ? item.uses
           : 0;
+
+    let hasAmmo = true;
+    if (item.type === "ACTIVE" && item.requiresAmmo) {
+      const ammos = childrenItems.filter(
+        (i) => i.type === "CONSUMABLE" && i.uses > 0,
+      );
+      let magAmmos = 0;
+      childrenItems
+        .filter((i) => i.type === "RECHARGEABLE")
+        .forEach((mag) => {
+          magAmmos += allInventory.filter(
+            (i) =>
+              i.parentId === mag.id && i.type === "CONSUMABLE" && i.uses > 0,
+          ).length;
+        });
+      hasAmmo = ammos.length > 0 || magAmmos > 0;
+    }
+    const disableUse =
+      item.type === "ACTIVE" &&
+      (!item.isEquipped || (item.requiresAmmo && !hasAmmo));
 
     const {
       attributes,
@@ -88,8 +112,20 @@ export const ItemNodeWrapper = React.memo(
       ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[0_0_10px_var(--theme-accent)_inset] z-10"
       : "";
 
+    const handleToggleEquip = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleEquipItem(item.id);
+      const actionStr = !item.isEquipped ? "EQUIPOU" : "DESEQUIPOU";
+      dispatchDiscordLog(
+        "INVENTORY",
+        name,
+        ` **AÇÃO:** [${name}] ${actionStr} **${item.name}**.`,
+      );
+    };
+
     const handleUse = (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (disableUse) return;
       if (
         item.type === "MATERIAL" ||
         item.type === "CONTAINER" ||
@@ -97,36 +133,49 @@ export const ItemNodeWrapper = React.memo(
       )
         return;
 
+      if (item.type === "ACTIVE" && !item.isEquipped) {
+        RetroToast.error("ITEM PRECISA ESTAR EQUIPADO PARA USO.");
+        return;
+      }
+
       if (item.type === "RECHARGEABLE") {
         if (currentUses > 0) {
           consumeRechargeable(item.id);
           dispatchDiscordLog(
             "INVENTORY",
             name,
-            `🎯 **AÇÃO:** [${name}] realizou descarga de **${item.name}**.`,
+            ` **AÇÃO:** [${name}] realizou descarga de **${item.name}**.`,
           );
           RetroToast.success(`DESCARGA: ${item.name}`);
         } else {
           RetroToast.error("COMPARTIMENTO VAZIO. RECARREGUE.");
         }
       } else {
-        if (currentUses > 0) {
-          consumeItem(item.id);
-          dispatchDiscordLog(
-            "INVENTORY",
-            name,
-            `🎯 **AÇÃO:** [${name}] usou **${item.name}**.`,
-          );
+        const res = consumeItem(item.id);
+        if (res.success) {
+          let msg = ` **AÇÃO:** [${name}] usou **${item.name}**.`;
+
+          if (item.type === "ACTIVE") {
+            if (res.rollData?.skillId) {
+              const skillVal =
+                skills[res.rollData.skillId as keyof typeof skills] || 0;
+              const rollRes = executeRawRoll(`1d20+${skillVal}`);
+              msg += `\n **ROLAGEM (${res.rollData.skillId.toUpperCase()}):** ${rollRes.total}`;
+            }
+            msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
+          }
+
+          dispatchDiscordLog("INVENTORY", name, msg);
           RetroToast.success(`USADO: ${item.name}`);
         } else {
-          RetroToast.error("CARGA DEPLECIONADA.");
+          RetroToast.error(res.message);
         }
       }
     };
 
     const handleWebhook = (e: React.MouseEvent) => {
       e.stopPropagation();
-      let msg = `📡 **MATÉRIA SCANEADA:**\n**NOME:** ${item.name} [${item.type}]\n**PESO:** ${item.slots} SLOTS\n`;
+      let msg = `**MATÉRIA SCANEADA:**\n**NOME:** ${item.name} [${item.type}]\n**PESO:** ${item.slots} SLOTS\n`;
       if (item.quantity > 1) msg += `**QTD:** ${item.quantity}\n`;
       if (item.description) msg += `*${item.description}*\n`;
       dispatchDiscordLog("INVENTORY", name, msg);
@@ -153,10 +202,7 @@ export const ItemNodeWrapper = React.memo(
             isEditMode={isEditMode}
             isEquippable={isEquippableType && canEquip}
             currentUses={currentUses}
-            onToggleEquip={(e) => {
-              e.stopPropagation();
-              toggleEquipItem(item.id);
-            }}
+            onToggleEquip={handleToggleEquip}
             onWebhook={handleWebhook}
             onQuickUse={handleUse}
             onEdit={() => onEdit(item)}
@@ -164,7 +210,8 @@ export const ItemNodeWrapper = React.memo(
             setDragRef={setDragRef}
             listeners={listeners}
             attributes={attributes}
-            isInsideRechargeable={isInsideRechargeable}
+            isNestedAmmo={isNestedAmmo}
+            disableUse={disableUse}
           />
         </div>
 
@@ -188,23 +235,22 @@ export const ItemNodeWrapper = React.memo(
                     onUpdateQty={(val) =>
                       updateInventoryItem(item.id, "quantity", Math.max(1, val))
                     }
-                    isInsideRechargeable={isInsideRechargeable}
+                    isNestedAmmo={isNestedAmmo}
+                    disableUse={disableUse}
                   />
                 )}
 
-                {(!isEditMode || isOverlay) && (
-                  <ItemRecursion
-                    item={item}
-                    childrenItems={childrenItems}
-                    allInventory={allInventory}
-                    isAbleToContain={isAbleToContain}
-                    isMicroContainer={isMicroContainer}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    activeDragId={activeDragId}
-                    isEditMode={isEditMode}
-                  />
-                )}
+                <ItemRecursion
+                  item={item}
+                  childrenItems={childrenItems}
+                  allInventory={allInventory}
+                  isAbleToContain={isAbleToContain}
+                  isMicroContainer={isMicroContainer}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  activeDragId={activeDragId}
+                  isEditMode={isEditMode}
+                />
               </div>
             </motion.div>
           )}
@@ -216,17 +262,28 @@ export const ItemNodeWrapper = React.memo(
     if (
       prev.isEditMode !== next.isEditMode ||
       prev.activeDragId !== next.activeDragId ||
-      prev.isInsideRechargeable !== next.isInsideRechargeable
+      prev.isNestedAmmo !== next.isNestedAmmo
     )
       return false;
-
     if (JSON.stringify(prev.item) !== JSON.stringify(next.item)) return false;
 
-    const getChildrenHash = (inv: Item[], parentId: number) =>
-      inv
-        .filter((i) => i.parentId === parentId)
+    const getChildrenHash = (inv: Item[], parentId: number) => {
+      const direct = inv.filter((i) => i.parentId === parentId);
+      let hash = direct
         .map((i) => `${i.id}-Q${i.quantity}-U${"uses" in i ? i.uses : 0}`)
         .join("|");
+      direct.forEach((d) => {
+        const nested = inv.filter((i) => i.parentId === d.id);
+        if (nested.length > 0) {
+          hash +=
+            "::" +
+            nested
+              .map((i) => `${i.id}-Q${i.quantity}-U${"uses" in i ? i.uses : 0}`)
+              .join("|");
+        }
+      });
+      return hash;
+    };
 
     const prevHash = getChildrenHash(prev.allInventory, prev.item.id);
     const nextHash = getChildrenHash(next.allInventory, next.item.id);

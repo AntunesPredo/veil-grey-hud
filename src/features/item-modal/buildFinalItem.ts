@@ -54,6 +54,8 @@ export const buildFinalItem = (data: ItemFormData): Item => {
         quality: data.quality || 1,
         condition: data.condition || 100,
         commsType: data.commsType || "",
+        requiresAmmo: data.requiresAmmo,
+        skillId: data.skillId,
       } as ActiveItem;
     case "KIT":
       return {

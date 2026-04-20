@@ -1,6 +1,11 @@
 import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
-import type { ContainerItem, Item } from "../../shared/types/veil-grey";
+import type {
+  ActiveItem,
+  ConsumableItem,
+  ContainerItem,
+  Item,
+} from "../../shared/types/veil-grey";
 
 export interface InventorySlice {
   inventory: Item[];
@@ -34,9 +39,13 @@ export interface InventorySlice {
     oldName?: string,
     newName?: string,
   ) => void;
-
-  consumeItem: (id: number) => void;
+  consumeItem: (id: number) => {
+    success: boolean;
+    message: string;
+    rollData?: { skillId: string | null; loss: number };
+  };
   consumeRechargeable: (id: number) => void;
+  repairActiveItem: (id: number, multiplier: number) => { recovered: number };
 }
 
 export const createInventorySlice: StateCreator<
@@ -106,13 +115,25 @@ export const createInventorySlice: StateCreator<
   },
 
   toggleEquipItem: (id) => {
-    set((state) => ({
-      inventory: state.inventory.map((i) =>
-        i.id === id && (i.type === "EQUIPABLE" || i.type === "ACTIVE")
-          ? { ...i, isEquipped: !i.isEquipped }
-          : i,
-      ),
-    }));
+    set((state) => {
+      const itemToEquip = state.inventory.find((i) => i.id === id);
+      if (!itemToEquip) return state;
+
+      const isEquipping = !itemToEquip.isEquipped;
+
+      return {
+        inventory: state.inventory.map((i) => {
+          if (i.id === id && i.type === "EQUIPABLE")
+            return { ...i, isEquipped: isEquipping };
+
+          if (itemToEquip.type === "ACTIVE" && i.type === "ACTIVE") {
+            if (i.id === id) return { ...i, isEquipped: isEquipping };
+            if (isEquipping) return { ...i, isEquipped: false };
+          }
+          return i;
+        }),
+      };
+    });
     get().recalculateAll();
   },
 
@@ -123,6 +144,30 @@ export const createInventorySlice: StateCreator<
 
     if (targetId !== null) {
       const container = state.inventory.find((i) => i.id === targetId);
+
+      if (container?.type === "ACTIVE" && container.requiresAmmo) {
+        if (item.type !== "CONSUMABLE" && item.type !== "RECHARGEABLE") {
+          return {
+            success: false,
+            message: "APENAS MUNIÇÃO OU CARREGADORES SÃO ACEITOS.",
+          };
+        }
+        if (item.commsType !== container.commsType) {
+          return {
+            success: false,
+            message: "TIPO DE MUNIÇÃO INCOMPATÍVEL COM O EQUIPAMENTO.",
+          };
+        }
+        set((state) => ({
+          inventory: state.inventory.map((i) =>
+            i.id === itemId
+              ? { ...i, parentId: targetId, drawer: drawerName }
+              : i,
+          ),
+        }));
+        get().recalculateAll();
+        return { success: true, message: "ARMAZENADO NO EQUIPAMENTO." };
+      }
 
       if (container?.type === "RECHARGEABLE") {
         if (item.type !== "CONSUMABLE")
@@ -181,7 +226,7 @@ export const createInventorySlice: StateCreator<
                   ? { ...i, quantity: i.quantity - unitsToMove }
                   : i,
               )
-              .concat(newItem),
+              .concat(newItem as Item),
           }));
         }
         get().recalculateAll();
@@ -191,7 +236,7 @@ export const createInventorySlice: StateCreator<
       const isAbleToContain =
         (container?.type === "CONTAINER" || container?.type === "EQUIPABLE") &&
         !!container.containerProps;
-      const isMicro = container?.type === "ACTIVE" || container?.type === "KIT";
+      const isMicro = container?.type === "KIT";
 
       if (!container || (!isAbleToContain && !isMicro))
         return { success: false, message: "ALVO INCOMPATÍVEL." };
@@ -205,15 +250,19 @@ export const createInventorySlice: StateCreator<
         curr = parent as typeof container;
       }
 
-      const hasChildren = state.inventory.some((i) => i.parentId === itemId);
-      if ((item.type === "CONTAINER" || hasChildren) && depth >= 2) {
+      if (
+        item.type !== "RECHARGEABLE" &&
+        (item.type === "CONTAINER" ||
+          state.inventory.some((i) => i.parentId === itemId)) &&
+        depth >= 2
+      ) {
         return {
           success: false,
           message: "LIMITE ESTRUTURAL ALCANÇADO (MÁX 2 NÍVEIS).",
         };
       }
 
-      if (isAbleToContain && container.containerProps) {
+      if (isAbleToContain && (container as ContainerItem).containerProps) {
         const used = state.inventory
           .filter((i) => i.parentId === targetId && i.id !== itemId)
           .reduce((sum, i) => sum + i.slots * i.quantity, 0);
@@ -347,15 +396,115 @@ export const createInventorySlice: StateCreator<
   },
 
   consumeItem: (id) => {
+    let result: {
+      success: boolean;
+      message: string;
+      rollData?: { skillId: string | null; loss: number };
+    } = { success: false, message: "" };
+
     set((state) => {
       const item = state.inventory.find((i) => i.id === id);
-      if (!item) return state;
+      if (!item || !("uses" in item)) {
+        result = { success: false, message: "ITEM INVÁLIDO." };
+        return state;
+      }
 
-      const hasUses = "uses" in item;
-      if (!hasUses) return state;
+      if (item.type === "ACTIVE") {
+        const activeItem = item as ActiveItem;
+
+        if (activeItem.uses <= 0) {
+          result = {
+            success: false,
+            message: "EQUIPAMENTO DESTRUÍDO OU SEM CONDIÇÃO.",
+          };
+          return state;
+        }
+
+        let newInventory = [...state.inventory];
+
+        if (activeItem.requiresAmmo) {
+          const directChildren = state.inventory.filter(
+            (i) => i.parentId === activeItem.id,
+          );
+
+          let validAmmos = directChildren.filter(
+            (i) => i.type === "CONSUMABLE" && i.uses > 0,
+          );
+
+          const rechargeables = directChildren.filter(
+            (i) => i.type === "RECHARGEABLE",
+          );
+          rechargeables.forEach((mag) => {
+            const magAmmo = state.inventory.filter(
+              (i) =>
+                i.parentId === mag.id && i.type === "CONSUMABLE" && i.uses > 0,
+            );
+            validAmmos = validAmmos.concat(magAmmo);
+          });
+
+          if (validAmmos.length === 0) {
+            result = {
+              success: false,
+              message: "MUNIÇÃO INSUFICIENTE.",
+            };
+            return state;
+          }
+
+          const ammo = validAmmos.sort((a, b) => {
+            if ("uses" in a && "uses" in b) {
+              const au = a.uses;
+              const bu = b.uses;
+              if (au !== bu) return au - bu;
+              return a.quantity - b.quantity;
+            }
+            return 0;
+          })[0] as ConsumableItem;
+
+          if (ammo.quantity > 1) {
+            if (ammo.uses > 1) {
+              const newAmmo = {
+                ...ammo,
+                id: Date.now() + Math.random(),
+                quantity: 1,
+                uses: ammo.uses - 1,
+              };
+              newInventory = newInventory
+                .map((i) =>
+                  i.id === ammo.id ? { ...i, quantity: i.quantity - 1 } : i,
+                )
+                .concat(newAmmo as Item);
+            } else {
+              newInventory = newInventory.map((i) =>
+                i.id === ammo.id ? { ...i, quantity: i.quantity - 1 } : i,
+              );
+            }
+          } else {
+            if (ammo.uses > 1) {
+              newInventory = newInventory.map((i) =>
+                i.id === ammo.id ? { ...i, uses: ammo.uses - 1 } : i,
+              );
+            } else {
+              newInventory = newInventory.filter((i) => i.id !== ammo.id);
+            }
+          }
+        }
+
+        const loss = Math.floor(Math.random() * (85 - 15 + 1)) + 15;
+        const newUses = Math.max(0, activeItem.uses - loss);
+
+        result = {
+          success: true,
+          message: "OK",
+          rollData: { skillId: activeItem.skillId, loss },
+        };
+        return {
+          inventory: newInventory.map((i) =>
+            i.id === activeItem.id ? { ...i, uses: newUses } : i,
+          ),
+        };
+      }
 
       const currentUses = item.uses;
-
       if (item.quantity > 1) {
         if (currentUses > 1) {
           const newItem = {
@@ -364,6 +513,7 @@ export const createInventorySlice: StateCreator<
             quantity: 1,
             uses: currentUses - 1,
           };
+          result = { success: true, message: "OK" };
           return {
             inventory: state.inventory
               .map((i) =>
@@ -372,6 +522,7 @@ export const createInventorySlice: StateCreator<
               .concat(newItem as Item),
           };
         } else {
+          result = { success: true, message: "OK" };
           return {
             inventory: state.inventory.map((i) =>
               i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
@@ -380,17 +531,21 @@ export const createInventorySlice: StateCreator<
         }
       } else {
         if (currentUses > 1) {
+          result = { success: true, message: "OK" };
           return {
             inventory: state.inventory.map((i) =>
               i.id === id ? { ...i, uses: currentUses - 1 } : i,
             ),
           };
         } else {
+          result = { success: true, message: "OK" };
           return { inventory: state.inventory.filter((i) => i.id !== id) };
         }
       }
     });
-    get().recalculateAll();
+
+    if (result.success) get().recalculateAll();
+    return result;
   },
 
   consumeRechargeable: (id) => {
@@ -398,22 +553,41 @@ export const createInventorySlice: StateCreator<
     const children = state.inventory.filter(
       (i) => i.parentId === id && i.type === "CONSUMABLE",
     );
-
     if (children.length === 0) return;
 
     const sortedChildren = children.sort((a, b) => {
       if ("uses" in a && "uses" in b) {
         const aUses = a.uses || 1;
         const bUses = b.uses || 1;
-
         if (aUses !== bUses) return aUses - bUses;
         return a.quantity - b.quantity;
       }
       return 0;
     });
 
-    const targetChild = sortedChildren[0];
+    get().consumeItem(sortedChildren[0].id);
+  },
 
-    get().consumeItem(targetChild.id);
+  repairActiveItem: (id, multiplier) => {
+    let recovered = 0;
+    set((state) => {
+      const item = state.inventory.find((i) => i.id === id);
+      if (item && item.type === "ACTIVE") {
+        const base = Math.floor(Math.random() * (100 - 60 + 1)) + 60;
+        recovered = Math.floor(base * multiplier);
+        const newUses = Math.min(
+          (item as ActiveItem).maxUses,
+          (item as ActiveItem).uses + recovered,
+        );
+        return {
+          inventory: state.inventory.map((i) =>
+            i.id === id ? { ...i, uses: newUses } : i,
+          ),
+        };
+      }
+      return state;
+    });
+    if (recovered > 0) get().recalculateAll();
+    return { recovered };
   },
 });

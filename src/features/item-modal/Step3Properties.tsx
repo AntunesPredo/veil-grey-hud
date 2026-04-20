@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { ItemFormData } from "./ItemModal";
-import { Input } from "../../shared/ui/Form";
+import { Input, Checkbox } from "../../shared/ui/Form";
 import { useSystemData } from "../../shared/hooks/useSystemData";
 import type { Skill } from "../../shared/types/veil-grey";
 import { IconSelector } from "./components/IconSelector";
@@ -32,7 +32,12 @@ export function Step3Properties({
 
   const allowStack = isMaterial || isConsumable;
   const allowEffects = !isMaterial && !isContainer && !isRechargeable;
-  const hasCommsType = isConsumable || isRechargeable || isActive || isKit;
+  const hasCommsType =
+    isConsumable ||
+    isRechargeable ||
+    isKit ||
+    (isActive && formData.requiresAmmo);
+  const showSkillBind = isKit || isActive;
 
   const handleActiveChange = (field: "condition" | "quality", val: number) => {
     const newCondition = field === "condition" ? val : formData.condition;
@@ -63,6 +68,18 @@ export function Step3Properties({
         setFormData={setFormData}
         allowStack={allowStack}
       />
+
+      {isActive && (
+        <div className="flex items-center gap-2 bg-[var(--theme-danger)]/10 p-2 border border-[var(--theme-danger)]/30">
+          <Checkbox
+            label="REQUER MUNIÇÃO / CARGA"
+            checked={formData.requiresAmmo}
+            onChange={() =>
+              setFormData((p) => ({ ...p, requiresAmmo: !p.requiresAmmo }))
+            }
+          />
+        </div>
+      )}
 
       {hasCommsType && (
         <div className="flex flex-col gap-1 bg-[var(--theme-accent)]/5 p-2 border border-[var(--theme-border)]">
@@ -126,7 +143,7 @@ export function Step3Properties({
         />
       )}
 
-      {isKit && (
+      {showSkillBind && (
         <div className="flex flex-col gap-1 bg-[var(--theme-accent)]/5 border border-[var(--theme-border)] p-3">
           <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
             VINCULAR PERÍCIA (OPCIONAL)
