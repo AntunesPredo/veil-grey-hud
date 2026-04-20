@@ -51,7 +51,10 @@ export type CustomEffectTarget =
   | "FREE_SKILL"
   | "HP"
   | "INSANITY"
-  | "MOVEMENT";
+  | "MOVEMENT"
+  | Attribute
+  | SecondaryAttribute
+  | Skill;
 
 export interface UniqueAbility {
   title: string;
@@ -67,27 +70,104 @@ export interface Role {
   uniqueAbility: UniqueAbility;
 }
 
+export type EffectMode = "FIXED" | "OPTIONAL" | "TEMP";
+
 export interface CustomEffect {
   id: number;
-  description: string;
-  noteId: number | string | null;
   target: CustomEffectTarget;
+  description: string;
+  mode: EffectMode;
+  link: number | string | null;
   val: number;
 }
 
-export interface Item {
+export type ItemType =
+  | "MATERIAL"
+  | "CONSUMABLE"
+  | "RECHARGEABLE"
+  | "ACTIVE"
+  | "KIT"
+  | "CONTAINER"
+  | "EQUIPABLE";
+
+export interface BaseItem {
   id: number;
   name: string;
+  description: string;
+  svgId: string;
+  quantity: number;
   slots: number;
   isCarried: boolean;
+  isEquipped: boolean;
   parentId: number | null;
-  isContainer: boolean;
-  description: string;
+  drawer: string | null;
+  effects: CustomEffect[];
+  type: ItemType;
+}
+
+export interface MaterialItem extends BaseItem {
+  type: "MATERIAL";
+}
+
+export interface ConsumableItem extends BaseItem {
+  type: "CONSUMABLE";
+  uses: number;
+  maxUses: number;
+  commsType: string;
+}
+
+export interface RechargeableItem extends BaseItem {
+  type: "RECHARGEABLE";
+  uses: number;
+  maxUses: number;
+  commsType: string;
+  perItemSlotReduction: number;
+}
+
+export interface ActiveItem extends BaseItem {
+  type: "ACTIVE";
+  uses: number;
+  maxUses: number;
+  quality: number;
+  condition: number;
+  commsType: string;
+}
+
+export interface KitItem extends BaseItem {
+  type: "KIT";
+  uses: number;
+  maxUses: number;
+  skillId: Skill | null;
+  commsType: string;
+}
+
+export interface ContainerItem extends BaseItem {
+  type: "CONTAINER";
   containerProps: {
     slotReduction: number;
     slotCapacity: number;
-  } | null;
+    drawers?: string[];
+  };
 }
+
+export interface EquipableItem extends BaseItem {
+  type: "EQUIPABLE";
+  containerProps?: {
+    slotReduction: number;
+    slotCapacity: number;
+    drawers?: string[];
+  };
+}
+
+// A união que exportamos para o sistema
+export type Item =
+  | MaterialItem
+  | ConsumableItem
+  | RechargeableItem
+  | ActiveItem
+  | KitItem
+  | ContainerItem
+  | EquipableItem;
 
 export interface Note {
   id: number;

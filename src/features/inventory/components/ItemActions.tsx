@@ -1,0 +1,168 @@
+import type { Item } from "../../../shared/types/veil-grey";
+import { Button, NumberStepper } from "../../../shared/ui/Form";
+import { useDisclosure } from "../../../shared/hooks/useDisclosure";
+import { SplitStackModal } from "./SplitStackModal";
+import { MergeStackModal } from "./MergeStackModal";
+
+interface ItemActionsProps {
+  item: Item;
+  allInventory: Item[];
+  currentUses: number;
+  onUse: (e: React.MouseEvent) => void;
+  onUpdateQty: (newVal: number) => void;
+  isInsideRechargeable?: boolean;
+}
+
+const renderBlocks = (uses: number, maxUses: number) => {
+  const blocks = [];
+  for (let i = 0; i < maxUses; i++) blocks.push(i < uses ? "■" : "□");
+  return blocks.join(" ");
+};
+
+export function ItemActions({
+  item,
+  allInventory,
+  currentUses,
+  onUse,
+  onUpdateQty,
+  isInsideRechargeable,
+}: ItemActionsProps) {
+  const hasUses = "maxUses" in item;
+  const maxUses = hasUses ? item.maxUses : 1;
+  const canStack = item.type === "MATERIAL" || item.type === "CONSUMABLE";
+
+  const splitModal = useDisclosure();
+  const mergeModal = useDisclosure();
+
+  const compatibleMergeItems = canStack
+    ? allInventory.filter(
+        (i) => i.id !== item.id && i.type === item.type && i.name === item.name,
+      )
+    : [];
+
+  return (
+    <div className="flex flex-col gap-2 bg-[var(--theme-background)]/40 p-2 border border-[var(--theme-border)]">
+      {canStack && (
+        <div className="flex items-center gap-2">
+          {item.quantity > 1 && (
+            <Button
+              size="sm"
+              onClick={splitModal.onOpen}
+              className="flex-1 border-dashed text-[10px] flex items-center justify-center gap-2"
+              title="Dividir Stack"
+            >
+              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                <path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12V5z" />
+              </svg>
+              DIVIDIR
+            </Button>
+          )}
+          {compatibleMergeItems.length > 0 && (
+            <Button
+              size="sm"
+              variant="success"
+              onClick={mergeModal.onOpen}
+              className="flex-1 border-dashed text-[10px] flex items-center justify-center gap-2"
+              title="Condensar Matérias"
+            >
+              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                <path d="M17 20.41L18.41 19 15 15.59 13.59 17 17 20.41zM7.5 8H11v5.59L5.59 19 7 20.41l6-6V8h3.5L12 3.5 7.5 8z" />
+              </svg>
+              CONDENSAR
+            </Button>
+          )}
+        </div>
+      )}
+
+      {item.type === "MATERIAL" && (
+        <div className="flex items-center gap-2 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
+          <span className="text-[9px] font-bold text-[var(--theme-text)]/50 uppercase tracking-widest">
+            STACK:
+          </span>
+          <NumberStepper
+            size="sm"
+            value={item.quantity}
+            onDecrement={() => onUpdateQty(item.quantity - 1)}
+            onIncrement={() => onUpdateQty(item.quantity + 1)}
+          />
+        </div>
+      )}
+
+      {hasUses && !(item.type === "CONSUMABLE" && item.quantity > 1) && (
+        <div className="flex flex-col w-full gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
+          <div className="flex justify-between items-center w-full">
+            <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest">
+              CARGAS
+            </span>
+            <span className="text-[9px] font-mono text-[var(--theme-warning)]">
+              {currentUses} / {maxUses}
+            </span>
+          </div>
+          <div className="w-full h-1 bg-[var(--theme-background)] border border-[var(--theme-border)]">
+            <div
+              className="h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)]"
+              style={{
+                width: `${Math.min((currentUses / maxUses) * 100, 100)}%`,
+              }}
+            />
+          </div>
+          {!isInsideRechargeable && (
+            <Button
+              size="sm"
+              variant="warning"
+              onClick={onUse}
+              className="w-full mt-1 border-dashed text-[10px]"
+            >
+              [ EXECUTAR USO ]
+            </Button>
+          )}
+        </div>
+      )}
+
+      {item.type === "CONSUMABLE" && item.quantity > 1 && (
+        <div className="flex flex-col gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
+          <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest mb-1">
+            UNIDADES NA STACK:
+          </span>
+          {Array.from({ length: item.quantity }).map((_, i) => (
+            <div
+              key={i}
+              className="flex justify-between items-center bg-[var(--theme-background)] p-1 border border-[var(--theme-border)] shadow-[0_0_5px_rgba(0,0,0,0.5)_inset]"
+            >
+              <span className="text-[9px] font-mono text-[var(--theme-text)] font-bold px-1">
+                UNID. {i + 1}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] text-[var(--theme-warning)] tracking-widest">
+                  {renderBlocks(currentUses, maxUses)}
+                </span>
+                {!isInsideRechargeable && (
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={onUse}
+                    className="h-5 px-2 text-[8px] border-dashed"
+                  >
+                    USAR
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <SplitStackModal
+        isOpen={splitModal.isOpen}
+        onClose={splitModal.onClose}
+        item={item}
+      />
+      <MergeStackModal
+        isOpen={mergeModal.isOpen}
+        onClose={mergeModal.onClose}
+        targetItem={item}
+        allInventory={allInventory}
+      />
+    </div>
+  );
+}

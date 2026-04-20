@@ -1,0 +1,419 @@
+import type { StateCreator } from "zustand";
+import type { CharacterStore } from "../character/store";
+import type { ContainerItem, Item } from "../../shared/types/veil-grey";
+
+export interface InventorySlice {
+  inventory: Item[];
+  currentLoad: number;
+  maxLoad: number;
+  isOverweight: boolean;
+
+  addInventoryItem: (item: Item) => void;
+  updateInventoryItem: (
+    id: number,
+    field: keyof Item,
+    val: Item[keyof Item],
+  ) => void;
+  deleteInventoryItem: (id: number) => void;
+  reorderInventoryItem: (activeId: number, overId: number) => void;
+  moveInventoryItem: (
+    itemId: number,
+    targetContainerId: number | null,
+    drawerName?: string | null,
+  ) => { success: boolean; message: string };
+  toggleEquipItem: (id: number) => void;
+  splitInventoryItem: (
+    id: number,
+    mode: "SINGLE" | "TOTAL",
+    divisor: number,
+  ) => void;
+  mergeInventoryItems: (targetId: number, sourceIds: number[]) => void;
+  manageDrawer: (
+    containerId: number,
+    action: "CREATE" | "RENAME" | "DELETE",
+    oldName?: string,
+    newName?: string,
+  ) => void;
+
+  consumeItem: (id: number) => void;
+  consumeRechargeable: (id: number) => void;
+}
+
+export const createInventorySlice: StateCreator<
+  CharacterStore,
+  [],
+  [],
+  InventorySlice
+> = (set, get) => ({
+  inventory: [],
+  currentLoad: 0,
+  maxLoad: 0,
+  isOverweight: false,
+
+  addInventoryItem: (item) => {
+    set((state) => ({ inventory: [...state.inventory, item] }));
+    get().recalculateAll();
+  },
+
+  updateInventoryItem: (id, field, val) => {
+    set((state) => {
+      let shouldDelete = false;
+      const newInventory = state.inventory.map((i) => {
+        if (i.id === id) {
+          const updatedItem = { ...i, [field]: val };
+          if (updatedItem.type === "CONSUMABLE" && updatedItem.uses <= 0)
+            shouldDelete = true;
+          if (updatedItem.type === "MATERIAL" && updatedItem.quantity <= 0)
+            shouldDelete = true;
+          return updatedItem;
+        }
+        return i;
+      });
+
+      if (shouldDelete) {
+        return {
+          inventory: newInventory
+            .map((i) => (i.parentId === id ? { ...i, parentId: null } : i))
+            .filter((i) => i.id !== id),
+        };
+      }
+      return { inventory: newInventory };
+    });
+    get().recalculateAll();
+  },
+
+  deleteInventoryItem: (id) => {
+    set((state) => ({
+      inventory: state.inventory
+        .map((i) => (i.parentId === id ? { ...i, parentId: null } : i))
+        .filter((i) => i.id !== id),
+    }));
+    get().recalculateAll();
+  },
+
+  reorderInventoryItem: (activeId, overId) => {
+    set((state) => {
+      const oldIdx = state.inventory.findIndex((i) => i.id === activeId);
+      const newIdx = state.inventory.findIndex((i) => i.id === overId);
+      if (oldIdx === -1 || newIdx === -1) return state;
+      const newInv = [...state.inventory];
+      const [moved] = newInv.splice(oldIdx, 1);
+      moved.parentId = state.inventory[newIdx].parentId;
+      newInv.splice(newIdx, 0, moved);
+      return { inventory: newInv };
+    });
+    get().recalculateAll();
+  },
+
+  toggleEquipItem: (id) => {
+    set((state) => ({
+      inventory: state.inventory.map((i) =>
+        i.id === id && (i.type === "EQUIPABLE" || i.type === "ACTIVE")
+          ? { ...i, isEquipped: !i.isEquipped }
+          : i,
+      ),
+    }));
+    get().recalculateAll();
+  },
+
+  moveInventoryItem: (itemId, targetId, drawerName = null) => {
+    const state = get();
+    const item = state.inventory.find((i) => i.id === itemId);
+    if (!item) return { success: false, message: "ITEM NÃO ENCONTRADO." };
+
+    if (targetId !== null) {
+      const container = state.inventory.find((i) => i.id === targetId);
+
+      if (container?.type === "RECHARGEABLE") {
+        if (item.type !== "CONSUMABLE")
+          return {
+            success: false,
+            message: "APENAS CONSUMÍVEIS/MUNIÇÃO SÃO ACEITOS.",
+          };
+        if (item.commsType !== container.commsType)
+          return {
+            success: false,
+            message: "TIPO DE COMUNICAÇÃO/MUNIÇÃO INCOMPATÍVEL.",
+          };
+
+        const children = state.inventory.filter(
+          (i) => i.parentId === container.id,
+        );
+        const currentUses = children.reduce((sum, i) => {
+          const uses = "uses" in i ? i.uses : 1;
+          return sum + uses * i.quantity;
+        }, 0);
+        const available = container.maxUses - currentUses;
+
+        if (available <= 0)
+          return { success: false, message: "COMPARTIMENTO CHEIO." };
+
+        const incomingUsesPerUnit = item.uses;
+        const incomingTotalUses = incomingUsesPerUnit * item.quantity;
+
+        if (incomingTotalUses <= available) {
+          set((state) => ({
+            inventory: state.inventory.map((i) =>
+              i.id === itemId
+                ? { ...i, parentId: targetId, drawer: drawerName }
+                : i,
+            ),
+          }));
+        } else {
+          const unitsToMove = Math.floor(available / incomingUsesPerUnit);
+          if (unitsToMove <= 0)
+            return {
+              success: false,
+              message: "ESPAÇO INSUFICIENTE PARA UMA UNIDADE COMPLETA.",
+            };
+
+          const newItem = {
+            ...item,
+            id: Date.now() + Math.random(),
+            quantity: unitsToMove,
+            parentId: targetId,
+            drawer: drawerName,
+          };
+          set((state) => ({
+            inventory: state.inventory
+              .map((i) =>
+                i.id === itemId
+                  ? { ...i, quantity: i.quantity - unitsToMove }
+                  : i,
+              )
+              .concat(newItem),
+          }));
+        }
+        get().recalculateAll();
+        return { success: true, message: "RECARGA CONCLUÍDA." };
+      }
+
+      const isAbleToContain =
+        (container?.type === "CONTAINER" || container?.type === "EQUIPABLE") &&
+        !!container.containerProps;
+      const isMicro = container?.type === "ACTIVE" || container?.type === "KIT";
+
+      if (!container || (!isAbleToContain && !isMicro))
+        return { success: false, message: "ALVO INCOMPATÍVEL." };
+
+      let depth = 1;
+      let curr = container;
+      while (curr.parentId !== null) {
+        depth++;
+        const parent = state.inventory.find((i) => i.id === curr.parentId);
+        if (!parent) break;
+        curr = parent as typeof container;
+      }
+
+      const hasChildren = state.inventory.some((i) => i.parentId === itemId);
+      if ((item.type === "CONTAINER" || hasChildren) && depth >= 2) {
+        return {
+          success: false,
+          message: "LIMITE ESTRUTURAL ALCANÇADO (MÁX 2 NÍVEIS).",
+        };
+      }
+
+      if (isAbleToContain && container.containerProps) {
+        const used = state.inventory
+          .filter((i) => i.parentId === targetId && i.id !== itemId)
+          .reduce((sum, i) => sum + i.slots * i.quantity, 0);
+        if (
+          (container as ContainerItem).containerProps.slotCapacity - used <
+          item.slots * item.quantity
+        )
+          return { success: false, message: "CAPACIDADE EXCEDIDA." };
+      }
+    }
+
+    set((state) => ({
+      inventory: state.inventory.map((i) =>
+        i.id === itemId ? { ...i, parentId: targetId, drawer: drawerName } : i,
+      ),
+    }));
+    get().recalculateAll();
+    return { success: true, message: "TRANSFERÊNCIA CONCLUÍDA." };
+  },
+
+  splitInventoryItem: (id, mode, divisor) => {
+    set((state) => {
+      const item = state.inventory.find((i) => i.id === id);
+      if (!item || item.quantity <= 1 || divisor <= 0) return state;
+      const newItems: Item[] = [];
+      let remainingQty = item.quantity;
+      if (mode === "SINGLE") {
+        if (divisor >= remainingQty) return state;
+        remainingQty -= divisor;
+        newItems.push({
+          ...item,
+          id: Date.now() + Math.random(),
+          quantity: divisor,
+        });
+      } else if (mode === "TOTAL") {
+        const sizePerStack = Math.floor(remainingQty / divisor);
+        if (sizePerStack <= 0) return state;
+        const remainder = remainingQty % divisor;
+        remainingQty = sizePerStack + remainder;
+        for (let i = 1; i < divisor; i++) {
+          newItems.push({
+            ...item,
+            id: Date.now() + i,
+            quantity: sizePerStack,
+          });
+        }
+      }
+      return {
+        inventory: state.inventory
+          .map((i) => (i.id === id ? { ...i, quantity: remainingQty } : i))
+          .concat(newItems),
+      };
+    });
+    get().recalculateAll();
+  },
+
+  mergeInventoryItems: (targetId, sourceIds) => {
+    set((state) => {
+      const target = state.inventory.find((i) => i.id === targetId);
+      if (!target) return state;
+      let extraQty = 0;
+      let newDesc = target.description;
+      const itemsToRemove = new Set(sourceIds);
+      state.inventory.forEach((src) => {
+        if (itemsToRemove.has(src.id)) {
+          extraQty += src.quantity;
+          if (
+            src.description &&
+            src.description !== target.description &&
+            !newDesc.includes(src.description)
+          ) {
+            newDesc += newDesc
+              ? `\n[M. FUSÃO]: ${src.description}`
+              : src.description;
+          }
+        }
+      });
+      return {
+        inventory: state.inventory
+          .filter((i) => !itemsToRemove.has(i.id))
+          .map((i) =>
+            i.id === targetId
+              ? {
+                  ...i,
+                  quantity: i.quantity + extraQty,
+                  description: newDesc.trim(),
+                }
+              : i,
+          ),
+      };
+    });
+    get().recalculateAll();
+  },
+
+  manageDrawer: (containerId, action, oldName, newName) => {
+    set((state) => {
+      const inventory = [...state.inventory];
+      const containerIdx = inventory.findIndex((i) => i.id === containerId);
+      if (containerIdx === -1) return state;
+      const container = inventory[containerIdx] as ContainerItem;
+      if (!container.containerProps) return state;
+      const drawers = container.containerProps.drawers || [];
+      if (action === "CREATE" && newName && !drawers.includes(newName)) {
+        container.containerProps = {
+          ...container.containerProps,
+          drawers: [...drawers, newName],
+        };
+      } else if (action === "RENAME" && oldName && newName) {
+        container.containerProps = {
+          ...container.containerProps,
+          drawers: drawers.map((d: string) => (d === oldName ? newName : d)),
+        };
+        inventory.forEach((i) => {
+          if (i.parentId === containerId && i.drawer === oldName)
+            i.drawer = newName;
+        });
+      } else if (action === "DELETE" && oldName) {
+        container.containerProps = {
+          ...container.containerProps,
+          drawers: drawers.filter((d: string) => d !== oldName),
+        };
+        inventory.forEach((i) => {
+          if (i.parentId === containerId && i.drawer === oldName)
+            i.drawer = null;
+        });
+      }
+      inventory[containerIdx] = container;
+      return { inventory };
+    });
+    get().recalculateAll();
+  },
+
+  consumeItem: (id) => {
+    set((state) => {
+      const item = state.inventory.find((i) => i.id === id);
+      if (!item) return state;
+
+      const hasUses = "uses" in item;
+      if (!hasUses) return state;
+
+      const currentUses = item.uses;
+
+      if (item.quantity > 1) {
+        if (currentUses > 1) {
+          const newItem = {
+            ...item,
+            id: Date.now() + Math.random(),
+            quantity: 1,
+            uses: currentUses - 1,
+          };
+          return {
+            inventory: state.inventory
+              .map((i) =>
+                i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
+              )
+              .concat(newItem as Item),
+          };
+        } else {
+          return {
+            inventory: state.inventory.map((i) =>
+              i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
+            ),
+          };
+        }
+      } else {
+        if (currentUses > 1) {
+          return {
+            inventory: state.inventory.map((i) =>
+              i.id === id ? { ...i, uses: currentUses - 1 } : i,
+            ),
+          };
+        } else {
+          return { inventory: state.inventory.filter((i) => i.id !== id) };
+        }
+      }
+    });
+    get().recalculateAll();
+  },
+
+  consumeRechargeable: (id) => {
+    const state = get();
+    const children = state.inventory.filter(
+      (i) => i.parentId === id && i.type === "CONSUMABLE",
+    );
+
+    if (children.length === 0) return;
+
+    const sortedChildren = children.sort((a, b) => {
+      if ("uses" in a && "uses" in b) {
+        const aUses = a.uses || 1;
+        const bUses = b.uses || 1;
+
+        if (aUses !== bUses) return aUses - bUses;
+        return a.quantity - b.quantity;
+      }
+      return 0;
+    });
+
+    const targetChild = sortedChildren[0];
+
+    get().consumeItem(targetChild.id);
+  },
+});
