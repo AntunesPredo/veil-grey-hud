@@ -89,11 +89,31 @@ export const useCharacterStore = create<CharacterStore>()(
                   .filter((i) => i.parentId === item.id && i.isCarried)
                   .reduce((s, i) => s + i.slots * i.quantity, 0);
 
-                const activeRed = item.isEquipped
-                  ? Math.min(props.slotReduction, inside)
-                  : 0;
+                let activeRed = 0;
+                if (item.type === "CONTAINER") {
+                  activeRed = Math.min(props.slotReduction, inside);
+                } else if (item.type === "EQUIPABLE") {
+                  activeRed = item.isEquipped
+                    ? Math.min(props.slotReduction, inside)
+                    : 0;
+                }
 
                 return total + itemTotalSlots + (inside - activeRed);
+              }
+
+              if (item.type === "RECHARGEABLE") {
+                const reductionPerUnit = item.perItemSlotReduction || 0;
+                const inside = updates.inventory
+                  .filter((i) => i.parentId === item.id && i.isCarried)
+                  .reduce((s, i) => {
+                    const reducedSlotPerUnit = Math.max(
+                      0,
+                      i.slots - reductionPerUnit,
+                    );
+                    return s + reducedSlotPerUnit * i.quantity;
+                  }, 0);
+
+                return total + itemTotalSlots + inside;
               }
 
               return total + itemTotalSlots;
@@ -190,7 +210,6 @@ export const useCharacterStore = create<CharacterStore>()(
             // updates.modifiers = { phys, ment, soc, mov };
             console.log({ phys, ment, soc, mov });
 
-            // 6. Crises
             if (!updates.crisis.ignore) {
               const isDying = updates.hp.current <= 0;
               const isCollapsing =

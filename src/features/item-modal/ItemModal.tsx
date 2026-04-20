@@ -136,15 +136,37 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
 
     const allowedStack = newType === "MATERIAL" || newType === "CONSUMABLE";
 
-    setFormData((prev) => ({
-      ...prev,
-      type: newType,
-      svgId: newSvgId,
-      quantity: allowedStack ? prev.quantity : 1,
-      effects: ["MATERIAL", "CONTAINER", "RECHARGEABLE"].includes(newType)
-        ? []
-        : prev.effects,
-    }));
+    setFormData((prev) => {
+      let newProps = prev.containerProps;
+
+      if (newType === "EQUIPABLE") {
+        newProps = {
+          slotCapacity: 0,
+          slotReduction: 0,
+          drawers: prev.containerProps?.drawers || [],
+        };
+      } else if (
+        newType === "CONTAINER" &&
+        (prev.containerProps?.slotCapacity || 0) === 0
+      ) {
+        newProps = {
+          slotCapacity: 5,
+          slotReduction: 5,
+          drawers: prev.containerProps?.drawers || [],
+        };
+      }
+
+      return {
+        ...prev,
+        type: newType,
+        svgId: newSvgId,
+        quantity: allowedStack ? prev.quantity : 1,
+        effects: ["MATERIAL", "CONTAINER", "RECHARGEABLE"].includes(newType)
+          ? []
+          : prev.effects,
+        containerProps: newProps,
+      };
+    });
   };
 
   const executeFinalize = () => {

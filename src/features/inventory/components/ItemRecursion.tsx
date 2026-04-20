@@ -23,6 +23,7 @@ interface DrawerZoneProps {
   onRename: (oldName: string) => void;
   onRemoveDrawer: (name: string) => void;
   isNestedAmmo: boolean;
+  isEditingDrawers: boolean;
 }
 
 function DrawerZone({
@@ -42,6 +43,7 @@ function DrawerZone({
   onRename,
   onRemoveDrawer,
   isNestedAmmo,
+  isEditingDrawers,
 }: DrawerZoneProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -94,7 +96,7 @@ function DrawerZone({
                 onClick={() => setIsCollapsed(!isCollapsed)}
               >
                 <svg
-                  className="w-3 h-3 fill-[var(--theme-text)]/50 transition-transform duration-200"
+                  className="w-5 h-5 fill-[var(--theme-text)]/50 transition-transform duration-200"
                   style={{
                     transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
                   }}
@@ -102,16 +104,16 @@ function DrawerZone({
                 >
                   <path d="M7 10l5 5 5-5z" />
                 </svg>
-                <span className="text-[8px] font-bold text-[var(--theme-text)]/50 uppercase tracking-widest hover:text-[var(--theme-accent)] transition-colors">
+                <span className="text-[10px] font-bold text-[var(--theme-text)]/50 uppercase tracking-widest hover:text-[var(--theme-accent)] transition-colors">
                   {drawerName}
                 </span>
               </div>
 
-              {drawerName !== "GERAL" && (
-                <div className="hidden group-hover:flex gap-1">
+              {drawerName !== "GERAL" && isEditingDrawers && (
+                <div className="flex gap-1">
                   <Button
                     size="sm"
-                    className="h-4 px-1 text-[8px] border-none hover:text-[var(--theme-accent)]"
+                    className="h-5 text-[8px] border-none hover:text-[var(--theme-accent)]"
                     onClick={(e) => {
                       e.stopPropagation();
                       setEditingDrawer(drawerName);
@@ -125,7 +127,7 @@ function DrawerZone({
                   <Button
                     size="sm"
                     variant="danger"
-                    className="h-4 px-1 text-[8px] border-none hover:text-[var(--theme-danger)]"
+                    className="h-5 text-[8px] border-none"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (drawerName !== null) {
@@ -201,6 +203,7 @@ export function ItemRecursion({
   const [creatingDrawer, setCreatingDrawer] = useState(false);
   const [editingDrawer, setEditingDrawer] = useState<string | null>(null);
   const [drawerInput, setDrawerInput] = useState("");
+  const [isEditingDrawers, setIsEditingDrawers] = useState(false);
 
   if (!isAbleToContain && !isMicroContainer) return null;
 
@@ -229,6 +232,11 @@ export function ItemRecursion({
 
   const capacity =
     "containerProps" in item ? item.containerProps?.slotCapacity : null;
+
+  const usedSlots = childrenItems.reduce(
+    (acc, child) => acc + child.slots * child.quantity,
+    0,
+  );
 
   const handleCreateDrawer = () => {
     if (drawerInput.trim())
@@ -267,19 +275,30 @@ export function ItemRecursion({
             ? "COMPARTIMENTO DE MUNIÇÃO:"
             : isMicroContainer
               ? "COMPARTIMENTO DE RECARGA:"
-              : `ARMAZENAMENTO INTERNO (${childrenItems.length}/${capacity}):`}
+              : `ARMAZENAMENTO INTERNO (${usedSlots}/${capacity} SLOTS):`}
         </span>
         {!isMicroContainer && (
-          <Button
-            size="sm"
-            className="px-1 text-[8px] border-dashed"
-            onClick={() => {
-              setCreatingDrawer(true);
-              setDrawerInput("");
-            }}
-          >
-            + GAVETA
-          </Button>
+          <div className="flex items-center gap-2">
+            {allDrawers.length > 1 ? (
+              <Button
+                size="sm"
+                className="px-1 text-[8px] border-dashed"
+                onClick={() => setIsEditingDrawers(!isEditingDrawers)}
+              >
+                {isEditingDrawers ? "OK" : "EDITAR GAVETAS"}
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              className="px-1 text-[8px] border-dashed"
+              onClick={() => {
+                setCreatingDrawer(true);
+                setDrawerInput("");
+              }}
+            >
+              + GAVETA
+            </Button>
+          </div>
         )}
       </div>
 
@@ -336,6 +355,7 @@ export function ItemRecursion({
               item.type === "ACTIVE" ||
               item.type === "KIT"
             }
+            isEditingDrawers={isEditingDrawers}
           />
         ))}
       </div>
