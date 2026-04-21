@@ -7,7 +7,7 @@ import { Button } from "../../shared/ui/Form";
 import { Markdown } from "../../shared/ui/Markdown";
 import { CustomEffectModal } from "../stats/CustomEffectModal";
 import { ConfirmModal } from "../../shared/ui/Overlays";
-import { EffectsList } from "./EffectsList";
+import { EffectsList } from "../../shared/ui/EffectsList";
 import { ExtraNoteBlock } from "./ExtraNoteBlock";
 import { useResizeObserver } from "../../shared/hooks/useResizeObserver";
 

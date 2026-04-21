@@ -21,7 +21,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
     isEquipped: false,
     parentId: null,
     drawer: data.drawer || null,
-    effects: [],
+    effects: data.effects || [],
     svgId: data.svgId,
   };
 

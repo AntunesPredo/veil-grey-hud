@@ -3,7 +3,7 @@ import type { ItemFormData } from "../ItemModal";
 interface IconSelectorProps {
   formData: ItemFormData;
   setFormData: React.Dispatch<React.SetStateAction<ItemFormData>>;
-  icons: { id: string; svg: React.ReactNode }[];
+  icons: { id: string; svg: React.ReactNode; viewBox: string }[];
 }
 
 export function IconSelector({
@@ -27,7 +27,7 @@ export function IconSelector({
           >
             <svg
               className={`w-6 h-6 fill-current ${formData.svgId === icon.id ? "text-[var(--theme-accent)]" : "text-[var(--theme-text)]/50"}`}
-              viewBox="0 0 24 24"
+              viewBox={icon.viewBox}
             >
               {icon.svg}
             </svg>

@@ -63,9 +63,9 @@ export function ItemHeader({
   isNestedAmmo = false,
   disableUse = false,
 }: ItemHeaderProps) {
-  const { getSpecificSvg } = useCustomSvgIcons();
+  const { getSpecificIcon } = useCustomSvgIcons();
   const { getSkillById } = useSystemData();
-
+  const icon = getSpecificIcon(item.svgId);
   const hasUses = "maxUses" in item;
   const maxUses = hasUses ? item.maxUses : 1;
   const isActive = item.type === "ACTIVE";
@@ -98,8 +98,8 @@ export function ItemHeader({
               {...attributes}
               className={`p-1.5 border bg-[var(--theme-background)] cursor-grab active:cursor-grabbing shadow-[0_0_8px_rgba(0,0,0,0.5)_inset] touch-none ${item.isEquipped ? "text-[var(--theme-success)] border-[var(--theme-success)]/30 hover:border-[var(--theme-success)]" : "text-[var(--theme-accent)] border-[var(--theme-border)] hover:border-[var(--theme-accent)]/50"}`}
             >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                {getSpecificSvg(item.svgId)}
+              <svg className="w-5 h-5 fill-current" viewBox={icon.viewBox}>
+                {icon.svg}
               </svg>
             </div>
           )}

@@ -18,6 +18,7 @@ import { ConfirmModal, Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { buildFinalItem } from "./buildFinalItem";
 import { Step2Identity } from "./Step2Identity";
+import { getAllowedModes } from "../../shared/utils/effectUtils";
 
 export interface ItemFormData {
   id: number | null;
@@ -135,6 +136,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
     }
 
     const allowedStack = newType === "MATERIAL" || newType === "CONSUMABLE";
+    const allowedModes = getAllowedModes(newType);
 
     setFormData((prev) => {
       let newProps = prev.containerProps;
@@ -161,9 +163,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
         type: newType,
         svgId: newSvgId,
         quantity: allowedStack ? prev.quantity : 1,
-        effects: ["MATERIAL", "CONTAINER", "RECHARGEABLE"].includes(newType)
-          ? []
-          : prev.effects,
+        effects: prev.effects.filter((e) => allowedModes.includes(e.mode)),
         containerProps: newProps,
       };
     });
@@ -281,7 +281,13 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
                   icons={getCategoryIcons(formData.type)}
                 />
               )}
-              {step === 4 && <Step4Preview key="step4" formData={formData} />}
+              {step === 4 && (
+                <Step4Preview
+                  key="step4"
+                  formData={formData}
+                  setFormData={setFormData}
+                />
+              )}
             </AnimatePresence>
           </div>
 

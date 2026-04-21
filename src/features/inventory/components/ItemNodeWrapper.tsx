@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useCharacterStore } from "../../character/store";
-import type { Item, Skill } from "../../../shared/types/veil-grey";
+import type {
+  Item,
+  Skill,
+  CustomEffect,
+} from "../../../shared/types/veil-grey";
 import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
 import { RetroToast } from "../../../shared/ui/RetroToast";
 import { ItemHeader } from "./ItemHeader";
@@ -85,6 +89,37 @@ export const ItemNodeWrapper = React.memo(
     const disableUse =
       item.type === "ACTIVE" &&
       (!item.isEquipped || (item.requiresAmmo && !hasAmmo));
+
+    let inheritedEffects: CustomEffect[] = [];
+    if (
+      item.type === "RECHARGEABLE" ||
+      item.type === "KIT" ||
+      (item.type === "ACTIVE" && item.requiresAmmo)
+    ) {
+      const ammos = childrenItems.filter((i) => i.type === "CONSUMABLE");
+      const effMap = new Map();
+
+      ammos.forEach((ammo) => {
+        ammo.effects?.forEach((e) => {
+          effMap.set(e.description + e.target + e.val, e);
+        });
+      });
+
+      const rechargeables = childrenItems.filter(
+        (i) => i.type === "RECHARGEABLE",
+      );
+      rechargeables.forEach((mag) => {
+        allInventory
+          .filter((i) => i.parentId === mag.id && i.type === "CONSUMABLE")
+          .forEach((ammo) => {
+            ammo.effects?.forEach((e) => {
+              effMap.set(e.description + e.target + e.val, e);
+            });
+          });
+      });
+
+      inheritedEffects = Array.from(effMap.values());
+    }
 
     const {
       attributes,
@@ -231,7 +266,7 @@ export const ItemNodeWrapper = React.memo(
               className="overflow-hidden"
             >
               <div className="p-3 pt-1 flex flex-col gap-3 border-t border-[var(--theme-border)]">
-                <ItemDetails item={item} />
+                <ItemDetails item={item} inheritedEffects={inheritedEffects} />
 
                 {!isEditMode && (
                   <ItemActions

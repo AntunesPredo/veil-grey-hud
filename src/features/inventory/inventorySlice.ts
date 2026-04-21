@@ -4,6 +4,7 @@ import type {
   ActiveItem,
   ConsumableItem,
   ContainerItem,
+  CustomEffect,
   Item,
 } from "../../shared/types/veil-grey";
 
@@ -121,15 +122,37 @@ export const createInventorySlice: StateCreator<
       if (!itemToEquip) return state;
 
       const isEquipping = !itemToEquip.isEquipped;
+      let newCustomEffects = [...state.customEffects];
+
+      if (!isEquipping) {
+        newCustomEffects = newCustomEffects.filter(
+          (e) => e.link !== `item_${id}`,
+        );
+      } else {
+        const fixedEffects = (itemToEquip.effects || [])
+          .filter((e) => e.mode === "FIXED")
+          .map((e) => ({
+            ...e,
+            id: Date.now() + Math.random(),
+            link: `item_${id}`,
+          }));
+        newCustomEffects = [...newCustomEffects, ...fixedEffects];
+      }
 
       return {
+        customEffects: newCustomEffects,
         inventory: state.inventory.map((i) => {
           if (i.id === id && i.type === "EQUIPABLE")
             return { ...i, isEquipped: isEquipping };
 
           if (itemToEquip.type === "ACTIVE" && i.type === "ACTIVE") {
             if (i.id === id) return { ...i, isEquipped: isEquipping };
-            if (isEquipping) return { ...i, isEquipped: false };
+            if (isEquipping) {
+              newCustomEffects = newCustomEffects.filter(
+                (e) => e.link !== `item_${i.id}`,
+              );
+              return { ...i, isEquipped: false };
+            }
           }
           return i;
         }),
@@ -409,6 +432,21 @@ export const createInventorySlice: StateCreator<
         return state;
       }
 
+      let newInventory = [...state.inventory];
+      const consumedTempEffects: CustomEffect[] = [];
+
+      if (item.effects) {
+        consumedTempEffects.push(
+          ...item.effects
+            .filter((e) => e.mode === "TEMP")
+            .map((e) => ({
+              ...e,
+              id: Date.now() + Math.random(),
+              link: `temp_${item.id}`,
+            })),
+        );
+      }
+
       if (item.type === "ACTIVE") {
         const activeItem = item as ActiveItem;
 
@@ -419,8 +457,6 @@ export const createInventorySlice: StateCreator<
           };
           return state;
         }
-
-        let newInventory = [...state.inventory];
 
         if (activeItem.requiresAmmo) {
           const directChildren = state.inventory.filter(
@@ -459,6 +495,18 @@ export const createInventorySlice: StateCreator<
             }
             return 0;
           })[0] as ConsumableItem;
+
+          if (ammo.effects) {
+            consumedTempEffects.push(
+              ...ammo.effects
+                .filter((e) => e.mode === "TEMP")
+                .map((e) => ({
+                  ...e,
+                  id: Date.now() + Math.random(),
+                  link: `temp_${ammo.id}`,
+                })),
+            );
+          }
 
           if (ammo.quantity > 1) {
             if (ammo.uses > 1) {
@@ -501,6 +549,7 @@ export const createInventorySlice: StateCreator<
           inventory: newInventory.map((i) =>
             i.id === activeItem.id ? { ...i, uses: newUses } : i,
           ),
+          customEffects: [...state.customEffects, ...consumedTempEffects],
         };
       }
 
@@ -520,6 +569,7 @@ export const createInventorySlice: StateCreator<
                 i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
               )
               .concat(newItem as Item),
+            customEffects: [...state.customEffects, ...consumedTempEffects],
           };
         } else {
           result = { success: true, message: "OK" };
@@ -527,6 +577,7 @@ export const createInventorySlice: StateCreator<
             inventory: state.inventory.map((i) =>
               i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
             ),
+            customEffects: [...state.customEffects, ...consumedTempEffects],
           };
         }
       } else {
@@ -536,6 +587,7 @@ export const createInventorySlice: StateCreator<
             inventory: state.inventory.map((i) =>
               i.id === id ? { ...i, uses: currentUses - 1 } : i,
             ),
+            customEffects: [...state.customEffects, ...consumedTempEffects],
           };
         } else {
           result = { success: true, message: "OK" };
@@ -544,9 +596,13 @@ export const createInventorySlice: StateCreator<
               inventory: state.inventory.map((i) =>
                 i.id === id ? { ...i, uses: 0 } : i,
               ),
+              customEffects: [...state.customEffects, ...consumedTempEffects],
             };
           }
-          return { inventory: state.inventory.filter((i) => i.id !== id) };
+          return {
+            inventory: state.inventory.filter((i) => i.id !== id),
+            customEffects: [...state.customEffects, ...consumedTempEffects],
+          };
         }
       }
     });
@@ -574,9 +630,7 @@ export const createInventorySlice: StateCreator<
       return 0;
     });
 
-    const targetChild = sortedChildren[0];
-
-    get().consumeItem(targetChild.id);
+    get().consumeItem(sortedChildren[0].id);
   },
 
   repairActiveItem: (id, multiplier) => {

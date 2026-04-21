@@ -2,13 +2,33 @@ import { motion } from "framer-motion";
 import { ItemNodeWrapper } from "../inventory/components/ItemNodeWrapper";
 import type { ItemFormData } from "./ItemModal";
 import { buildFinalItem } from "./buildFinalItem";
+import { useDisclosure } from "../../shared/hooks/useDisclosure";
+import { CustomEffectModal } from "../stats/CustomEffectModal";
+import { EffectsList } from "../../shared/ui/EffectsList";
+import { Button } from "../../shared/ui/Form";
+import { getAllowedModes } from "../../shared/utils/effectUtils";
+import type { CustomEffect } from "../../shared/types/veil-grey";
 
 interface Step4PreviewProps {
   formData: ItemFormData;
+  setFormData: React.Dispatch<React.SetStateAction<ItemFormData>>;
 }
 
-export function Step4Preview({ formData }: Step4PreviewProps) {
+export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
   const mockItem = buildFinalItem(formData);
+  const effectModal = useDisclosure();
+  const allowedModes = getAllowedModes(formData.type);
+
+  const handleSaveEffect = (newEffect: CustomEffect) => {
+    setFormData((p) => ({ ...p, effects: [...p.effects, newEffect] }));
+  };
+
+  const handleRemoveEffect = (id: number) => {
+    setFormData((p) => ({
+      ...p,
+      effects: p.effects.filter((e) => e.id !== id),
+    }));
+  };
 
   return (
     <motion.div
@@ -39,6 +59,36 @@ export function Step4Preview({ formData }: Step4PreviewProps) {
           />
         </div>
       </div>
+
+      {allowedModes.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-dashed border-[var(--theme-border)] pt-4 w-full">
+          <div className="flex justify-between items-center bg-[var(--theme-background)]/80 p-2 border border-[var(--theme-border)]">
+            <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
+              EFEITOS ANEXADOS
+            </span>
+            <Button
+              size="sm"
+              onClick={effectModal.onOpen}
+              className="border-dashed px-2 py-1 text-[9px]"
+            >
+              + INJETAR EFEITO
+            </Button>
+          </div>
+          <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
+            <EffectsList
+              effects={formData.effects}
+              onRemove={handleRemoveEffect}
+            />
+          </div>
+        </div>
+      )}
+
+      <CustomEffectModal
+        isOpen={effectModal.isOpen}
+        onClose={effectModal.onClose}
+        allowedModes={allowedModes}
+        onSave={handleSaveEffect}
+      />
     </motion.div>
   );
 }

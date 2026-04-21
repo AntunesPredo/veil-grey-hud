@@ -2,7 +2,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import type { CustomEffect, Note } from "../../shared/types/veil-grey";
 import { Button, Input } from "../../shared/ui/Form";
 import { Markdown } from "../../shared/ui/Markdown";
-import { EffectsList } from "./EffectsList";
+import { EffectsList } from "../../shared/ui/EffectsList";
 import { useResizeObserver } from "../../shared/hooks/useResizeObserver";
 
 type ExtraNoteBlockProps = {

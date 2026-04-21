@@ -8,11 +8,12 @@ import { BaseMetrics } from "./components/BaseMetrics";
 import { ChargeConfig } from "./components/ChargeConfig";
 import { ActiveCondition } from "./components/ActiveCondition";
 import { ContainerConfig } from "./components/ContainerConfig";
+import { getAllowedModes } from "../../shared/utils/effectUtils";
 
 interface Step3PropertiesProps {
   formData: ItemFormData;
   setFormData: React.Dispatch<React.SetStateAction<ItemFormData>>;
-  icons: { id: string; svg: React.ReactNode }[];
+  icons: { id: string; svg: React.ReactNode; viewBox: string }[];
 }
 
 export function Step3Properties({
@@ -31,7 +32,9 @@ export function Step3Properties({
   const isEquipable = formData.type === "EQUIPABLE";
 
   const allowStack = isMaterial || isConsumable;
-  const allowEffects = !isMaterial && !isContainer && !isRechargeable;
+  const allowedModes = getAllowedModes(formData.type);
+  const allowEffects = allowedModes.length > 0;
+
   const hasCommsType =
     isConsumable ||
     isRechargeable ||
@@ -184,12 +187,11 @@ export function Step3Properties({
 
       {allowEffects ? (
         <div className="border-l-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 p-2 text-[10px] text-[var(--theme-accent)] font-mono italic">
-          * O Módulo de Efeitos ficará disponível na tela principal do
-          inventário.
+          * O Módulo de Injeção de Efeitos está disponível na próxima etapa.
         </div>
       ) : (
         <div className="border-l-2 border-[var(--theme-border)] bg-[var(--theme-background)] p-2 text-[10px] text-[var(--theme-text)]/50 font-mono italic">
-          * Esta classe não suporta Efeitos de Status.
+          * A classificação deste item não suporta Injeção de Efeitos.
         </div>
       )}
     </motion.div>
