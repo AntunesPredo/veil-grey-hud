@@ -569,10 +569,7 @@ export const createInventorySlice: StateCreator<
 
       consumedActions.forEach((act) => {
         if (act.target === "HP_HEAL") {
-          updatedHp.current = Math.min(
-            updatedHp.max,
-            updatedHp.current + act.val,
-          );
+          updatedHp.current = updatedHp.current + act.val;
         }
         if (act.target === "ENERGY_RESTORE") {
           if (updatedEnergy === "exhausted") updatedEnergy = "tired";
@@ -583,10 +580,7 @@ export const createInventorySlice: StateCreator<
           else if (updatedEnergy === "tired") updatedEnergy = "exhausted";
         }
         if (act.target === "SUSTENANCE_ADD") {
-          updatedSustenance.current = Math.min(
-            updatedSustenance.limit,
-            updatedSustenance.current + act.val,
-          );
+          updatedSustenance.current = updatedSustenance.current + act.val;
         }
         if (act.target === "EVILNESS_ADD") {
           updatedEvilness = Math.min(10, updatedEvilness + act.val);
@@ -606,7 +600,7 @@ export const createInventorySlice: StateCreator<
       };
     });
 
-    if (result.success) return result;
+    return result;
   },
 
   consumeRechargeable: (id) => {
@@ -650,6 +644,7 @@ export const createInventorySlice: StateCreator<
       }
       return state;
     });
-    if (recovered > 0) return { recovered };
+
+    return { recovered };
   },
 });
