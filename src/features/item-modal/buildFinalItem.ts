@@ -35,6 +35,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
         uses: data.uses,
         maxUses: data.maxUses,
         commsType: data.commsType || "",
+        instantActions: data.hasInstantActions ? data.instantActions : [],
       } as ConsumableItem;
     case "RECHARGEABLE":
       return {
@@ -77,6 +78,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
         ...base,
         type: "EQUIPABLE",
         containerProps: data.containerProps,
+        armorProps: data.hasArmor ? data.armorProps : undefined,
       } as EquipableItem;
   }
 };

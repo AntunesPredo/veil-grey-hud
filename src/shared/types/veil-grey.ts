@@ -70,6 +70,25 @@ export interface Role {
   uniqueAbility: UniqueAbility;
 }
 
+export type InstantActionTarget =
+  | "HP_HEAL"
+  | "HP_DRAIN"
+  | "ENERGY_RESTORE"
+  | "ENERGY_DRAIN"
+  | "SUSTENANCE_ADD"
+  | "SUSTENANCE_DRAIN"
+  | "INSANITY_ADD"
+  | "INSANITY_DRAIN"
+  | "EVILNESS_ADD"
+  | "EVILNESS_SUB";
+
+export interface InstantAction {
+  id: number;
+  target: InstantActionTarget;
+  val: number;
+  description: string;
+}
+
 export type EffectMode = "FIXED" | "OPTIONAL" | "TEMP";
 
 export interface CustomEffect {
@@ -114,6 +133,7 @@ export interface ConsumableItem extends BaseItem {
   uses: number;
   maxUses: number;
   commsType: string;
+  instantActions: InstantAction[];
 }
 
 export interface RechargeableItem extends BaseItem {
@@ -158,6 +178,11 @@ export interface EquipableItem extends BaseItem {
     slotReduction: number;
     slotCapacity: number;
     drawers?: string[];
+  };
+  armorProps?: {
+    pe: number;
+    maxPe: number;
+    rd: number;
   };
 }
 

@@ -7,6 +7,7 @@ import { VG_CONFIG } from "../../shared/config/system.config";
 import type { Attribute } from "../../shared/types/veil-grey";
 import { useDrawerResize } from "../../shared/hooks/useDrawerResize";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 
 export function AttributeDrawer() {
   const { drawerLeft, setDrawerState, accordions, toggleAccordion } =
@@ -22,6 +23,7 @@ export function AttributeDrawer() {
     sandboxMode,
     lockedSnapshot,
   } = useCharacterStore();
+  const { getAttrMod } = useActiveModifiers();
   const { isOpen, isPinned, widthVW } = drawerLeft;
 
   const drawerRef = useRef<HTMLDivElement>(null!);
@@ -145,17 +147,28 @@ export function AttributeDrawer() {
               title={group.label}
             >
               {Object.entries(group.atributes).map(([attrKey, attr]) => {
-                const val = attributes[attrKey as Attribute] || 0;
+                const baseVal = attributes[attrKey as Attribute] || 0;
+                const modVal = getAttrMod(attrKey, group.rollCategory);
+                const finalVal = baseVal + modVal;
 
                 const minVal = lockedSnapshot
                   ? lockedSnapshot.attributes[attrKey as Attribute]
                   : VG_CONFIG.rules.attrMin;
-                const canReduce = sandboxMode || val > minVal;
+                const canReduce = sandboxMode || baseVal > minVal;
                 const canIncrease =
                   sandboxMode ||
                   (freePoints.attributes > 0 &&
-                    val < currentTier.maxAttr &&
-                    val < VG_CONFIG.rules.attrMax);
+                    baseVal < currentTier.maxAttr &&
+                    baseVal < VG_CONFIG.rules.attrMax);
+
+                let valueBoxColor =
+                  "text-[var(--theme-text)] bg-[var(--theme-accent)]/20 border-[var(--theme-accent)]";
+                if (modVal > 0)
+                  valueBoxColor =
+                    "text-[var(--theme-success)] bg-[var(--theme-success)]/10 border-[var(--theme-success)]";
+                if (modVal < 0)
+                  valueBoxColor =
+                    "text-[var(--theme-danger)] bg-[var(--theme-danger)]/10 border-[var(--theme-danger)]";
 
                 return (
                   <div
@@ -170,7 +183,7 @@ export function AttributeDrawer() {
                       {canEdit ? (
                         <NumberStepper
                           size="sm"
-                          value={val}
+                          value={baseVal}
                           onDecrement={() =>
                             handleAttributeChange(attrKey as Attribute, -1)
                           }
@@ -181,8 +194,15 @@ export function AttributeDrawer() {
                           disableIncrement={!canIncrease}
                         />
                       ) : (
-                        <span className="font-mono text-[var(--theme-text)] bg-[var(--theme-accent)]/20 px-2 py-1 border border-[var(--theme-accent)] text-xs min-w-[32px] text-center">
-                          {val}
+                        <span
+                          className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
+                        >
+                          {finalVal}
+                          {modVal !== 0 && (
+                            <span className="text-[10px] opacity-80">
+                              [{modVal > 0 ? `+${modVal}` : modVal}]
+                            </span>
+                          )}
                         </span>
                       )}
 
@@ -190,7 +210,7 @@ export function AttributeDrawer() {
                         <Button
                           size="sm"
                           className="px-2 py-1 text-[9px]"
-                          onClick={() => handleRoll(attr.label, val)}
+                          onClick={() => handleRoll(attr.label, finalVal)}
                         >
                           ROLL
                         </Button>

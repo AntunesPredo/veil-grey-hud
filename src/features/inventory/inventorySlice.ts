@@ -5,6 +5,7 @@ import type {
   ConsumableItem,
   ContainerItem,
   CustomEffect,
+  InstantAction,
   Item,
 } from "../../shared/types/veil-grey";
 
@@ -122,25 +123,8 @@ export const createInventorySlice: StateCreator<
       if (!itemToEquip) return state;
 
       const isEquipping = !itemToEquip.isEquipped;
-      let newCustomEffects = [...state.customEffects];
-
-      if (!isEquipping) {
-        newCustomEffects = newCustomEffects.filter(
-          (e) => e.link !== `item_${id}`,
-        );
-      } else {
-        const fixedEffects = (itemToEquip.effects || [])
-          .filter((e) => e.mode === "FIXED")
-          .map((e) => ({
-            ...e,
-            id: Date.now() + Math.random(),
-            link: `item_${id}`,
-          }));
-        newCustomEffects = [...newCustomEffects, ...fixedEffects];
-      }
 
       return {
-        customEffects: newCustomEffects,
         inventory: state.inventory.map((i) => {
           if (i.id === id && i.type === "EQUIPABLE")
             return { ...i, isEquipped: isEquipping };
@@ -148,9 +132,6 @@ export const createInventorySlice: StateCreator<
           if (itemToEquip.type === "ACTIVE" && i.type === "ACTIVE") {
             if (i.id === id) return { ...i, isEquipped: isEquipping };
             if (isEquipping) {
-              newCustomEffects = newCustomEffects.filter(
-                (e) => e.link !== `item_${i.id}`,
-              );
               return { ...i, isEquipped: false };
             }
           }
@@ -434,6 +415,7 @@ export const createInventorySlice: StateCreator<
 
       let newInventory = [...state.inventory];
       const consumedTempEffects: CustomEffect[] = [];
+      const consumedActions: InstantAction[] = [];
 
       if (item.effects) {
         consumedTempEffects.push(
@@ -445,6 +427,10 @@ export const createInventorySlice: StateCreator<
               link: `temp_${item.id}`,
             })),
         );
+      }
+
+      if ("instantActions" in item && Array.isArray(item.instantActions)) {
+        consumedActions.push(...item.instantActions);
       }
 
       if (item.type === "ACTIVE") {
@@ -508,6 +494,10 @@ export const createInventorySlice: StateCreator<
             );
           }
 
+          if (ammo.instantActions) {
+            consumedActions.push(...ammo.instantActions);
+          }
+
           if (ammo.quantity > 1) {
             if (ammo.uses > 1) {
               const newAmmo = {
@@ -545,66 +535,89 @@ export const createInventorySlice: StateCreator<
           message: "OK",
           rollData: { skillId: activeItem.skillId, loss },
         };
-        return {
-          inventory: newInventory.map((i) =>
-            i.id === activeItem.id ? { ...i, uses: newUses } : i,
-          ),
-          customEffects: [...state.customEffects, ...consumedTempEffects],
-        };
-      }
-
-      const currentUses = item.uses;
-      if (item.quantity > 1) {
-        if (currentUses > 1) {
-          const newItem = {
-            ...item,
-            id: Date.now() + Math.random(),
-            quantity: 1,
-            uses: currentUses - 1,
-          };
-          result = { success: true, message: "OK" };
-          return {
-            inventory: state.inventory
+        newInventory = newInventory.map((i) =>
+          i.id === activeItem.id ? { ...i, uses: newUses } : i,
+        );
+      } else {
+        const currentUses = item.uses;
+        if (item.quantity > 1) {
+          if (currentUses > 1) {
+            const newItem = {
+              ...item,
+              id: Date.now() + Math.random(),
+              quantity: 1,
+              uses: currentUses - 1,
+            };
+            newInventory = state.inventory
               .map((i) =>
                 i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
               )
-              .concat(newItem as Item),
-            customEffects: [...state.customEffects, ...consumedTempEffects],
-          };
-        } else {
-          result = { success: true, message: "OK" };
-          return {
-            inventory: state.inventory.map((i) =>
+              .concat(newItem as Item);
+          } else {
+            newInventory = state.inventory.map((i) =>
               i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
-            ),
-            customEffects: [...state.customEffects, ...consumedTempEffects],
-          };
-        }
-      } else {
-        if (currentUses > 1) {
-          result = { success: true, message: "OK" };
-          return {
-            inventory: state.inventory.map((i) =>
-              i.id === id ? { ...i, uses: currentUses - 1 } : i,
-            ),
-            customEffects: [...state.customEffects, ...consumedTempEffects],
-          };
-        } else {
-          result = { success: true, message: "OK" };
-          if (item.type === "KIT") {
-            return {
-              inventory: state.inventory.map((i) =>
-                i.id === id ? { ...i, uses: 0 } : i,
-              ),
-              customEffects: [...state.customEffects, ...consumedTempEffects],
-            };
+            );
           }
-          return {
-            inventory: state.inventory.filter((i) => i.id !== id),
-            customEffects: [...state.customEffects, ...consumedTempEffects],
-          };
+        } else {
+          if (currentUses > 1) {
+            newInventory = state.inventory.map((i) =>
+              i.id === id ? { ...i, uses: currentUses - 1 } : i,
+            );
+          } else {
+            if (item.type === "KIT") {
+              newInventory = state.inventory.map((i) =>
+                i.id === id ? { ...i, uses: 0 } : i,
+              );
+            } else {
+              newInventory = state.inventory.filter((i) => i.id !== id);
+            }
+          }
         }
+        result = { success: true, message: "OK" };
       }
+
+      const updatedHp = { ...state.hp };
+      const updatedSustenance = { ...state.sustenance };
+      let updatedEnergy = state.energy;
+      let updatedEvilness = state.evilness;
+
+      consumedActions.forEach((act) => {
+        if (act.target === "HP_HEAL") {
+          updatedHp.current = Math.min(
+            updatedHp.max,
+            updatedHp.current + act.val,
+          );
+        }
+        if (act.target === "ENERGY_RESTORE") {
+          if (updatedEnergy === "exhausted") updatedEnergy = "tired";
+          else if (updatedEnergy === "tired") updatedEnergy = "rested";
+        }
+        if (act.target === "ENERGY_DRAIN") {
+          if (updatedEnergy === "rested") updatedEnergy = "tired";
+          else if (updatedEnergy === "tired") updatedEnergy = "exhausted";
+        }
+        if (act.target === "SUSTENANCE_ADD") {
+          updatedSustenance.current = Math.min(
+            updatedSustenance.limit,
+            updatedSustenance.current + act.val,
+          );
+        }
+        if (act.target === "EVILNESS_ADD") {
+          updatedEvilness = Math.min(10, updatedEvilness + act.val);
+        }
+        if (act.target === "EVILNESS_SUB") {
+          updatedEvilness = Math.max(0, updatedEvilness - act.val);
+        }
+      });
+
+      return {
+        inventory: newInventory,
+        customEffects: [...state.customEffects, ...consumedTempEffects],
+        hp: updatedHp,
+        sustenance: updatedSustenance,
+        energy: updatedEnergy,
+        evilness: updatedEvilness,
+      };
     });
 
     if (result.success) get().recalculateAll();

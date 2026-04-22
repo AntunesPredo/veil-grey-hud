@@ -161,54 +161,10 @@ export const useCharacterStore = create<CharacterStore>()(
               updates.sustenance.state = "SATIATED";
             else updates.sustenance.state = "FULL";
 
-            let [phys, ment, soc, mov] = [0, 0, 0, 0];
-            if (updates.insanity.state === "UNSTABLE") ment -= 1;
-            if (updates.insanity.state === "INSANE") ment -= 3;
-            soc -= Math.floor(
-              Math.min(updates.evilness, rules.evilnessMax) / 2,
+            updates.insanity.current = Math.max(
+              updates.insanity.floor_mod,
+              updates.insanity.current,
             );
-
-            if (updates.sustenance.state === "FULL") {
-              phys += 1;
-              ment += 1;
-            } else if (updates.sustenance.state === "HUNGRY") {
-              phys -= 1;
-              ment -= 1;
-            } else if (updates.sustenance.state === "STARVING") {
-              phys -= 3;
-              ment -= 3;
-            }
-
-            if (updates.energy === "tired") {
-              phys -= 2;
-              soc -= 1;
-            } else if (updates.energy === "exhausted") {
-              phys -= 4;
-              soc -= 3;
-              ment -= 3;
-              mov -= 2;
-            }
-
-            if (updates.hp.isVeryInjured) {
-              phys -= 2;
-              ment -= 2;
-              soc -= 2;
-              mov -= 1;
-            } else if (updates.hp.isInjured) {
-              phys -= 1;
-              ment -= 1;
-              soc -= 1;
-            }
-
-            // TODO: add Custom Effects
-            // updates.customEffects.forEach((eff) => {
-            //   if (eff.target === "ATTR_PHYSICAL") phys += eff.val;
-            //   if (eff.target === "ATTR_MENTAL") ment += eff.val;
-            //   if (eff.target === "ATTR_SOCIAL") soc += eff.val;
-            // });
-
-            // updates.modifiers = { phys, ment, soc, mov };
-            console.log({ phys, ment, soc, mov });
 
             if (!updates.crisis.ignore) {
               const isDying = updates.hp.current <= 0;

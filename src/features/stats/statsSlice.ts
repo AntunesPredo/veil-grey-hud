@@ -59,6 +59,7 @@ export const createStatsSlice: StateCreator<
     }));
     get().recalculateAll();
   },
+
   updateSkill: (skill, value) => {
     set((state) => ({
       skills: {
@@ -76,6 +77,7 @@ export const createStatsSlice: StateCreator<
     set((state) => ({ customEffects: [...state.customEffects, effect] }));
     get().recalculateAll();
   },
+
   removeCustomEffect: (id) => {
     set((state) => ({
       customEffects: state.customEffects.filter((e) => e.id !== id),

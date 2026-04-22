@@ -8,6 +8,7 @@ import { Button, Input, NumberStepper, Checkbox } from "../../shared/ui/Form";
 import { Accordion } from "../../shared/ui/Accordion";
 import type { Skill, Attribute, SkillData } from "../../shared/types/veil-grey";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 
 const getAttrShort = (attrId: string) => {
   for (const group of Object.values(VG_CONFIG.att_groups)) {
@@ -33,7 +34,7 @@ export function SkillDrawer() {
     sandboxMode,
     lockedSnapshot,
   } = useCharacterStore();
-
+  const { getSkillMod } = useActiveModifiers();
   const { isOpen, isPinned, widthVW } = drawerRight;
   const drawerRef = useRef<HTMLDivElement>(null!);
   const { handleMouseDown } = useDrawerResize("right", drawerRef);
@@ -146,10 +147,14 @@ export function SkillDrawer() {
 
   const renderSkillRow = (
     skillKey: string,
-    skillData: SkillData,
+    skillData: SkillData & { rollCategory: string },
     isFiltered = false,
   ) => {
-    const val = skills[skillKey as Skill] || 0;
+    const baseVal = skills[skillKey as Skill] || 0;
+
+    const rollCategory = skillData.rollCategory || "";
+    const modVal = getSkillMod(skillKey, rollCategory);
+    const finalVal = baseVal + modVal;
 
     const baseValues = skillData.bases.map(
       (b: string) => attributes[b as Attribute] || 0,
@@ -164,11 +169,20 @@ export function SkillDrawer() {
     const minVal = lockedSnapshot
       ? lockedSnapshot.skills[skillKey as Skill]
       : VG_CONFIG.rules.skillMin;
-    const canReduce = sandboxMode || val > minVal;
+    const canReduce = sandboxMode || baseVal > minVal;
     const canIncrease =
-      sandboxMode || (freePoints.skills > 0 && val < actualSkillCap);
+      sandboxMode || (freePoints.skills > 0 && baseVal < actualSkillCap);
 
     const isDescOpen = showAllDesc || !!descToggles[skillKey];
+
+    let valueBoxColor =
+      "text-[var(--theme-text)] bg-[var(--theme-accent)]/20 border-[var(--theme-accent)]";
+    if (modVal > 0)
+      valueBoxColor =
+        "text-[var(--theme-success)] bg-[var(--theme-success)]/10 border-[var(--theme-success)]";
+    if (modVal < 0)
+      valueBoxColor =
+        "text-[var(--theme-danger)] bg-[var(--theme-danger)]/10 border-[var(--theme-danger)]";
 
     return (
       <div
@@ -227,7 +241,7 @@ export function SkillDrawer() {
             {canEdit ? (
               <NumberStepper
                 size="sm"
-                value={val}
+                value={baseVal}
                 onDecrement={() =>
                   handleSkillChange(skillKey as Skill, -1, skillData)
                 }
@@ -238,8 +252,15 @@ export function SkillDrawer() {
                 disableIncrement={!canIncrease}
               />
             ) : (
-              <span className="font-mono text-[var(--theme-text)] bg-[var(--theme-accent)]/20 px-2 py-1 border border-[var(--theme-accent)] text-xs min-w-[32px] text-center">
-                {val}
+              <span
+                className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
+              >
+                {finalVal}
+                {modVal !== 0 && (
+                  <span className="text-[9px] opacity-80">
+                    [{modVal > 0 ? `+${modVal}` : modVal}]
+                  </span>
+                )}
               </span>
             )}
 
@@ -247,7 +268,7 @@ export function SkillDrawer() {
               <Button
                 size="sm"
                 className="px-2 py-1 text-[9px]"
-                onClick={() => handleRoll(skillData.label, val)}
+                onClick={() => handleRoll(skillData.label, finalVal)}
               >
                 ROLL
               </Button>
@@ -387,7 +408,11 @@ export function SkillDrawer() {
                   title={group.label}
                 >
                   {Object.entries(group.skills).map(([skillKey, skillData]) =>
-                    renderSkillRow(skillKey, skillData, false),
+                    renderSkillRow(
+                      skillKey,
+                      { ...skillData, rollCategory: group.rollCategory },
+                      false,
+                    ),
                   )}
                 </Accordion>
               );

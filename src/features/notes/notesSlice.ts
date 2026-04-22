@@ -21,7 +21,7 @@ export const createNotesSlice: StateCreator<
   [],
   [],
   NotesSlice
-> = (set) => ({
+> = (set, get) => ({
   notes: [],
   mainNote: "# Nota principal",
   isMainNoteEditing: false,
@@ -45,8 +45,13 @@ export const createNotesSlice: StateCreator<
     set((state) => ({
       notes: state.notes.map((n) => (n.id === id ? { ...n, [field]: val } : n)),
     })),
-  deleteNote: (id) =>
-    set((state) => ({ notes: state.notes.filter((n) => n.id !== id) })),
+  deleteNote: (id) => {
+    set((state) => ({
+      notes: state.notes.filter((n) => n.id !== id),
+      customEffects: state.customEffects.filter((e) => e.link !== id),
+    }));
+    get().recalculateAll();
+  },
 
   toggleNoteEditMode: (id) => {
     if (id === "MAIN")

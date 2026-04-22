@@ -32,7 +32,7 @@ export function SplitStackModal({
     const size = Math.floor(total / parts);
     const remainder = total % parts;
     preview = Array(parts).fill(size);
-    preview[0] += remainder; // O original fica com o resto para não perder matéria
+    preview[0] += remainder;
   }
 
   const handleConfirm = () => {

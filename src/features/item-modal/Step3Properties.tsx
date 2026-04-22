@@ -146,6 +146,64 @@ export function Step3Properties({
         />
       )}
 
+      {isEquipable && (
+        <div className="bg-[var(--theme-warning)]/10 border border-[var(--theme-warning)]/30 p-3 flex flex-col gap-3">
+          <Checkbox
+            label="PROPRIEDADES PROTETORAS"
+            checked={formData.hasArmor}
+            onChange={() =>
+              setFormData((prev) => ({ ...prev, hasArmor: !prev.hasArmor }))
+            }
+          />
+
+          {formData.hasArmor && (
+            <div className="grid grid-cols-2 gap-4 border-t border-dashed border-[var(--theme-warning)]/30 pt-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-[var(--theme-warning)] tracking-widest uppercase">
+                  PONTOS DE ESTRUTURA (PE)
+                </span>
+                <Input
+                  type="number"
+                  min="1"
+                  value={formData.armorProps.maxPe}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      armorProps: {
+                        ...prev.armorProps,
+                        maxPe: parseInt(e.target.value) || 1,
+                        pe: parseInt(e.target.value) || 1,
+                      },
+                    }))
+                  }
+                  className="text-center font-mono border-[var(--theme-warning)]/50 text-[var(--theme-warning)]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-[var(--theme-warning)] tracking-widest uppercase">
+                  REDUÇÃO DE DANO (RD)
+                </span>
+                <Input
+                  type="number"
+                  min="1"
+                  value={formData.armorProps.rd}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      armorProps: {
+                        ...prev.armorProps,
+                        rd: parseInt(e.target.value) || 1,
+                      },
+                    }))
+                  }
+                  className="text-center font-mono border-[var(--theme-warning)]/50 text-[var(--theme-warning)]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {showSkillBind && (
         <div className="flex flex-col gap-1 bg-[var(--theme-accent)]/5 border border-[var(--theme-border)] p-3">
           <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
@@ -185,9 +243,33 @@ export function Step3Properties({
         />
       </div>
 
+      {isConsumable && (
+        <div className="bg-[var(--theme-success)]/10 border border-[var(--theme-success)]/30 p-3 flex flex-col gap-3">
+          <Checkbox
+            label="INJETAR AÇÕES INSTANTÂNEAS"
+            checked={formData.hasInstantActions}
+            onChange={() =>
+              setFormData((prev) => ({
+                ...prev,
+                hasInstantActions: !prev.hasInstantActions,
+              }))
+            }
+          />
+        </div>
+      )}
+
+      {formData.hasInstantActions && (
+        <div className="border-t border-dashed border-[var(--theme-success)]/30 pt-3 flex flex-col gap-2">
+          <span className="text-[10px] text-[var(--theme-success)] font-mono italic">
+            * A injeção de múltiplas ações será feita em um modal dedicado na
+            próxima etapa.
+          </span>
+        </div>
+      )}
+
       {allowEffects ? (
         <div className="border-l-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 p-2 text-[10px] text-[var(--theme-accent)] font-mono italic">
-          * O Módulo de Injeção de Efeitos está disponível na próxima etapa.
+          * O Módulo de Injeção de Efeitos estará disponível na próxima etapa.
         </div>
       ) : (
         <div className="border-l-2 border-[var(--theme-border)] bg-[var(--theme-background)] p-2 text-[10px] text-[var(--theme-text)]/50 font-mono italic">

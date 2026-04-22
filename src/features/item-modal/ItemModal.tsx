@@ -9,6 +9,7 @@ import type {
   ItemType,
   Skill,
   ConsumableItem,
+  InstantAction,
 } from "../../shared/types/veil-grey";
 import { useCharacterStore } from "../character/store";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
@@ -45,6 +46,14 @@ export interface ItemFormData {
   singleUse: boolean;
   fullCharge: boolean;
   requiresAmmo: boolean;
+  hasArmor: boolean;
+  armorProps: {
+    pe: number;
+    maxPe: number;
+    rd: number;
+  };
+  hasInstantActions: boolean;
+  instantActions: InstantAction[];
 }
 
 const defaultFormData: ItemFormData = {
@@ -68,6 +77,10 @@ const defaultFormData: ItemFormData = {
   singleUse: true,
   fullCharge: true,
   requiresAmmo: false,
+  hasArmor: false,
+  armorProps: { pe: 120, maxPe: 120, rd: 30 },
+  hasInstantActions: false,
+  instantActions: [],
 };
 
 interface ItemModalProps {
@@ -209,6 +222,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
             parentId: finalItem.id,
             drawer: null,
             effects: [],
+            instantActions: [],
           };
           addInventoryItem(ammo);
         }
