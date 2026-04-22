@@ -9,6 +9,7 @@ import { Accordion } from "../../shared/ui/Accordion";
 import type { Skill, Attribute, SkillData } from "../../shared/types/veil-grey";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
+import { useRoller } from "../../shared/hooks/useRoller";
 
 const getAttrShort = (attrId: string) => {
   for (const group of Object.values(VG_CONFIG.att_groups)) {
@@ -34,6 +35,7 @@ export function SkillDrawer() {
     sandboxMode,
     lockedSnapshot,
   } = useCharacterStore();
+  const { initiateRoll } = useRoller();
   const { getSkillMod } = useActiveModifiers();
   const { isOpen, isPinned, widthVW } = drawerRight;
   const drawerRef = useRef<HTMLDivElement>(null!);
@@ -76,11 +78,6 @@ export function SkillDrawer() {
             s.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
             s.id.toLowerCase().includes(searchQuery.toLowerCase()),
         );
-
-  const handleRoll = (label: string, val: number) => {
-    RetroToast.info(`Rolando Perícia ${label.toUpperCase()} [Base: ${val}]`);
-    setSearchQuery("");
-  };
 
   const handleSkillChange = (
     skillKey: Skill,
@@ -268,7 +265,14 @@ export function SkillDrawer() {
               <Button
                 size="sm"
                 className="px-2 py-1 text-[9px]"
-                onClick={() => handleRoll(skillData.label, finalVal)}
+                onClick={() => {
+                  initiateRoll(
+                    skillData.label,
+                    `${VG_CONFIG.rules.mainDice}+${baseVal}`,
+                    [skillData.id, skillData.rollCategory],
+                  );
+                  setSearchQuery("");
+                }}
               >
                 ROLL
               </Button>

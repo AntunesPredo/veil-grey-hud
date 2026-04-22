@@ -3,6 +3,7 @@ import { SKILLS } from "./skills";
 
 export const VG_CONFIG = {
   rules: {
+    mainDice: "1d20",
     attrMin: 0,
     attrMax: 10,
     skillMin: 0,

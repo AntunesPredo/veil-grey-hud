@@ -8,6 +8,7 @@ import type { Attribute } from "../../shared/types/veil-grey";
 import { useDrawerResize } from "../../shared/hooks/useDrawerResize";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
+import { useRoller } from "../../shared/hooks/useRoller";
 
 export function AttributeDrawer() {
   const { drawerLeft, setDrawerState, accordions, toggleAccordion } =
@@ -24,6 +25,7 @@ export function AttributeDrawer() {
     lockedSnapshot,
   } = useCharacterStore();
   const { getAttrMod } = useActiveModifiers();
+  const { initiateRoll } = useRoller();
   const { isOpen, isPinned, widthVW } = drawerLeft;
 
   const drawerRef = useRef<HTMLDivElement>(null!);
@@ -44,10 +46,6 @@ export function AttributeDrawer() {
   const layoutClass = isPinned
     ? "relative flex-shrink-0 border-r z-20 h-full"
     : "fixed top-0 bottom-0 left-0 h-[100vh] z-[100] border-r-2 shadow-[20px_0_30px_rgba(0,0,0,0.8)]";
-
-  const handleRoll = (attrKey: string, val: number) => {
-    RetroToast.info(`Rolando ${attrKey.toUpperCase()} [Base: ${val}]`);
-  };
 
   const handleAttributeChange = (attrKey: Attribute, delta: number) => {
     const currentVal = attributes[attrKey];
@@ -210,7 +208,13 @@ export function AttributeDrawer() {
                         <Button
                           size="sm"
                           className="px-2 py-1 text-[9px]"
-                          onClick={() => handleRoll(attr.label, finalVal)}
+                          onClick={() =>
+                            initiateRoll(
+                              attr.label,
+                              `${VG_CONFIG.rules.mainDice}+${baseVal}`,
+                              [attrKey, group.rollCategory],
+                            )
+                          }
                         >
                           ROLL
                         </Button>
@@ -231,13 +235,17 @@ export function AttributeDrawer() {
           >
             <SecondaryStatRow
               label="AGILIDADE"
-              value={secondaryAttributes.agility}
+              key="sec_agility"
+              rollCategory={VG_CONFIG.att_secondary.agility.rollCategory}
+              baseValue={secondaryAttributes.agility}
               isDistributing={isDistributing}
               icon={<path d="M9 7L10 0H8L2 7V9H7L6 16H8L14 9L14 7H9Z" />}
             />
             <SecondaryStatRow
               label="MASSA CORPÓREA"
-              value={secondaryAttributes.mass}
+              key="sec_mass"
+              rollCategory={VG_CONFIG.att_secondary.mass.rollCategory}
+              baseValue={secondaryAttributes.mass}
               isDistributing={isDistributing}
               icon={
                 <path
@@ -249,7 +257,9 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="PERCEPÇÃO"
-              value={secondaryAttributes.perception}
+              key="sec_perception"
+              rollCategory={VG_CONFIG.att_secondary.perception.rollCategory}
+              baseValue={secondaryAttributes.perception}
               isDistributing={isDistributing}
               icon={
                 <path
@@ -261,7 +271,9 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="SAÚDE MENTAL"
-              value={secondaryAttributes.mental_health}
+              key="sec_mental_healt"
+              rollCategory={VG_CONFIG.att_secondary.mental_health.rollCategory}
+              baseValue={secondaryAttributes.mental_health}
               isDistributing={isDistributing}
               icon={
                 <path
@@ -287,17 +299,34 @@ export function AttributeDrawer() {
 
 function SecondaryStatRow({
   label,
-  value,
+  key,
+  rollCategory,
+  baseValue,
   icon,
   isDistributing,
 }: {
   label: string;
-  value: number;
+  key: string;
+  rollCategory: string;
+  baseValue: number;
   icon: React.ReactNode;
   isDistributing: boolean;
 }) {
+  const { initiateRoll } = useRoller();
+  const { getAttrMod } = useActiveModifiers();
+  const modVal = getAttrMod(key, rollCategory) || 0;
+  const finalVal = baseValue + modVal;
+  let valueBoxColor =
+    "text-[var(--theme-text)] bg-[var(--theme-background)]/80 border-[var(--theme-border)]";
+  if (modVal > 0)
+    valueBoxColor =
+      "text-[var(--theme-success)] bg-[var(--theme-success)]/10 border-[var(--theme-success)]";
+  if (modVal < 0)
+    valueBoxColor =
+      "text-[var(--theme-danger)] bg-[var(--theme-danger)]/10 border-[var(--theme-danger)]";
+
   return (
-    <div className="flex justify-between items-center bg-[var(--theme-accent)]/5 px-1  py-2 border border-[var(--theme-accent)]/20 mb-1">
+    <div className="flex justify-between items-center bg-[var(--theme-accent)]/5 px-1 py-2 border border-[var(--theme-accent)]/20 mb-1">
       <div className="flex items-center gap-2 text-[var(--theme-accent)] opacity-80">
         <svg className="w-6 h-6 fill-current" viewBox="0 0 16 16">
           {icon}
@@ -305,14 +334,26 @@ function SecondaryStatRow({
         <span className="text-[12px] uppercase font-bold">{label}</span>
       </div>
       <div className="flex gap-2 items-center shrink-0">
-        <span className="font-mono text-[var(--theme-text)] bg-[var(--theme-background)]/80 px-2 py-1 border border-[var(--theme-border)] text-xs min-w-[32px] text-center">
-          {value}
+        <span
+          className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
+        >
+          {finalVal}
+          {modVal !== 0 && (
+            <span className="text-[10px] opacity-80">
+              [{modVal > 0 ? `+${modVal}` : modVal}]
+            </span>
+          )}
         </span>
         {!isDistributing && (
           <Button
             size="sm"
             className="px-2 py-1 text-[9px]"
-            onClick={() => console.log(`Rolling ${label}`)}
+            onClick={() =>
+              initiateRoll(label, `${VG_CONFIG.rules.mainDice}+${baseValue}`, [
+                key,
+                rollCategory,
+              ])
+            }
           >
             ROLL
           </Button>

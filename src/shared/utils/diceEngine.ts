@@ -1,3 +1,5 @@
+import { VG_CONFIG } from "../config/system.config";
+
 export function vg_roll(faces: number): number {
   if (faces <= 0) return 0;
   if (faces === 1) return 1;
@@ -14,30 +16,37 @@ export interface ParseResult {
   log: string;
   error?: string;
   results: { roll: number; faces: number; isNegative: boolean }[];
+  mainDice?: { roll: number; faces: number };
+  isCriticalSuccess: boolean;
+  isCriticalFail: boolean;
 }
-
-// TODO: rename and add support for rollCategory and rollType to apply global modifiers based on them
 
 /**
  * Advanced Dice Parser
  * Supports: d20, 2d20+1 -2, 3d10+3-1 +3, D20+3, 2d20-d4 +d6
  */
-export function executeRawRoll(notation: string): ParseResult {
-  const cleanStr = notation.trim().toLowerCase().replace(/\s+/g, "");
+export function executeRawRoll(
+  notation: string,
+  activeEffects: { description: string; val: number }[] = [],
+): ParseResult {
+  const rawStr = notation.trim() === "" ? VG_CONFIG.rules.mainDice : notation;
+  const cleanStr = rawStr.trim().toLowerCase().replace(/\s+/g, "");
 
-  // Split into tokens: keep + or - attached to the following terms
   const tokens = cleanStr.match(/[+-]?[^+-]+/g);
   if (!tokens)
     return {
       total: 0,
       log: "",
-      error: "Formato de dados inválido.",
+      error: "FORMATO DE DADOS INVÁLIDO.",
       results: [],
+      isCriticalSuccess: false,
+      isCriticalFail: false,
     };
 
-  let total = 0;
-  let log = `> EXPRESSÃO: [ ${notation.toUpperCase()} ]\n`;
+  let currentTotal = 0;
+  let log = `> EXPRESSÃO BASE: [ ${rawStr.toUpperCase()} ]\n`;
   const indResults: ParseResult["results"] = [];
+  let mainDice: { roll: number; faces: number } | undefined = undefined;
 
   for (const token of tokens) {
     const isNegative = token.startsWith("-");
@@ -52,8 +61,10 @@ export function executeRawRoll(notation: string): ParseResult {
         return {
           total: 0,
           log: "",
-          error: `Termo inválido ou limite excedido: ${token}`,
+          error: `TERMO INVÁLIDO OU LIMITE EXCEDIDO: ${token}`,
           results: [],
+          isCriticalSuccess: false,
+          isCriticalFail: false,
         };
       }
 
@@ -64,35 +75,66 @@ export function executeRawRoll(notation: string): ParseResult {
         termSum += roll;
         rolls.push(roll);
         indResults.push({ roll, faces, isNegative });
+
+        if (!mainDice) mainDice = { roll, faces };
       }
 
       const finalTermValue = isNegative ? -termSum : termSum;
-      total += finalTermValue;
+      const previousTotal = currentTotal;
+      currentTotal += finalTermValue;
 
       const signStr = isNegative ? "-" : "+";
-      log += `> DADO (${count}d${faces}): [${rolls.join(", ")}] = ${signStr}${termSum}\n`;
+      if (previousTotal === 0) {
+        log += `> DADO (${count}d${faces}): [${rolls.join(", ")}] = ${currentTotal}\n`;
+      } else {
+        log += `> DADO (${count}d${faces}): [${rolls.join(", ")}] -> ${previousTotal} ${signStr} ${termSum} = ${currentTotal}\n`;
+      }
     } else {
-      // Static modifier
       const mod = parseInt(term, 10);
       if (isNaN(mod)) {
         return {
           total: 0,
           log: "",
-          error: `Modificador inválido: ${token}`,
+          error: `MODIFICADOR INVÁLIDO: ${token}`,
           results: [],
+          isCriticalSuccess: false,
+          isCriticalFail: false,
         };
       }
 
       const finalModValue = isNegative ? -mod : mod;
-      total += finalModValue;
+      const previousTotal = currentTotal;
+      currentTotal += finalModValue;
       const signStr = isNegative ? "-" : "+";
-      log += `> MODIFICADOR: ${signStr}${mod}\n`;
+
+      if (previousTotal === 0) {
+        log += `> MODIFICADOR BASE: ${signStr}${mod}\n`;
+      } else {
+        log += `> MODIFICADOR BASE: ${previousTotal} ${signStr} ${mod} = ${currentTotal}\n`;
+      }
     }
   }
 
-  // TODO: add global modifiers when rollCategory or rollType is sended
+  for (const effect of activeEffects) {
+    if (effect.val === 0) continue;
+    const previousTotal = currentTotal;
+    currentTotal += effect.val;
+    const signStr = effect.val < 0 ? "-" : "+";
+    const absVal = Math.abs(effect.val);
+    log += `> EFEITO [${effect.description.toUpperCase()}]: ${previousTotal} ${signStr} ${absVal} = ${currentTotal}\n`;
+  }
 
-  log += `> RESULTADO FINAL: ${total}`;
+  log += `> RESULTADO FINAL: ${currentTotal}`;
 
-  return { total, log, results: indResults };
+  const isCriticalSuccess = mainDice ? mainDice.roll === mainDice.faces : false;
+  const isCriticalFail = mainDice ? mainDice.roll === 1 : false;
+
+  return {
+    total: currentTotal,
+    log,
+    results: indResults,
+    mainDice,
+    isCriticalSuccess,
+    isCriticalFail,
+  };
 }

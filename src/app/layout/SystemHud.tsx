@@ -7,6 +7,7 @@ import { CrisisOverlay } from "../../features/vitals/CrisisOverlay";
 import { VitalsPanel } from "../../features/vitals/VitalsPanel";
 import { LogisticsPanel } from "../../features/inventory/LogisticsPanel";
 import { BioPanel } from "../../features/notes/BioPanel";
+import { RollResolverModal } from "../../features/stats/RollResolverModal";
 
 export function SystemHud() {
   const tabs = [
@@ -30,6 +31,7 @@ export function SystemHud() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--theme-background)] text-[var(--theme-accent)] font-mono p-2 md:p-4 gap-4">
       <CrisisOverlay />
+      <RollResolverModal />
       <Header />
       <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)]">
         <AttributeDrawer />
@@ -38,6 +40,7 @@ export function SystemHud() {
           <div className="flex justify-center gap-2 p-2 border-b border-[var(--theme-accent)]/30 shrink-0">
             {tabs.map(({ key, label }) => (
               <button
+                key={key}
                 className={`px-4 py-2 font-bold tracking-widest text-[10px] md:text-xs uppercase transition-colors border border-transparent ${activeTab === key ? "bg-[var(--theme-accent)] text-[var(--theme-background)] border-[var(--theme-accent)]" : "text-[var(--theme-accent)] border-[var(--theme-accent)] hover:border-[var(--theme-accent)]"}`}
                 onClick={() =>
                   setActiveTab(key as "front" | "inventory" | "bio")

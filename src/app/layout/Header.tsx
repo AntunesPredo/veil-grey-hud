@@ -2,17 +2,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { Button, Input } from "../../shared/ui/Form";
-import {
-  executeRawRoll,
-  type ParseResult,
-} from "../../shared/utils/diceEngine";
-import { RetroToast } from "../../shared/ui/RetroToast";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
-import { ConfirmModal, Modal } from "../../shared/ui/Overlays";
+import { ConfirmModal } from "../../shared/ui/Overlays";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
 import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
 import { XpInjectionModal } from "../../features/progression/XpInjectionModal";
+import { useRoller } from "../../shared/hooks/useRoller";
 
 export function Header() {
   const {
@@ -245,25 +241,11 @@ export function Header() {
 
 function RawDiceRoller() {
   const [expression, setExpression] = useState("");
-  const { settings } = useCharacterStore();
-
-  const detailModal = useDisclosure();
-  const [lastResult, setLastResult] = useState<ParseResult | null>(null);
+  const { initiateRoll } = useRoller();
 
   const handleRoll = () => {
     if (!expression.trim()) return;
-    const result = executeRawRoll(expression);
-
-    if (result.error) {
-      RetroToast.error(result.error);
-    } else {
-      if (settings.showRollDetails) {
-        setLastResult(result);
-        detailModal.onOpen();
-      } else {
-        RetroToast.info(`[${expression.toUpperCase()}] = ${result.total}`);
-      }
-    }
+    initiateRoll("TERMINAL", expression, []);
     setExpression("");
   };
 
@@ -288,35 +270,6 @@ function RawDiceRoller() {
           EXEC
         </Button>
       </div>
-
-      <Modal
-        isOpen={detailModal.isOpen}
-        onClose={detailModal.onClose}
-        title="LOG DE PROCESSAMENTO"
-      >
-        <div className="flex flex-col gap-4">
-          <div className="bg-[var(--theme-background)] border border-[var(--theme-border)] p-3 overflow-x-auto custom-scrollbar">
-            <pre className="text-xs text-[var(--theme-text)] font-mono leading-relaxed whitespace-pre-wrap">
-              {lastResult?.log || "NENHUM DADO PROCESSADO."}
-            </pre>
-          </div>
-          <div className="flex justify-between items-center bg-[var(--theme-accent)]/10 border border-[var(--theme-accent)]/40 p-2">
-            <span className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
-              OUTPUT FINAL:
-            </span>
-            <span className="text-2xl font-bold text-[var(--theme-accent)] glow-text">
-              {lastResult?.total}
-            </span>
-          </div>
-          <Button
-            variant="primary"
-            onClick={detailModal.onClose}
-            className="w-full"
-          >
-            ACEITAR
-          </Button>
-        </div>
-      </Modal>
     </>
   );
 }

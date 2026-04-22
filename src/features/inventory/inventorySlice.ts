@@ -420,7 +420,7 @@ export const createInventorySlice: StateCreator<
       if (item.effects) {
         consumedTempEffects.push(
           ...item.effects
-            .filter((e) => e.mode === "TEMP")
+            .filter((e) => e.mode === "TEMP" || e.mode === "OPTIONAL")
             .map((e) => ({
               ...e,
               id: Date.now() + Math.random(),
@@ -485,7 +485,7 @@ export const createInventorySlice: StateCreator<
           if (ammo.effects) {
             consumedTempEffects.push(
               ...ammo.effects
-                .filter((e) => e.mode === "TEMP")
+                .filter((e) => e.mode === "TEMP" || e.mode === "OPTIONAL")
                 .map((e) => ({
                   ...e,
                   id: Date.now() + Math.random(),

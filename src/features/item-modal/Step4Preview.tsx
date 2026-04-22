@@ -7,7 +7,8 @@ import { CustomEffectModal } from "../stats/CustomEffectModal";
 import { EffectsList } from "../../shared/ui/EffectsList";
 import { Button } from "../../shared/ui/Form";
 import { getAllowedModes } from "../../shared/utils/effectUtils";
-import type { CustomEffect } from "../../shared/types/veil-grey";
+import type { CustomEffect, InstantAction } from "../../shared/types/veil-grey";
+import { InstantActionModal } from "../stats/InstantActionModal";
 
 interface Step4PreviewProps {
   formData: ItemFormData;
@@ -17,6 +18,7 @@ interface Step4PreviewProps {
 export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
   const mockItem = buildFinalItem(formData);
   const effectModal = useDisclosure();
+  const actionModal = useDisclosure();
   const allowedModes = getAllowedModes(formData.type);
 
   const handleSaveEffect = (newEffect: CustomEffect) => {
@@ -27,6 +29,20 @@ export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
     setFormData((p) => ({
       ...p,
       effects: p.effects.filter((e) => e.id !== id),
+    }));
+  };
+
+  const handleSaveAction = (newAction: InstantAction) => {
+    setFormData((p) => ({
+      ...p,
+      instantActions: [...p.instantActions, newAction],
+    }));
+  };
+
+  const handleRemoveAction = (id: number) => {
+    setFormData((p) => ({
+      ...p,
+      instantActions: p.instantActions.filter((a) => a.id !== id),
     }));
   };
 
@@ -83,11 +99,60 @@ export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
         </div>
       )}
 
+      {formData.hasInstantActions && (
+        <div className="flex flex-col gap-2 border-t border-dashed border-[var(--theme-border)] pt-4 w-full">
+          <div className="flex justify-between items-center bg-[var(--theme-background)]/80 p-2 border border-[var(--theme-border)]">
+            <span className="text-[10px] font-bold text-[var(--theme-success)] tracking-widest uppercase">
+              AÇÕES IMEDIATAS (CONSUMÍVEL)
+            </span>
+            <Button
+              size="sm"
+              variant="success"
+              onClick={actionModal.onOpen}
+              className="border-dashed px-2 py-1 text-[9px]"
+            >
+              + INJETAR AÇÃO
+            </Button>
+          </div>
+          <div className="max-h-[150px] overflow-y-auto custom-scrollbar flex flex-col gap-1">
+            {formData.instantActions.map((act) => (
+              <div
+                key={act.id}
+                className="flex justify-between items-center bg-[var(--theme-success)]/10 border border-[var(--theme-success)]/30 p-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold text-[var(--theme-success)]">
+                    [{act.target}]
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--theme-text)]">
+                    {act.description} ({act.val > 0 ? `+${act.val}` : act.val})
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  className="h-5 px-1.5 py-0 border-none"
+                  onClick={() => handleRemoveAction(act.id)}
+                >
+                  X
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <CustomEffectModal
         isOpen={effectModal.isOpen}
         onClose={effectModal.onClose}
         allowedModes={allowedModes}
         onSave={handleSaveEffect}
+      />
+
+      <InstantActionModal
+        isOpen={actionModal.isOpen}
+        onClose={actionModal.onClose}
+        onSave={handleSaveAction}
       />
     </motion.div>
   );

@@ -12,7 +12,7 @@ export function useActiveModifiers() {
 
   const getTargetSum = (target: string): number => {
     return activeEffects
-      .filter((e) => e.target === target)
+      .filter((e) => e.target === target && e.mode !== "OPTIONAL")
       .reduce((sum, e) => sum + e.val, 0);
   };
 
