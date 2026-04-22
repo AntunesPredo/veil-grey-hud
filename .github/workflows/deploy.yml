@@ -26,6 +26,9 @@ jobs:
         run: |
           npm install
           npm run build
+          env:
+            VITE_PLAYER_WEBHOOK: ${{ secrets.VITE_PLAYER_WEBHOOK }}
+            VITE_INVENTORY_WEBHOOK: ${{ secrets.VITE_INVENTORY_WEBHOOK }}
       
       - name: Delete old artifacts
         uses: geekyeggo/delete-artifact@v5
