@@ -1,5 +1,5 @@
-const PLAYER_WEBHOOK = import.meta.env.PLAYER_WEBHOOK;
-const INVENTORY_WEBHOOK = import.meta.env.INVENTORY_WEBHOOK;
+const PLAYER_WEBHOOK = import.meta.env.VITE_PLAYER_WEBHOOK;
+const INVENTORY_WEBHOOK = import.meta.env.VITE_INVENTORY_WEBHOOK;
 
 export async function dispatchDiscordLog(
   type: "PLAYER" | "INVENTORY",

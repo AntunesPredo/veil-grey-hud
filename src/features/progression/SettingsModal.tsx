@@ -36,7 +36,7 @@ export function SettingsModal({
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const noSave = [resetCharacterData, importCharacterData];
-
+    console.log({ noSave });
     const dataStr =
       "data:text/json;charset=utf-8," +
       encodeURIComponent(JSON.stringify(dataToSave, null, 2));

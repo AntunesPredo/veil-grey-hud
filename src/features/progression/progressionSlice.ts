@@ -89,10 +89,9 @@ export const createProgressionSlice: StateCreator<
   },
 
   confirmDistribution: () => {
-    const { creationStatus, attributes } = get();
+    const { attributes } = get();
 
     set((state) => {
-      console.log({ creationStatus, setCS: state.creationStatus });
       const isFirstSetup = state.creationStatus === "STARTED";
       const updates: Partial<CharacterStore> = {
         creationStatus: "CLOSED",
