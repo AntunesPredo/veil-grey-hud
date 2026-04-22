@@ -11,9 +11,6 @@ import type {
 
 export interface InventorySlice {
   inventory: Item[];
-  currentLoad: number;
-  maxLoad: number;
-  isOverweight: boolean;
 
   addInventoryItem: (item: Item) => void;
   updateInventoryItem: (
@@ -58,13 +55,9 @@ export const createInventorySlice: StateCreator<
   InventorySlice
 > = (set, get) => ({
   inventory: [],
-  currentLoad: 0,
-  maxLoad: 0,
-  isOverweight: false,
 
   addInventoryItem: (item) => {
     set((state) => ({ inventory: [...state.inventory, item] }));
-    get().recalculateAll();
   },
 
   updateInventoryItem: (id, field, val) => {
@@ -91,7 +84,6 @@ export const createInventorySlice: StateCreator<
       }
       return { inventory: newInventory };
     });
-    get().recalculateAll();
   },
 
   deleteInventoryItem: (id) => {
@@ -100,7 +92,6 @@ export const createInventorySlice: StateCreator<
         .map((i) => (i.parentId === id ? { ...i, parentId: null } : i))
         .filter((i) => i.id !== id),
     }));
-    get().recalculateAll();
   },
 
   reorderInventoryItem: (activeId, overId) => {
@@ -114,7 +105,6 @@ export const createInventorySlice: StateCreator<
       newInv.splice(newIdx, 0, moved);
       return { inventory: newInv };
     });
-    get().recalculateAll();
   },
 
   toggleEquipItem: (id) => {
@@ -139,7 +129,6 @@ export const createInventorySlice: StateCreator<
         }),
       };
     });
-    get().recalculateAll();
   },
 
   moveInventoryItem: (itemId, targetId, drawerName = null) => {
@@ -170,7 +159,7 @@ export const createInventorySlice: StateCreator<
               : i,
           ),
         }));
-        get().recalculateAll();
+
         return { success: true, message: "ARMAZENADO NO EQUIPAMENTO." };
       }
 
@@ -234,7 +223,7 @@ export const createInventorySlice: StateCreator<
               .concat(newItem as Item),
           }));
         }
-        get().recalculateAll();
+
         return { success: true, message: "RECARGA CONCLUÍDA." };
       }
 
@@ -283,7 +272,7 @@ export const createInventorySlice: StateCreator<
         i.id === itemId ? { ...i, parentId: targetId, drawer: drawerName } : i,
       ),
     }));
-    get().recalculateAll();
+
     return { success: true, message: "TRANSFERÊNCIA CONCLUÍDA." };
   },
 
@@ -320,7 +309,6 @@ export const createInventorySlice: StateCreator<
           .concat(newItems),
       };
     });
-    get().recalculateAll();
   },
 
   mergeInventoryItems: (targetId, sourceIds) => {
@@ -358,7 +346,6 @@ export const createInventorySlice: StateCreator<
           ),
       };
     });
-    get().recalculateAll();
   },
 
   manageDrawer: (containerId, action, oldName, newName) => {
@@ -396,7 +383,6 @@ export const createInventorySlice: StateCreator<
       inventory[containerIdx] = container;
       return { inventory };
     });
-    get().recalculateAll();
   },
 
   consumeItem: (id) => {
@@ -620,8 +606,7 @@ export const createInventorySlice: StateCreator<
       };
     });
 
-    if (result.success) get().recalculateAll();
-    return result;
+    if (result.success) return result;
   },
 
   consumeRechargeable: (id) => {
@@ -665,7 +650,6 @@ export const createInventorySlice: StateCreator<
       }
       return state;
     });
-    if (recovered > 0) get().recalculateAll();
-    return { recovered };
+    if (recovered > 0) return { recovered };
   },
 });

@@ -3,14 +3,12 @@ import type { CharacterStore } from "../character/store";
 import type {
   Attribute,
   Skill,
-  SecondaryAttribute,
   CustomEffect,
 } from "../../shared/types/veil-grey";
 import { VG_CONFIG } from "../../shared/config/system.config";
 
 export interface StatsSlice {
   attributes: Record<Attribute, number>;
-  secondaryAttributes: Record<SecondaryAttribute, number>;
   skills: Record<Skill, number>;
   customEffects: CustomEffect[];
 
@@ -41,9 +39,8 @@ export const createStatsSlice: StateCreator<
   [],
   [],
   StatsSlice
-> = (set, get) => ({
+> = (set) => ({
   attributes: generateInitialStats(),
-  secondaryAttributes: { agility: 0, mass: 0, mental_health: 0, perception: 0 },
   skills: generateInitialSkills(),
   customEffects: [],
 
@@ -57,7 +54,6 @@ export const createStatsSlice: StateCreator<
         ),
       },
     }));
-    get().recalculateAll();
   },
 
   updateSkill: (skill, value) => {
@@ -70,18 +66,15 @@ export const createStatsSlice: StateCreator<
         ),
       },
     }));
-    get().recalculateAll();
   },
 
   addCustomEffect: (effect) => {
     set((state) => ({ customEffects: [...state.customEffects, effect] }));
-    get().recalculateAll();
   },
 
   removeCustomEffect: (id) => {
     set((state) => ({
       customEffects: state.customEffects.filter((e) => e.id !== id),
     }));
-    get().recalculateAll();
   },
 });

@@ -9,6 +9,7 @@ import { useDrawerResize } from "../../shared/hooks/useDrawerResize";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 import { useRoller } from "../../shared/hooks/useRoller";
+import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export function AttributeDrawer() {
   const { drawerLeft, setDrawerState, accordions, toggleAccordion } =
@@ -17,7 +18,6 @@ export function AttributeDrawer() {
     attributes,
     updateAttribute,
     updateProgression,
-    secondaryAttributes,
     level,
     freePoints,
     creationStatus,
@@ -25,6 +25,7 @@ export function AttributeDrawer() {
     lockedSnapshot,
   } = useCharacterStore();
   const { getAttrMod } = useActiveModifiers();
+  const { secondaryAttributes } = useCharacterStats();
   const { initiateRoll } = useRoller();
   const { isOpen, isPinned, widthVW } = drawerLeft;
 
@@ -235,7 +236,7 @@ export function AttributeDrawer() {
           >
             <SecondaryStatRow
               label="AGILIDADE"
-              key="sec_agility"
+              rollKey="sec_agility"
               rollCategory={VG_CONFIG.att_secondary.agility.rollCategory}
               baseValue={secondaryAttributes.agility}
               isDistributing={isDistributing}
@@ -243,7 +244,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="MASSA CORPÓREA"
-              key="sec_mass"
+              rollKey="sec_mass"
               rollCategory={VG_CONFIG.att_secondary.mass.rollCategory}
               baseValue={secondaryAttributes.mass}
               isDistributing={isDistributing}
@@ -257,7 +258,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="PERCEPÇÃO"
-              key="sec_perception"
+              rollKey="sec_perception"
               rollCategory={VG_CONFIG.att_secondary.perception.rollCategory}
               baseValue={secondaryAttributes.perception}
               isDistributing={isDistributing}
@@ -271,7 +272,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="SAÚDE MENTAL"
-              key="sec_mental_healt"
+              rollKey="sec_mental_healt"
               rollCategory={VG_CONFIG.att_secondary.mental_health.rollCategory}
               baseValue={secondaryAttributes.mental_health}
               isDistributing={isDistributing}
@@ -299,14 +300,14 @@ export function AttributeDrawer() {
 
 function SecondaryStatRow({
   label,
-  key,
+  rollKey,
   rollCategory,
   baseValue,
   icon,
   isDistributing,
 }: {
   label: string;
-  key: string;
+  rollKey: string;
   rollCategory: string;
   baseValue: number;
   icon: React.ReactNode;
@@ -314,7 +315,7 @@ function SecondaryStatRow({
 }) {
   const { initiateRoll } = useRoller();
   const { getAttrMod } = useActiveModifiers();
-  const modVal = getAttrMod(key, rollCategory) || 0;
+  const modVal = getAttrMod(rollKey, rollCategory) || 0;
   const finalVal = baseValue + modVal;
   let valueBoxColor =
     "text-[var(--theme-text)] bg-[var(--theme-background)]/80 border-[var(--theme-border)]";
@@ -350,7 +351,7 @@ function SecondaryStatRow({
             className="px-2 py-1 text-[9px]"
             onClick={() =>
               initiateRoll(label, `${VG_CONFIG.rules.mainDice}+${baseValue}`, [
-                key,
+                rollKey,
                 rollCategory,
               ])
             }

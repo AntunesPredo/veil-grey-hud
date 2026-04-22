@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { VG_CONFIG } from "../../shared/config/system.config";
-import { buildSustenanceStages } from "../../shared/utils/mathUtils";
 
 import {
   createProgressionSlice,
@@ -20,7 +18,6 @@ export type CharacterStore = ProgressionSlice &
   VitalsSlice &
   InventorySlice &
   NotesSlice & {
-    recalculateAll: () => void;
     resetCharacterData: () => void;
     importCharacterData: (data: Partial<CharacterStore>) => void;
   };
@@ -28,7 +25,7 @@ export type CharacterStore = ProgressionSlice &
 export const useCharacterStore = create<CharacterStore>()(
   persist(
     (...a) => {
-      const [set, get] = a;
+      const [set] = a;
 
       return {
         ...createProgressionSlice(...a),
@@ -39,7 +36,6 @@ export const useCharacterStore = create<CharacterStore>()(
 
         importCharacterData: (data) => {
           set((state) => ({ ...state, ...data }));
-          get().recalculateAll();
         },
 
         resetCharacterData: () => {
@@ -51,148 +47,6 @@ export const useCharacterStore = create<CharacterStore>()(
             ...createNotesSlice(...a),
           };
           set(emptyState);
-          get().recalculateAll();
-        },
-
-        recalculateAll: () => {
-          set((state) => {
-            const rules = VG_CONFIG.rules;
-            const updates = { ...state };
-
-            updates.secondaryAttributes.agility = Math.floor(
-              (state.attributes.dexterity + state.attributes.instinct) / 2,
-            );
-            updates.secondaryAttributes.mass =
-              state.attributes.strength + state.attributes.constitution;
-            updates.secondaryAttributes.mental_health = Math.floor(
-              (state.attributes.intelligence + state.attributes.wisdom) / 2,
-            );
-
-            updates.hp.max = rules.baseHp + updates.hp.max_mod;
-            updates.insanity.limit =
-              rules.baseInsanity + updates.secondaryAttributes.mental_health;
-            updates.sustenance.limit =
-              rules.baseSustenance + updates.secondaryAttributes.mass;
-
-            const calculatedLoad = updates.inventory.reduce((total, item) => {
-              if (!item.isCarried || item.parentId !== null) return total;
-
-              const itemTotalSlots = item.slots * item.quantity;
-
-              const hasProps =
-                (item.type === "CONTAINER" || item.type === "EQUIPABLE") &&
-                item.containerProps;
-
-              if (hasProps && item.containerProps) {
-                const props = item.containerProps;
-                const inside = updates.inventory
-                  .filter((i) => i.parentId === item.id && i.isCarried)
-                  .reduce((s, i) => s + i.slots * i.quantity, 0);
-
-                let activeRed = 0;
-                if (item.type === "CONTAINER") {
-                  activeRed = Math.min(props.slotReduction, inside);
-                } else if (item.type === "EQUIPABLE") {
-                  activeRed = item.isEquipped
-                    ? Math.min(props.slotReduction, inside)
-                    : 0;
-                }
-
-                return total + itemTotalSlots + (inside - activeRed);
-              }
-
-              if (item.type === "RECHARGEABLE") {
-                const reductionPerUnit = item.perItemSlotReduction || 0;
-                const inside = updates.inventory
-                  .filter((i) => i.parentId === item.id && i.isCarried)
-                  .reduce((s, i) => {
-                    const reducedSlotPerUnit = Math.max(
-                      0,
-                      i.slots - reductionPerUnit,
-                    );
-                    return s + reducedSlotPerUnit * i.quantity;
-                  }, 0);
-
-                return total + itemTotalSlots + inside;
-              }
-
-              return total + itemTotalSlots;
-            }, 0);
-
-            updates.currentLoad = calculatedLoad;
-            updates.maxLoad = rules.baseLoad + updates.secondaryAttributes.mass;
-            updates.isOverweight = updates.currentLoad > updates.maxLoad;
-
-            updates.inventory
-              .filter((i) => i.isEquipped)
-              .forEach((item) => {
-                item.effects
-                  .filter((e) => e.mode === "FIXED")
-                  .forEach((effect) => {
-                    // TODO: Apply fixed effects by itens
-                    console.log({ effect });
-                  });
-              });
-
-            updates.hp.current = Math.max(
-              0,
-              Math.min(updates.hp.max, updates.hp.current),
-            );
-
-            const hpPorc =
-              updates.hp.max === 0
-                ? 0
-                : (updates.hp.current / updates.hp.max) * 100;
-            if (updates.hp.autoApplyInjury) {
-              updates.hp.isInjured = hpPorc <= rules.thresholdInjured;
-              updates.hp.isVeryInjured = hpPorc <= rules.thresholdCrit;
-            }
-
-            updates.sustenance.current = Math.max(
-              0,
-              Math.min(updates.sustenance.limit, updates.sustenance.current),
-            );
-            const sus = buildSustenanceStages(updates.sustenance.limit);
-            if (updates.sustenance.current <= sus[0] - 1)
-              updates.sustenance.state = "STARVING";
-            else if (updates.sustenance.current <= sus[0] - 1 + sus[1])
-              updates.sustenance.state = "HUNGRY";
-            else if (updates.sustenance.current <= sus[0] - 1 + sus[1] + sus[2])
-              updates.sustenance.state = "SATIATED";
-            else updates.sustenance.state = "FULL";
-
-            updates.insanity.current = Math.max(
-              updates.insanity.floor_mod,
-              updates.insanity.current,
-            );
-
-            if (!updates.crisis.ignore) {
-              const isDying = updates.hp.current <= 0;
-              const isCollapsing =
-                updates.insanity.current > updates.insanity.limit;
-              if (updates.crisis.state === "DEATH" && !isDying) {
-                updates.crisis.state = null;
-                updates.crisis.fails = 0;
-              } else if (updates.crisis.state === "COLLAPSE" && !isCollapsing) {
-                updates.crisis.state = null;
-                updates.crisis.fails = 0;
-              }
-
-              if (isDying && updates.crisis.state !== "DEATH") {
-                updates.crisis.state = "DEATH";
-                updates.crisis.fails = 0;
-              } else if (
-                isCollapsing &&
-                !isDying &&
-                updates.crisis.state !== "COLLAPSE"
-              ) {
-                updates.crisis.state = "COLLAPSE";
-                updates.crisis.fails = 0;
-              }
-            }
-
-            return updates;
-          });
         },
       };
     },

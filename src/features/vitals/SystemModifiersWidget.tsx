@@ -1,13 +1,20 @@
 import { CustomEffectModal } from "../stats/CustomEffectModal";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
-import type { CustomEffectTarget } from "../../shared/types/veil-grey";
 import { Button } from "../../shared/ui/Form";
 import { useCharacterStore } from "../character/store";
 import { EffectsList } from "../../shared/ui/EffectsList";
+import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
+import { motion } from "framer-motion";
 
 export function SystemModifiersWidget() {
-  const { customEffects, removeCustomEffect } = useCharacterStore();
-  const effectModal = useDisclosure();
+  const { removeCustomEffect } = useCharacterStore();
+  const { activeEffects, getTargetSum } = useActiveModifiers();
+
+  const globalModal = useDisclosure();
+  const tempModal = useDisclosure();
+
+  const globalEffects = activeEffects.filter((e) => e.mode !== "TEMP");
+  const tempEffects = activeEffects.filter((e) => e.mode === "TEMP");
 
   const renderMod = (val: number) => {
     const value = val || 0;
@@ -20,87 +27,123 @@ export function SystemModifiersWidget() {
     );
   };
 
-  const sumModsByTarget = (target: CustomEffectTarget): number => {
-    let value = 0;
-    customEffects
-      .filter((e) => e.target === target)
-      .map((e) => (value += e.val));
-    return value;
+  const handleRemove = (id: number, link: string | number | null) => {
+    if (typeof link === "string" && link.startsWith("item_")) return;
+    removeCustomEffect(id);
   };
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6 bg-[var(--theme-background)]/80 p-2 border border-[var(--theme-border)]">
         <div className="flex flex-col gap-1">
           <span className="text-[10px] text-[var(--theme-accent)] font-bold border-b border-[var(--theme-border)] mb-1 pb-1">
-            MODS DE ATRIBUTO
+            ATRIBUTOS
           </span>
           <div className="flex justify-between items-center text-[10px]">
-            <span>FÍSICO</span> {renderMod(sumModsByTarget("ATT_PHYSICAL"))}
+            <span>FÍSICO</span> {renderMod(getTargetSum("ATT_PHYSICAL"))}
           </div>
           <div className="flex justify-between items-center text-[10px]">
-            <span>MENTAL</span> {renderMod(sumModsByTarget("ATT_MENTAL"))}
+            <span>MENTAL</span> {renderMod(getTargetSum("ATT_MENTAL"))}
           </div>
           <div className="flex justify-between items-center text-[10px]">
-            <span>SOCIAL</span> {renderMod(sumModsByTarget("ATT_SOCIAL"))}
+            <span>SOCIAL</span> {renderMod(getTargetSum("ATT_SOCIAL"))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <span className="text-[10px] text-[var(--theme-accent)] font-bold border-b border-[var(--theme-border)] mb-1 pb-1">
-            MODS DE PERÍCIA
+            PERÍCIAS
           </span>
           <div className="flex justify-between items-center text-[10px]">
-            <span>FÍSICA</span> {renderMod(sumModsByTarget("SKILL_PHYSICAL"))}
+            <span>FÍSICA</span> {renderMod(getTargetSum("SKILL_PHYSICAL"))}
           </div>
           <div className="flex justify-between items-center text-[10px]">
-            <span>MENTAL</span> {renderMod(sumModsByTarget("SKILL_MENTAL"))}
+            <span>MENTAL</span> {renderMod(getTargetSum("SKILL_MENTAL"))}
           </div>
           <div className="flex justify-between items-center text-[10px]">
-            <span>SOCIAL</span> {renderMod(sumModsByTarget("SKILL_SOCIAL"))}
+            <span>SOCIAL</span> {renderMod(getTargetSum("SKILL_SOCIAL"))}
           </div>
         </div>
       </div>
 
-      <div className="flex justify-between items-center text-[10px] border-t border-dashed border-[var(--theme-border)] pt-2">
-        <span className="font-bold text-[var(--theme-text)]/50">
-          MOD DE VIDA
-        </span>
-        {renderMod(sumModsByTarget("HP"))}
-      </div>
-      <div className="flex justify-between items-center text-[10px] border-t border-dashed border-[var(--theme-border)] pt-2">
-        <span className="font-bold text-[var(--theme-text)]/50">
-          MOD DE INSANIDADE
-        </span>
-        {renderMod(sumModsByTarget("INSANITY"))}
-      </div>
-      <div className="flex justify-between items-center text-[10px] border-t border-dashed border-[var(--theme-border)] pt-2">
-        <span className="font-bold text-[var(--theme-text)]/50">
-          MOD DE MOVIMENTO
-        </span>
-        {renderMod(sumModsByTarget("MOVEMENT"))}
-      </div>
-
-      <div className="border-t border-[var(--theme-accent)]/30 pt-4 mt-2">
-        <Button
-          className="w-full border-dashed text-[var(--theme-accent)] border-[var(--theme-accent)] hover:bg-[var(--theme-accent)] hover:text-[var(--theme-background)] mb-2"
-          onClick={effectModal.onOpen}
-        >
-          [+] ADICIONAR EFEITO GLOBAL
-        </Button>
-
+      <div className="border border-[var(--theme-warning)]/50 bg-[var(--theme-warning)]/5 p-2 flex flex-col">
+        <div className="flex justify-between items-center mb-2 border-b border-[var(--theme-warning)]/30 pb-1">
+          <span className="text-[10px] font-bold text-[var(--theme-warning)] tracking-widest uppercase flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--theme-warning)] animate-ping" />
+            EFEITOS TEMPORÁRIOS
+          </span>
+          <Button
+            size="sm"
+            variant="warning"
+            onClick={tempModal.onOpen}
+            className="px-2 py-0.5 text-[9px] border-dashed"
+          >
+            + NOVO TEMP
+          </Button>
+        </div>
         <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
-          <EffectsList
-            effects={customEffects.filter((e) => e.link === null)}
-            onRemove={removeCustomEffect}
-          />
+          {tempEffects.length > 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <EffectsList
+                effects={tempEffects}
+                onRemove={(id) =>
+                  handleRemove(
+                    id,
+                    tempEffects.find((e) => e.id === id)?.link || null,
+                  )
+                }
+              />
+            </motion.div>
+          ) : (
+            <span className="text-[9px] text-[var(--theme-text)]/40 uppercase tracking-widest font-mono">
+              [ NENHUM EFEITO VOLÁTIL ATIVO ]
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="border border-[var(--theme-border)] bg-[var(--theme-background)]/80 p-2 flex flex-col">
+        <div className="flex justify-between items-center mb-2 border-b border-[var(--theme-border)] pb-1">
+          <span className="text-[10px] font-bold text-[var(--theme-text)]/70 tracking-widest uppercase">
+            MODIFICADORES PASSIVOS / EQUIPAMENTOS
+          </span>
+          <Button
+            size="sm"
+            onClick={globalModal.onOpen}
+            className="px-2 py-0.5 text-[9px] border-dashed"
+          >
+            + NOVO FIXO
+          </Button>
+        </div>
+        <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
+          {globalEffects.length > 0 ? (
+            <EffectsList
+              effects={globalEffects}
+              onRemove={(id) =>
+                handleRemove(
+                  id,
+                  globalEffects.find((e) => e.id === id)?.link || null,
+                )
+              }
+            />
+          ) : (
+            <span className="text-[9px] text-[var(--theme-text)]/40 uppercase tracking-widest font-mono">
+              [ NENHUM MODIFICADOR PASSIVO ]
+            </span>
+          )}
         </div>
       </div>
 
       <CustomEffectModal
-        isOpen={effectModal.isOpen}
-        onClose={effectModal.onClose}
-        allowedModes={["FIXED"]}
+        isOpen={globalModal.isOpen}
+        onClose={globalModal.onClose}
+        allowedModes={["FIXED", "OPTIONAL"]}
+      />
+
+      <CustomEffectModal
+        isOpen={tempModal.isOpen}
+        onClose={tempModal.onClose}
+        allowedModes={["TEMP"]}
       />
     </div>
   );
