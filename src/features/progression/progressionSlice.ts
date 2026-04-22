@@ -6,7 +6,7 @@ import type {
   SnapshotStats,
 } from "../../shared/types/veil-grey";
 import { VG_CONFIG } from "../../shared/config/system.config";
-import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
+import { buildSustenanceStages } from "../../shared/utils/mathUtils";
 
 export interface ProgressionSlice {
   name: string;
@@ -98,10 +98,14 @@ export const createProgressionSlice: StateCreator<
         settings: { ...state.settings, lockPoints: true },
         lockedSnapshot: null,
       };
-      const { sustanceStages } = useCharacterStats();
 
       if (isFirstSetup) {
         const startHp = 65 + attributes.constitution * 4;
+
+        const mass = attributes.strength + attributes.constitution;
+        const maxSustenance = VG_CONFIG.rules.baseSustenance + mass;
+        const sustanceStages = buildSustenanceStages(maxSustenance);
+
         const satiatedMax =
           sustanceStages[0] + sustanceStages[1] + sustanceStages[2] - 1;
 
