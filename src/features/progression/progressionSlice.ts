@@ -6,7 +6,7 @@ import type {
   SnapshotStats,
 } from "../../shared/types/veil-grey";
 import { VG_CONFIG } from "../../shared/config/system.config";
-import { buildSustenanceStages } from "../../shared/utils/mathUtils";
+import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export interface ProgressionSlice {
   name: string;
@@ -50,7 +50,6 @@ export const createProgressionSlice: StateCreator<
 
   updateProgression: (data) => {
     set((state) => ({ ...state, ...data }));
-    get().recalculateAll();
   },
 
   addXp: (amount, log) =>
@@ -100,15 +99,15 @@ export const createProgressionSlice: StateCreator<
         settings: { ...state.settings, lockPoints: true },
         lockedSnapshot: null,
       };
+      const { sustanceStages } = useCharacterStats();
 
       if (isFirstSetup) {
         const startHp = 65 + attributes.constitution * 4;
-        const susStages = buildSustenanceStages(state.sustenance.limit);
-        const satiatedMax = susStages[0] + susStages[1] + susStages[2] - 1;
+        const satiatedMax =
+          sustanceStages[0] + sustanceStages[1] + sustanceStages[2] - 1;
 
         updates.hp = {
           ...state.hp,
-          max: startHp,
           current: startHp,
         };
         updates.crisis = { ...state.crisis, ignore: false };
@@ -130,7 +129,6 @@ export const createProgressionSlice: StateCreator<
 
       return updates;
     });
-    get().recalculateAll();
   },
 
   confirmRoleSelection: (roleId, allocatedPoints) => {
@@ -181,6 +179,5 @@ export const createProgressionSlice: StateCreator<
 
       return updates;
     });
-    get().recalculateAll();
   },
 });

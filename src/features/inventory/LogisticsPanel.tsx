@@ -1,8 +1,8 @@
-import { useCharacterStore } from "../character/store";
+import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { InventoryManager } from "./InventoryManager";
 
 export function LogisticsPanel() {
-  const { isOverweight, currentLoad, maxLoad } = useCharacterStore();
+  const { isOverweight, currentLoad, maxLoad } = useCharacterStats();
 
   return (
     <div className="h-full relative">

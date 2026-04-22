@@ -21,7 +21,7 @@ export const createNotesSlice: StateCreator<
   [],
   [],
   NotesSlice
-> = (set, get) => ({
+> = (set) => ({
   notes: [],
   mainNote: "# Nota principal",
   isMainNoteEditing: false,
@@ -50,7 +50,6 @@ export const createNotesSlice: StateCreator<
       notes: state.notes.filter((n) => n.id !== id),
       customEffects: state.customEffects.filter((e) => e.link !== id),
     }));
-    get().recalculateAll();
   },
 
   toggleNoteEditMode: (id) => {

@@ -17,6 +17,7 @@ import { Button } from "../../shared/ui/Form";
 import { InventoryDropColumn } from "./InventoryDropColumn";
 import { ItemNodeWrapper } from "./components/ItemNodeWrapper";
 import { ItemModal } from "../item-modal/ItemModal";
+import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 const dropAnimationConfig = {
   sideEffects: defaultDropAnimationSideEffects({
@@ -34,12 +35,12 @@ export function InventoryManager({
   const {
     inventory,
     name,
-    isOverweight,
     moveInventoryItem,
     deleteInventoryItem,
     reorderInventoryItem,
     updateInventoryItem,
   } = useCharacterStore();
+  const { isOverweight } = useCharacterStats();
 
   const itemModal = useDisclosure();
   const deleteModal = useDisclosure();

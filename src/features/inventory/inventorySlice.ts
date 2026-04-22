@@ -114,6 +114,8 @@ export const createInventorySlice: StateCreator<
 
       const isEquipping = !itemToEquip.isEquipped;
 
+      const isArmor = "armorProps" in itemToEquip && !!itemToEquip.armorProps;
+
       return {
         inventory: state.inventory.map((i) => {
           if (i.id === id && i.type === "EQUIPABLE")
@@ -125,6 +127,17 @@ export const createInventorySlice: StateCreator<
               return { ...i, isEquipped: false };
             }
           }
+
+          if (
+            isEquipping &&
+            isArmor &&
+            i.id !== id &&
+            "armorProps" in i &&
+            !!i.armorProps
+          ) {
+            return { ...i, isEquipped: false };
+          }
+
           return i;
         }),
       };

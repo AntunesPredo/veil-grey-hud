@@ -31,15 +31,11 @@ export function SettingsModal({
   const isDev = import.meta.env.DEV;
 
   const handleExportJSON = () => {
-    const {
-      recalculateAll,
-      resetCharacterData,
-      importCharacterData,
-      ...dataToSave
-    } = useCharacterStore.getState();
+    const { resetCharacterData, importCharacterData, ...dataToSave } =
+      useCharacterStore.getState();
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const noSave = [recalculateAll, resetCharacterData, importCharacterData];
+    const noSave = [resetCharacterData, importCharacterData];
 
     const dataStr =
       "data:text/json;charset=utf-8," +

@@ -75,11 +75,15 @@ export function useCharacterStats() {
       : hp.isVeryInjured;
 
     let sustenanceState: SustenanceState = "FULL";
-    const sus = buildSustenanceStages(maxSustenance);
-    if (sustenance.current <= sus[0] - 1) sustenanceState = "STARVING";
-    else if (sustenance.current <= sus[0] - 1 + sus[1])
+    const sustanceStages = buildSustenanceStages(maxSustenance);
+    if (sustenance.current <= sustanceStages[0] - 1)
+      sustenanceState = "STARVING";
+    else if (sustenance.current <= sustanceStages[0] - 1 + sustanceStages[1])
       sustenanceState = "HUNGRY";
-    else if (sustenance.current <= sus[0] - 1 + sus[1] + sus[2])
+    else if (
+      sustenance.current <=
+      sustanceStages[0] - 1 + sustanceStages[1] + sustanceStages[2]
+    )
       sustenanceState = "SATIATED";
 
     return {
@@ -93,6 +97,7 @@ export function useCharacterStats() {
       isInjured,
       isVeryInjured,
       sustenanceState,
+      sustanceStages,
     };
   }, [attributes, inventory, hp, sustenance]);
 }
