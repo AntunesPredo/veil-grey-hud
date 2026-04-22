@@ -11,15 +11,19 @@ export interface VitalsSlice {
     autoApplyInjury: boolean;
   };
   sustenance: { current: number };
-  insanity: {
-    current: number;
-    volatile: boolean;
-  };
+  insanity: { current: number; volatile: boolean };
   energy: EnergyLevel;
   evilness: number;
   crisis: { state: CrisisState; fails: number; ignore: boolean };
 
-  updateHp: (amount: number) => void;
+  applyHealing: (amount: number, maxHp: number) => void;
+  applyDamage: (
+    amount: number,
+    mitigateMode: "FULL" | "HALF" | "IGNORE",
+    armorId: number | null,
+    maxHp: number,
+  ) => void;
+
   updateHpTemp: (amount: number) => void;
   updateInsanity: (current: number) => void;
   updateSustenance: (current: number) => void;
@@ -36,7 +40,7 @@ export const createVitalsSlice: StateCreator<
   [],
   [],
   VitalsSlice
-> = (set) => ({
+> = (set, get) => ({
   hp: {
     current: 65,
     temp: 0,
@@ -50,8 +54,54 @@ export const createVitalsSlice: StateCreator<
   evilness: 0,
   crisis: { state: null, fails: 0, ignore: false },
 
-  updateHp: (amount) =>
-    set((state) => ({ hp: { ...state.hp, current: amount } })),
+  applyHealing: (amount, maxHp) =>
+    set((state) => ({
+      hp: { ...state.hp, current: Math.min(maxHp, state.hp.current + amount) },
+    })),
+
+  applyDamage: (amount, mitigateMode, armorId, maxHp) => {
+    const state = get();
+    let finalDamage = amount;
+
+    if (mitigateMode !== "IGNORE" && armorId) {
+      const armor = state.inventory.find((i) => i.id === armorId);
+      if (armor && "armorProps" in armor && armor.armorProps) {
+        let rd = armor.armorProps.rd;
+        if (mitigateMode === "HALF") rd = Math.floor(rd / 2);
+
+        const effectiveBlock = Math.min(finalDamage, rd, armor.armorProps.pe);
+        finalDamage -= effectiveBlock;
+
+        state.updateInventoryItem(armorId, "armorProps", {
+          ...armor.armorProps,
+          pe: armor.armorProps.pe - effectiveBlock,
+        });
+      }
+    }
+
+    set((s) => {
+      let remainingDamage = finalDamage;
+      let newTemp = s.hp.temp;
+      let newCurrent = Math.min(s.hp.current, maxHp);
+
+      if (newTemp > 0) {
+        if (newTemp >= remainingDamage) {
+          newTemp -= remainingDamage;
+          remainingDamage = 0;
+        } else {
+          remainingDamage -= newTemp;
+          newTemp = 0;
+        }
+      }
+
+      if (remainingDamage > 0) {
+        newCurrent = Math.max(0, newCurrent - remainingDamage);
+      }
+
+      return { hp: { ...s.hp, temp: newTemp, current: newCurrent } };
+    });
+  },
+
   updateHpTemp: (amount) =>
     set((state) => ({ hp: { ...state.hp, temp: Math.max(0, amount) } })),
   updateInsanity: (current) =>

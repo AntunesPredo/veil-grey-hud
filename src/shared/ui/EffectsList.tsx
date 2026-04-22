@@ -45,7 +45,7 @@ export function EffectsList({ effects, onRemove, title }: EffectsListProps) {
             <Button
               size="sm"
               variant="danger"
-              className="border-none py-0 px-1.5 h-4 ml-2 shrink-0 text-[8px]"
+              className="border-none py-0 px-1.5 h-6 ml-2 shrink-0 text-[8px]"
               onClick={() => onRemove(eff.id)}
             >
               <svg

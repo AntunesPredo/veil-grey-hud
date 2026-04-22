@@ -8,6 +8,7 @@ import { VitalsPanel } from "../../features/vitals/VitalsPanel";
 import { LogisticsPanel } from "../../features/inventory/LogisticsPanel";
 import { BioPanel } from "../../features/notes/BioPanel";
 import { RollResolverModal } from "../../features/stats/RollResolverModal";
+import { VitalsResolutionModal } from "../../features/vitals/VitalsResolutionModal";
 
 export function SystemHud() {
   const tabs = [
@@ -32,6 +33,7 @@ export function SystemHud() {
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--theme-background)] text-[var(--theme-accent)] font-mono p-2 md:p-4 gap-4">
       <CrisisOverlay />
       <RollResolverModal />
+      <VitalsResolutionModal />
       <Header />
       <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)]">
         <AttributeDrawer />

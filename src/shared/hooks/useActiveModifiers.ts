@@ -1,14 +1,20 @@
 import { useCharacterStore } from "../../features/character/store";
+import { useCharacterStats } from "./useCharacterStats";
 import type { CustomEffect } from "../types/veil-grey";
 
 export function useActiveModifiers() {
   const { customEffects, inventory } = useCharacterStore();
+  const { systemEffects } = useCharacterStats();
 
   const equippedItemEffects: CustomEffect[] = inventory
     .filter((i) => i.isEquipped)
     .flatMap((i) => i.effects?.filter((e) => e.mode === "FIXED") || []);
 
-  const activeEffects = [...customEffects, ...equippedItemEffects];
+  const activeEffects = [
+    ...customEffects,
+    ...equippedItemEffects,
+    ...systemEffects,
+  ];
 
   const getTargetSum = (target: string): number => {
     return activeEffects

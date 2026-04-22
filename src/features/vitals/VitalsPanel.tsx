@@ -1,3 +1,4 @@
+import { HealthWidget } from "./HealthWidget";
 import { SystemModifiersWidget } from "./SystemModifiersWidget";
 
 export function VitalsPanel() {
@@ -9,7 +10,7 @@ export function VitalsPanel() {
             SISTEMA DE SUPORTE À VIDA
           </div>
           <div className="p-4 flex flex-col gap-4 flex-1">
-            {/* <HealthWidget /> */}
+            <HealthWidget />
             <div className="border-t border-dashed border-[var(--theme-accent)]/30 pt-4 grid grid-cols-2 gap-4 flex-1">
               <div className="flex flex-col justify-center">
                 {/* <SustenanceWidget /> */}

@@ -1,11 +1,17 @@
 import { useMemo } from "react";
 import { useCharacterStore } from "../../features/character/store";
 import { VG_CONFIG } from "../config/system.config";
-import { buildSustenanceStages } from "../utils/mathUtils";
-import type { SustenanceState } from "../types/veil-grey";
+import { buildInsanityStages, buildSustenanceStages } from "../utils/mathUtils";
+import type {
+  SustenanceState,
+  InsanityState,
+  CustomEffectTarget,
+  CustomEffect,
+} from "../types/veil-grey";
 
 export function useCharacterStats() {
-  const { attributes, inventory, hp, sustenance } = useCharacterStore();
+  const { attributes, inventory, hp, sustenance, energy, insanity } =
+    useCharacterStore();
 
   return useMemo(() => {
     const rules = VG_CONFIG.rules;
@@ -66,7 +72,9 @@ export function useCharacterStats() {
 
     const isOverweight = currentLoad > maxLoad;
 
-    const hpPorc = maxHp === 0 ? 0 : (hp.current / maxHp) * 100;
+    const actualHp = Math.min(hp.current, maxHp);
+    const hpPorc = maxHp === 0 ? 0 : (actualHp / maxHp) * 100;
+
     const isInjured = hp.autoApplyInjury
       ? hpPorc <= rules.thresholdInjured
       : hp.isInjured;
@@ -86,9 +94,114 @@ export function useCharacterStats() {
     )
       sustenanceState = "SATIATED";
 
+    let insanityState: InsanityState = "STABLE";
+    const insStages = buildInsanityStages(maxInsanity, insanity.volatile);
+
+    if (insanity.current >= insStages[0] + insStages[1]) {
+      insanityState = "INSANE";
+    } else if (insanity.current >= insStages[0]) {
+      insanityState = "UNSTABLE";
+    }
+
+    const systemEffects: CustomEffect[] = [];
+    let effectIdCounter = 9000;
+
+    const addSysEffect = (
+      target: CustomEffectTarget,
+      val: number,
+      desc: string,
+    ) => {
+      systemEffects.push({
+        id: effectIdCounter++,
+        link: "SYS",
+        mode: "FIXED",
+        target,
+        description: desc,
+        val,
+      });
+    };
+
+    // 1. HEALTH
+    if (isVeryInjured) {
+      const desc = "[LESÃO: MUITO MACHUCADO]";
+      addSysEffect("ATT_PHYSICAL", -4, desc);
+      addSysEffect("SKILL_PHYSICAL", -4, desc);
+      addSysEffect("ATT_MENTAL", -4, desc);
+      addSysEffect("SKILL_MENTAL", -4, desc);
+      addSysEffect("ATT_SOCIAL", -4, desc);
+      addSysEffect("SKILL_SOCIAL", -4, desc);
+    } else if (isInjured) {
+      const desc = "[LESÃO: MACHUCADO]";
+      addSysEffect("ATT_PHYSICAL", -2, desc);
+      addSysEffect("SKILL_PHYSICAL", -2, desc);
+      addSysEffect("ATT_MENTAL", -2, desc);
+      addSysEffect("SKILL_MENTAL", -2, desc);
+      addSysEffect("ATT_SOCIAL", -2, desc);
+      addSysEffect("SKILL_SOCIAL", -2, desc);
+    }
+
+    // 2. MADNESS
+    if (insanityState === "UNSTABLE") {
+      const desc = "[MENTE: INSTÁVEL]";
+      addSysEffect("instinct", -1, desc);
+      addSysEffect("intelligence", -1, desc);
+      addSysEffect("perception", -2, desc);
+    } else if (insanityState === "INSANE") {
+      const descObj = "[MENTE: INSANO]";
+      addSysEffect("instinct", -2, descObj);
+      addSysEffect("intelligence", -2, descObj);
+      addSysEffect("wisdom", -2, descObj);
+      const descGeral = "[PÂNICO GENERALIZADO]";
+      addSysEffect("ATT_PHYSICAL", -2, descGeral);
+      addSysEffect("SKILL_PHYSICAL", -2, descGeral);
+      addSysEffect("ATT_MENTAL", -2, descGeral);
+      addSysEffect("SKILL_MENTAL", -2, descGeral);
+      addSysEffect("ATT_SOCIAL", -2, descGeral);
+      addSysEffect("SKILL_SOCIAL", -2, descGeral);
+    }
+
+    // 3. SUSTENANCE
+    if (sustenanceState === "FULL") {
+      const desc = "[SISTEMA: BEM ALIMENTADO]";
+      addSysEffect("ATT_PHYSICAL", 1, desc);
+      addSysEffect("SKILL_PHYSICAL", 1, desc);
+      addSysEffect("ATT_MENTAL", 1, desc);
+      addSysEffect("SKILL_MENTAL", 1, desc);
+    } else if (sustenanceState === "HUNGRY") {
+      const desc = "[SISTEMA: FAMINTO]";
+      addSysEffect("ATT_PHYSICAL", -1, desc);
+      addSysEffect("SKILL_PHYSICAL", -1, desc);
+      addSysEffect("ATT_MENTAL", -1, desc);
+      addSysEffect("SKILL_MENTAL", -1, desc);
+    } else if (sustenanceState === "STARVING") {
+      const desc = "[SISTEMA: INANIÇÃO]";
+      addSysEffect("ATT_PHYSICAL", -2, desc);
+      addSysEffect("SKILL_PHYSICAL", -2, desc);
+      addSysEffect("ATT_MENTAL", -2, desc);
+      addSysEffect("SKILL_MENTAL", -2, desc);
+    }
+
+    // 4. ENERGY
+    if (energy === "tired") {
+      const desc = "[SISTEMA: CANSADO]";
+      addSysEffect("ATT_PHYSICAL", -2, desc);
+      addSysEffect("SKILL_PHYSICAL", -2, desc);
+      addSysEffect("ATT_SOCIAL", -1, desc);
+      addSysEffect("SKILL_SOCIAL", -1, desc);
+    } else if (energy === "exhausted") {
+      const desc = "[SISTEMA: EXAUSTO]";
+      addSysEffect("ATT_PHYSICAL", -3, desc);
+      addSysEffect("SKILL_PHYSICAL", -3, desc);
+      addSysEffect("ATT_SOCIAL", -2, desc);
+      addSysEffect("SKILL_SOCIAL", -2, desc);
+      addSysEffect("ATT_MENTAL", -2, desc);
+      addSysEffect("SKILL_MENTAL", -2, desc);
+    }
+
     return {
       secondaryAttributes,
       maxHp,
+      actualHp,
       maxInsanity,
       maxSustenance,
       maxLoad,
@@ -98,6 +211,9 @@ export function useCharacterStats() {
       isVeryInjured,
       sustenanceState,
       sustanceStages,
+      insanityState,
+      insStages,
+      systemEffects,
     };
-  }, [attributes, inventory, hp, sustenance]);
+  }, [attributes, inventory, hp, sustenance, energy, insanity]);
 }

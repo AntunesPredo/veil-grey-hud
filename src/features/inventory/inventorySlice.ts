@@ -5,6 +5,7 @@ import type {
   ConsumableItem,
   ContainerItem,
   CustomEffect,
+  EquipableItem,
   InstantAction,
   Item,
 } from "../../shared/types/veil-grey";
@@ -15,8 +16,8 @@ export interface InventorySlice {
   addInventoryItem: (item: Item) => void;
   updateInventoryItem: (
     id: number,
-    field: keyof Item,
-    val: Item[keyof Item],
+    field: keyof EquipableItem | keyof Item,
+    val: Item[keyof Item] | EquipableItem[keyof EquipableItem],
   ) => void;
   deleteInventoryItem: (id: number) => void;
   reorderInventoryItem: (activeId: number, overId: number) => void;
