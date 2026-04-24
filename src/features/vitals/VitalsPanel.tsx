@@ -1,4 +1,5 @@
 import { HealthWidget } from "./HealthWidget";
+import { MadnessGaugeWidget } from "./MadnessGaugeWidget";
 import { SystemModifiersWidget } from "./SystemModifiersWidget";
 
 export function VitalsPanel() {
@@ -21,18 +22,7 @@ export function VitalsPanel() {
             </div>
           </div>
         </div>
-
-        <div className="border border-[var(--theme-accent)]/30 bg-[var(--theme-background)]/40 flex flex-col h-full">
-          <div className="bg-[var(--theme-accent)]/10 border-b border-[var(--theme-accent)]/30 p-2 font-bold tracking-widest uppercase">
-            PSIQUE & CONDUTA
-          </div>
-          <div className="p-4 flex flex-col gap-4 flex-1">
-            {/* <InsanityWidget /> */}
-            <div className="border-t border-dashed border-[var(--theme-accent)]/30 pt-4 flex-1">
-              {/* <EvilnessWidget /> */}
-            </div>
-          </div>
-        </div>
+        <MadnessGaugeWidget />
       </div>
 
       <div className="border border-[var(--theme-accent)]/30 bg-[var(--theme-background)]/40 flex flex-col">

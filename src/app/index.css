@@ -249,3 +249,295 @@ input {
     transform: translateX(-1px);
   }
 }
+.madness-glitch {
+  animation: madness-shake 0.4s infinite alternate-reverse;
+}
+
+@keyframes madness-shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+  20% {
+    transform: translate(-1px, -1px) rotate(-1deg);
+  }
+  40% {
+    transform: translate(-1px, 1px) rotate(1deg);
+  }
+  60% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+  80% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  100% {
+    transform: translate(-1px, 1px) rotate(-1deg);
+  }
+}
+
+.madness-glitch-text {
+  position: relative;
+  display: inline-block;
+  animation: madness-shake 0.3s infinite alternate-reverse;
+}
+
+.madness-glitch-text::before,
+.madness-glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--theme-background);
+}
+
+.madness-glitch-text::before {
+  left: 2px;
+  text-shadow: -2px 0 rgba(255, 0, 0, 0.9);
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+  z-index: -1;
+}
+
+.madness-glitch-text::after {
+  left: -2px;
+  text-shadow: -2px 0 rgba(0, 255, 255, 0.9);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+  z-index: -2;
+}
+
+@keyframes glitch-anim-1 {
+  0% {
+    clip-path: inset(20% 0 80% 0);
+  }
+  20% {
+    clip-path: inset(60% 0 10% 0);
+  }
+  40% {
+    clip-path: inset(40% 0 50% 0);
+  }
+  60% {
+    clip-path: inset(80% 0 5% 0);
+  }
+  80% {
+    clip-path: inset(10% 0 70% 0);
+  }
+  100% {
+    clip-path: inset(30% 0 50% 0);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip-path: inset(10% 0 60% 0);
+  }
+  20% {
+    clip-path: inset(30% 0 20% 0);
+  }
+  40% {
+    clip-path: inset(70% 0 10% 0);
+  }
+  60% {
+    clip-path: inset(20% 0 50% 0);
+  }
+  80% {
+    clip-path: inset(90% 0 5% 0);
+  }
+  100% {
+    clip-path: inset(5% 0 80% 0);
+  }
+}
+
+@keyframes unstable-animation {
+  0%,
+  90%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    filter: none;
+  }
+
+  91% {
+    transform: translate(-3px, 2px) scale(1.05);
+    filter: contrast(2) brightness(1.5);
+  }
+
+  92% {
+    transform: translate(4px, -3px) scale(0.95);
+    filter: contrast(3) brightness(2) drop-shadow(2px 0 red)
+      drop-shadow(-2px 0 cyan);
+  }
+
+  93% {
+    transform: translate(-5px, 3px) scale(1.1);
+    filter: contrast(4) brightness(2.5) drop-shadow(3px 0 red)
+      drop-shadow(-3px 0 blue);
+  }
+
+  94% {
+    transform: translate(5px, -4px) scale(0.9);
+    filter: contrast(2) drop-shadow(-2px 2px red) drop-shadow(2px -2px cyan);
+  }
+
+  95% {
+    transform: translate(-2px, 5px) scale(1.07);
+    filter: brightness(3) drop-shadow(4px 0 red) drop-shadow(-4px 0 cyan);
+  }
+
+  96% {
+    transform: translate(3px, -5px) scale(0.93);
+    filter: contrast(5) drop-shadow(-3px -2px red) drop-shadow(3px 2px blue);
+  }
+
+  97% {
+    transform: translate(-4px, -3px) scale(1.06);
+    filter: brightness(2) drop-shadow(2px -2px red) drop-shadow(-2px 2px cyan);
+  }
+
+  98% {
+    transform: translate(2px, 4px) scale(0.97);
+    filter: contrast(3) drop-shadow(-3px 0 red) drop-shadow(3px 0 cyan);
+  }
+
+  99% {
+    transform: translate(0, 0) scale(1);
+    filter: none;
+  }
+}
+
+.animate-unstable {
+  animation: unstable-animation 2.2s infinite steps(3, end);
+}
+
+@keyframes madness-vibrate-animation {
+  0% {
+    transform: translate(1px, -1px);
+    filter: drop-shadow(1px 0 red) drop-shadow(-1px 0 cyan);
+  }
+
+  10% {
+    transform: translate(-1px, 1px);
+    filter: drop-shadow(-1px 1px red) drop-shadow(1px -1px cyan);
+  }
+
+  20% {
+    transform: translate(1px, 1px);
+    filter: drop-shadow(2px -1px red) drop-shadow(-2px 1px cyan);
+  }
+
+  30% {
+    transform: translate(-1px, -1px);
+    filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 cyan);
+  }
+
+  40% {
+    transform: translate(2px, 0px);
+    filter: drop-shadow(1px 2px red) drop-shadow(-1px -2px cyan);
+  }
+
+  50% {
+    transform: translate(-2px, 0px);
+    filter: drop-shadow(-1px -2px red) drop-shadow(1px 2px cyan);
+  }
+
+  60% {
+    transform: translate(0px, 2px);
+    filter: drop-shadow(2px 1px red) drop-shadow(-2px -1px cyan);
+  }
+
+  70% {
+    transform: translate(0px, -2px);
+    filter: drop-shadow(-2px -1px red) drop-shadow(2px 1px cyan);
+  }
+
+  80% {
+    transform: translate(1px, -2px);
+    filter: drop-shadow(3px 0 red) drop-shadow(-3px 0 cyan);
+  }
+
+  90% {
+    transform: translate(-1px, 2px);
+    filter: drop-shadow(-3px 1px red) drop-shadow(3px -1px cyan);
+  }
+
+  100% {
+    transform: translate(1px, -1px);
+    filter: drop-shadow(1px 0 red) drop-shadow(-1px 0 cyan);
+  }
+}
+
+.madness-vibrate {
+  animation: madness-vibrate-animation 0.28s infinite;
+}
+
+@keyframes madness-burst-animation {
+  0%,
+  55%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+
+  56% {
+    transform: translate(-20px, 10px) scale(1.3) rotate(-15deg) skew(5deg);
+    filter: brightness(3) contrast(5) hue-rotate(90deg) drop-shadow(8px 0 red)
+      drop-shadow(-8px 0 cyan);
+  }
+
+  58% {
+    transform: translate(25px, -18px) scale(0.6) rotate(20deg) skew(-10deg);
+    filter: hue-rotate(180deg) drop-shadow(-10px 4px lime)
+      drop-shadow(10px -4px magenta);
+  }
+
+  60% {
+    transform: translate(-30px, -12px) scale(1.5) rotate(-25deg) skew(15deg);
+    filter: brightness(4) contrast(6) hue-rotate(250deg) drop-shadow(12px 0 red)
+      drop-shadow(-12px 0 blue);
+  }
+
+  62% {
+    transform: translate(10px, 30px) scale(0.5) rotate(30deg) skew(-20deg);
+  }
+
+  64% {
+    transform: translate(-35px, 5px) scale(1.6) rotate(-35deg);
+    filter: brightness(5) hue-rotate(320deg) drop-shadow(14px 0 red)
+      drop-shadow(-14px 0 cyan);
+  }
+
+  66% {
+    transform: translate(0px, -35px) scale(0.7) rotate(40deg);
+  }
+
+  68% {
+    transform: translate(35px, 0px) scale(1.4) rotate(-45deg);
+  }
+
+  70% {
+    transform: translate(-25px, 25px) scale(0.6) rotate(50deg);
+  }
+
+  72% {
+    transform: translate(40px, -30px) scale(1.8) rotate(-60deg) skew(25deg);
+    filter: brightness(6) contrast(7) hue-rotate(140deg) drop-shadow(16px 0 red)
+      drop-shadow(-16px 0 cyan);
+  }
+
+  74% {
+    transform: translate(-15px, -40px) scale(0.4) rotate(70deg);
+  }
+
+  76% {
+    transform: translate(20px, 20px) scale(1.2) rotate(-80deg);
+  }
+
+  78% {
+    transform: translate(-5px, 5px) scale(1.05) rotate(10deg);
+    filter: brightness(2) hue-rotate(60deg) drop-shadow(4px 0 red)
+      drop-shadow(-4px 0 cyan);
+  }
+}
+
+.madness-burst {
+  animation: madness-burst-animation 1.6s infinite steps(1, end);
+}
