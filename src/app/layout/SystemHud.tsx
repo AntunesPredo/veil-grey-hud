@@ -12,7 +12,7 @@ import { VitalsResolutionModal } from "../../features/vitals/VitalsResolutionMod
 
 export function SystemHud() {
   const tabs = [
-    { key: "front", label: "SISTEMA VITAL" },
+    { key: "front", label: "MAINFRAME" },
     { key: "inventory", label: "LOGÍSTICA" },
     { key: "bio", label: "BIO & NOTAS" },
   ];

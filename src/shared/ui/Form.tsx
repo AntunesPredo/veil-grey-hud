@@ -4,7 +4,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`bg-transparent border border-[var(--theme-accent)]/50 text-[var(--theme-accent)] px-2 py-1 outline-none focus:border-[var(--theme-accent)] focus:bg-[var(--theme-accent)]/10 transition-colors placeholder-[var(--theme-accent)]/30 font-mono ${props.className || ""}`}
+      className={`bg-[var(--theme-background)] border-2 border-[var(--theme-accent)]/50 text-[var(--theme-accent)] px-3 py-2 outline-none focus:border-[var(--theme-accent)] focus:bg-[var(--theme-accent)]/10 transition-colors placeholder-[var(--theme-accent)]/30 font-mono tracking-wider rounded-none ${props.className || ""}`}
     />
   );
 }
@@ -21,9 +21,11 @@ export function Checkbox({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 font-mono text-[10px] text-[var(--theme-accent)] tracking-wider">
+    <label
+      className={`flex items-center gap-3 cursor-pointer hover:bg-[var(--theme-accent)]/5 p-1 transition-colors font-mono text-[10px] text-[var(--theme-accent)] font-bold tracking-widest uppercase ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+    >
       <div
-        className={`w-3 h-3 flex items-center justify-center border border-[var(--theme-accent)] rotate-45 transition-colors ${checked ? "bg-[var(--theme-accent)]" : "bg-black"}`}
+        className={`w-3.5 h-3.5 flex items-center justify-center border-2 border-[var(--theme-accent)] rotate-45 transition-all duration-300 ${checked ? "bg-[var(--theme-accent)] shadow-[0_0_8px_var(--theme-accent)]" : "bg-black"}`}
       >
         {checked && (
           <div className="w-1.5 h-1.5 bg-[var(--theme-background)]" />
@@ -53,18 +55,18 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "font-bold uppercase tracking-widest transition-colors disabled:opacity-10 disabled:cursor-not-allowed disabled:pointer-events-none group";
+    "font-bold uppercase tracking-widest transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none rounded-none group";
   const sizeClasses =
-    size === "sm" ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-xs";
+    size === "sm" ? "px-3 py-1.5 text-[10px]" : "px-4 py-2 text-xs";
   const variants = {
     primary:
-      "border border-[var(--theme-accent)] text-[var(--theme-accent)] hover:bg-[var(--theme-accent)] hover:text-black",
+      "border-2 border-[var(--theme-accent)] text-[var(--theme-accent)] hover:bg-[var(--theme-accent)] hover:text-black hover:shadow-[0_0_10px_var(--theme-accent)]",
     success:
-      "border bg-[var(--theme-success)]/20 border-[var(--theme-success)]/50 text-[var(--theme-success)] hover:text-[var(--theme-accent)] hover:bg-[var(--theme-success)]",
+      "border-2 border-[var(--theme-success)] bg-[var(--theme-success)]/10 text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-white hover:shadow-[0_0_10px_var(--theme-success)]",
     danger:
-      "border bg-[var(--theme-danger)]/20 border-[var(--theme-danger)]/50 text-[var(--theme-accent)] hover:bg-[var(--theme-danger)]",
+      "border-2 border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 text-[var(--theme-danger)] hover:bg-[var(--theme-danger)] hover:text-white hover:shadow-[0_0_10px_var(--theme-danger)]",
     warning:
-      "border border-[var(--theme-warning)]/50 text-[var(--theme-warning)] hover:bg-[var(--theme-warning)]/20",
+      "border-2 border-[var(--theme-warning)] bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] hover:bg-[var(--theme-warning)] hover:text-black hover:shadow-[0_0_10px_var(--theme-warning)]",
   };
 
   return (
@@ -94,15 +96,15 @@ export function NumberStepper({
   disableDecrement = false,
   size = "md",
 }: NumberStepperProps) {
-  const btnClass = size === "sm" ? "w-7 h-7 text-xs" : "w-8 h-8 text-sm";
-  const valClass = size === "sm" ? "w-8" : "w-10";
+  const btnClass = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
+  const valClass = size === "sm" ? "w-10" : "w-12";
 
   return (
-    <div className="flex items-stretch bg-[var(--theme-border)]/40 shrink-0">
+    <div className="flex items-stretch shrink-0">
       <Button
         variant="danger"
         size="sm"
-        className={`${btnClass} flex items-center justify-center border-r-0 ition-colors`}
+        className={`${btnClass} flex items-center justify-center border-r-0`}
         onClick={onDecrement}
         disabled={disableDecrement}
       >
@@ -116,16 +118,16 @@ export function NumberStepper({
         </svg>
       </Button>
       <div
-        className={`${valClass} flex flex-col items-center justify-center bg-[var(--theme-accent)]/10 border border-[var(--theme-accent)] py-1`}
+        className={`${valClass} flex flex-col items-center justify-center bg-black border-y-2 border-[var(--theme-accent)]`}
       >
-        <span className="text-sm font-bold text-[var(--theme-accent)] leading-none">
+        <span className="text-sm font-black text-[var(--theme-accent)] font-mono leading-none">
           {value}
         </span>
       </div>
       <Button
         variant="success"
         size="sm"
-        className={`${btnClass} flex items-center justify-center border-l-0 transition-colors`}
+        className={`${btnClass} flex items-center justify-center border-l-0`}
         onClick={onIncrement}
         disabled={disableIncrement}
       >

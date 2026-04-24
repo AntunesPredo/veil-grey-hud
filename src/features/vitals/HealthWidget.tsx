@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCharacterStore } from "../character/store";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
@@ -63,7 +64,13 @@ function HexCell({
   );
 }
 
-function BioClusterChassis({ children }: { children: React.ReactNode }) {
+function BioClusterChassis({
+  children,
+  chassisRef,
+}: {
+  children: React.ReactNode;
+  chassisRef: React.RefObject<HTMLDivElement | null>;
+}) {
   const { inventory } = useCharacterStore();
 
   const equippedArmor = inventory.find(
@@ -83,7 +90,10 @@ function BioClusterChassis({ children }: { children: React.ReactNode }) {
         className={`absolute -top-1 -right-1 w-3 border-t-2 border-r-2 ${belt}`}
       />
       <div className={`flex flex-col ${equippedArmor ? "" : "gap-2"}`}>
-        <div className="border-2 border-[var(--theme-border)] bg-[#030303] p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+        <div
+          ref={chassisRef}
+          className="border-2 border-[var(--theme-border)] bg-[#030303] p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]"
+        >
           <div
             className="absolute inset-0 opacity-10"
             style={{
@@ -137,7 +147,7 @@ function BioClusterChassis({ children }: { children: React.ReactNode }) {
                   Redução Máxima
                 </span>
                 <span className="text-[13px] font-black text-center font-mono text-[var(--theme-accent)] block leading-none mt-1">
-                  -{Math.ceil(equippedArmor.armorProps!.maxPe / 2)}
+                  -{equippedArmor.armorProps?.rd}
                 </span>
               </div>
             </div>
@@ -168,11 +178,30 @@ export function HealthWidget() {
   const totalHexes = Math.ceil(maxHp / 6);
   const tempHexes = Math.ceil(hp.temp / 6);
 
-  const columns = 8;
+  const [columns, setColumns] = useState(6);
+  const chassisRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chassisRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const availableWidth = entry.contentRect.width - 32;
+
+        const calculatedCols = Math.max(1, Math.floor(availableWidth / 44));
+
+        setColumns(calculatedCols);
+      }
+    });
+
+    observer.observe(chassisRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const rows = Math.ceil((totalHexes + tempHexes) / columns);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full">
       <div className="flex justify-between items-end border-b-2 border-[var(--theme-border)] pb-2">
         <div className="flex flex-col">
           <div className="flex items-baseline gap-2">
@@ -229,14 +258,14 @@ export function HealthWidget() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <BioClusterChassis>
-          <span className="text-[9px] font-mono font-bold text-[var(--theme-accent)] tracking-widest uppercase block mb-3 opacity-70">
+      <div className="flex flex-col gap-3 w-full">
+        <BioClusterChassis chassisRef={chassisRef}>
+          <span className="text-[9px] font-mono font-bold text-[var(--theme-accent)] tracking-widest uppercase block mb-3 opacity-70 w-full text-left">
             [ LEITURA_DENSIDADE_CELULAR ]
           </span>
 
           <div
-            className="grid gap-x-1 gap-y-[-10px] justify-center"
+            className="grid gap-x-1 gap-y-[-10px] justify-start w-fit"
             style={{
               gridTemplateColumns: `repeat(${columns}, 40px)`,
               gridTemplateRows: `repeat(${rows}, 36px)`,

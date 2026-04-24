@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useCharacterStore } from "../character/store";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
@@ -8,9 +8,11 @@ import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { InsanityTransactionModal } from "./InsanityTransactionModal";
+import { useCustomSvgIcons } from "../../shared/hooks/useCustomSvgIcons";
 
 export function MadnessGaugeWidget() {
   const { name, insanity } = useCharacterStore();
+  const { getSpecificIcon } = useCustomSvgIcons();
   const { maxInsanity, insanityState, insStages } = useCharacterStats();
   const [modalMode, setModalMode] = useState<"ADD" | "SUB" | null>(null);
 
@@ -19,9 +21,9 @@ export function MadnessGaugeWidget() {
     const result = executeRawRoll(expression, []);
     if (result.error) return RetroToast.error(result.error);
 
-    const logMsg = `**TESTE DE LOUCURA:** ${result.total}\n\`\`\`\n${result.log}\n\`\`\``;
+    const logMsg = `**TESTE DE INSANIDADE:** ${result.total}\n\`\`\`\n${result.log}\n\`\`\``;
     dispatchDiscordLog("PLAYER", name, logMsg);
-    RetroToast.warning(`TESTE DE LOUCURA: ${result.total}`);
+    RetroToast.warning(`TESTE DE INSANIDADE: ${result.total}`);
   };
 
   const progress = maxInsanity === 0 ? 0 : insanity.current / maxInsanity;
@@ -33,7 +35,7 @@ export function MadnessGaugeWidget() {
       label: "ESTÁVEL",
       colorClass: "text-[var(--theme-accent)]",
       strokeColor: "var(--theme-accent)",
-      desc: "SISTEMA OPERACIONAL. Leituras neurocognitivas dentro dos parâmetros aceitáveis.",
+      desc: "OPERACIONAL. Dentro dos parâmetros aceitáveis.",
       glow: "drop-shadow-[0_0_4px_var(--theme-accent)]",
       coreAnim: "",
     },
@@ -41,17 +43,17 @@ export function MadnessGaugeWidget() {
       label: "INSTÁVEL",
       colorClass: "text-[var(--theme-warning)]",
       strokeColor: "var(--theme-warning)",
-      desc: "ALERTA: Integridade psicológica comprometida. Detectada anomalia periférica.",
+      desc: "ALERTA: Integridade psicológica comprometida.",
       glow: "drop-shadow-[0_0_10px_var(--theme-warning)]",
-      coreAnim: "animate-pulse-warning",
+      coreAnim: "madness-unstable",
     },
     INSANE: {
       label: "INSANO",
       colorClass: "text-[var(--theme-danger)]",
       strokeColor: "var(--theme-danger)",
-      desc: "FALHA CRÍTICA. Contenção mental rompida. Risco imediato.",
+      desc: "FALHA. Psique completamente fraturada",
       glow: "drop-shadow-[0_0_12px_var(--theme-danger)]",
-      coreAnim: "madness-glitch",
+      coreAnim: "madness-burst",
     },
   };
 
@@ -62,18 +64,21 @@ export function MadnessGaugeWidget() {
   const pathD = `M ${coreX} 130 A 50 50 0 0 1 ${coreX} 30 L 430 30`;
   const tickPath = `M 80 18 L 430 18`;
 
-  return (
-    <div className="flex flex-col w-full relative group border-2 border-[var(--theme-border)] pb-4">
-      <div className="bg-[var(--theme-accent)] text-[var(--theme-background)] px-3 py-1.5 flex justify-between items-center">
-        <span className="font-mono font-bold font-black text-[14px] tracking-[0.2em] uppercase">
-          Medidor de Sanidade
-        </span>
-        <span className="font-mono font-bold text-[10px] opacity-70 tracking-widest">
-          SYS.OP.V1
-        </span>
-      </div>
+  const icon = useMemo(() => {
+    const iconId =
+      insanityState === "INSANE"
+        ? "eye_insane"
+        : insanityState === "UNSTABLE"
+          ? "eye_unstable"
+          : "eye_stable";
+    return getSpecificIcon(iconId);
 
-      <div className="relative w-full h-[180px] bg-[var(--theme-background)] overflow-hidden">
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insanityState]);
+
+  return (
+    <>
+      <div className="relative w-full h-[190px] bg-[var(--theme-background)] overflow-hidden">
         <svg
           viewBox="0 0 450 180"
           className="absolute inset-0 w-full h-full"
@@ -115,16 +120,36 @@ export function MadnessGaugeWidget() {
               strokeDasharray="10 5"
             />
 
-            <g className={activeConf.coreAnim}>
-              <rect
-                x={coreX - 12}
-                y={coreY - 12}
-                width="24"
-                height="24"
-                fill="none"
-                stroke={activeConf.strokeColor}
-                strokeWidth="3"
-              />
+            <g
+              className={activeConf.coreAnim}
+              style={{
+                transformOrigin: `${coreX}px ${coreY}px`,
+              }}
+            >
+              <g
+                className={insanityState === "INSANE" ? "madness-vibrate" : ""}
+              >
+                {icon ? (
+                  <g
+                    transform={`translate(${coreX - 32}, ${coreY - 32}) scale(${64 / 512})`}
+                    className={`text-[${activeConf.strokeColor}]`}
+                    stroke={activeConf.strokeColor}
+                    strokeWidth={0}
+                  >
+                    {icon.svg}
+                  </g>
+                ) : (
+                  <rect
+                    x={coreX - 12}
+                    y={coreY - 12}
+                    width="24"
+                    height="24"
+                    fill="none"
+                    stroke={activeConf.strokeColor}
+                    strokeWidth="3"
+                  />
+                )}
+              </g>
             </g>
 
             <rect
@@ -263,7 +288,6 @@ export function MadnessGaugeWidget() {
                   <Button
                     variant="success"
                     size="sm"
-                    className="h-10 w-12"
                     onClick={() => setModalMode("SUB")}
                   >
                     <svg
@@ -282,7 +306,7 @@ export function MadnessGaugeWidget() {
                 <div className="flex gap-1.5 items-center px-1">
                   <div className="w-2 h-2 bg-[var(--theme-accent)]"></div>
                   <span className="text-[var(--theme-accent)] mt-0.5">
-                    EST: {insStages[0]}
+                    EST: {insStages[0] - 1}
                   </span>
                 </div>
                 <div className="flex gap-1.5 items-center px-1 border-l-2 border-[var(--theme-border)]">
@@ -303,20 +327,16 @@ export function MadnessGaugeWidget() {
         </svg>
       </div>
 
-      <div className="flex flex-col px-4 border-[var(--theme-border)] gap-5 mt-3">
+      <div className="flex flex-col px-5 pb-5 border-[var(--theme-border)] gap-5 mt-3">
         <div
-          className="p-4 border-b-2 border-[var(--theme-border)] bg-[var(--theme-accent)]/10"
+          className={`p-4 bg-[${insanityState === "INSANE" ? "var(--theme-danger)" : "var(--theme-accent)"}]/10`}
           style={{ borderLeft: `4px solid ${activeConf.strokeColor}` }}
         >
-          <div className="flex items-start gap-2">
-            <span
-              className={`text-[12px] font-mono font-bold ${activeConf.colorClass} mt-0.5`}
-            >
-              &gt;
-            </span>
-            <span
-              className={`block text-[12px] font-mono tracking-wide leading-relaxed font-bold uppercase ${activeConf.colorClass}`}
-            >
+          <div
+            className={`flex items-start gap-2 ${insanityState === "INSANE" ? "text-withe" : activeConf.colorClass}`}
+          >
+            <span className="text-[12px] font-mono font-bold mt-0.5">&gt;</span>
+            <span className="block text-[12px] font-mono tracking-wide leading-relaxed font-bold uppercase">
               {activeConf.desc}
             </span>
           </div>
@@ -328,7 +348,7 @@ export function MadnessGaugeWidget() {
           className="py-3 text-[14px]"
           onClick={handleTestInsanity}
         >
-          [ TESTE DE SANIDADE ]
+          [ TESTE DE INSANIDADE ]
         </Button>
       </div>
 
@@ -337,6 +357,6 @@ export function MadnessGaugeWidget() {
         mode={modalMode}
         onClose={() => setModalMode(null)}
       />
-    </div>
+    </>
   );
 }

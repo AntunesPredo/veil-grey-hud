@@ -113,7 +113,14 @@ export const createVitalsSlice: StateCreator<
   updateCrisis: (data) =>
     set((state) => ({ crisis: { ...state.crisis, ...data } })),
   setManualInjury: (type, val) =>
-    set((state) => ({ hp: { ...state.hp, [type]: val } })),
+    set((state) => {
+      const update =
+        type === "isInjured"
+          ? { ...state.hp, isInjured: val, isVeryInjured: false }
+          : { ...state.hp, isVeryInjured: val, isInjured: false };
+
+      return { hp: update };
+    }),
   toggleAutoInjury: () =>
     set((state) => ({
       hp: { ...state.hp, autoApplyInjury: !state.hp.autoApplyInjury },
