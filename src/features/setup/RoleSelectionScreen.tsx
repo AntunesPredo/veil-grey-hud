@@ -23,7 +23,14 @@ const panelVariants: Variants = {
 };
 
 export function RoleSelectionScreen() {
-  const { name, confirmRoleSelection, updateProgression } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const confirmRoleSelection = useCharacterStore(
+    (state) => state.confirmRoleSelection,
+  );
+  const updateProgression = useCharacterStore(
+    (state) => state.updateProgression,
+  );
+
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [allocatedPoints, setAllocatedPoints] = useState<
     Record<string, number>

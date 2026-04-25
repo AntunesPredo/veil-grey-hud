@@ -16,8 +16,9 @@ export function XpInjectionModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const { addXp } = useCharacterStore();
-  const { xp } = useCharacterStore();
+  const xp = useCharacterStore((state) => state.xp);
+  const addXp = useCharacterStore((state) => state.addXp);
+
   const confirmModal = useDisclosure();
   const usedXpLogs = xp.usedXpLogs || [];
 

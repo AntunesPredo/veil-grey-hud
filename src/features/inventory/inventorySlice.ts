@@ -585,6 +585,12 @@ export const createInventorySlice: StateCreator<
         if (act.target === "HP_HEAL") {
           updatedHp.current = updatedHp.current + act.val;
         }
+        if (act.target === "HP_DRAIN") {
+          updatedHp.current = Math.max(0, updatedHp.current - act.val);
+        }
+        if (act.target === "HP_TEMP") {
+          updatedHp.temp += act.val;
+        }
         if (act.target === "ENERGY_RESTORE") {
           if (updatedEnergy === "exhausted") updatedEnergy = "tired";
           else if (updatedEnergy === "tired") updatedEnergy = "rested";
@@ -595,6 +601,9 @@ export const createInventorySlice: StateCreator<
         }
         if (act.target === "SUSTENANCE_ADD") {
           updatedSustenance.current = updatedSustenance.current + act.val;
+        }
+        if (act.target === "SUSTENANCE_DRAIN") {
+          updatedSustenance.current = updatedSustenance.current - act.val;
         }
         if (act.target === "EVILNESS_ADD") {
           updatedEvilness = Math.min(10, updatedEvilness + act.val);

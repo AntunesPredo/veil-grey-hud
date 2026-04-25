@@ -199,7 +199,7 @@ export function ItemRecursion({
   activeDragId,
   isEditMode,
 }: ItemRecursionProps) {
-  const { manageDrawer } = useCharacterStore();
+  const manageDrawer = useCharacterStore((state) => state.manageDrawer);
   const [creatingDrawer, setCreatingDrawer] = useState(false);
   const [editingDrawer, setEditingDrawer] = useState<string | null>(null);
   const [drawerInput, setDrawerInput] = useState("");

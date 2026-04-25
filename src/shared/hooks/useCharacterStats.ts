@@ -10,8 +10,12 @@ import type {
 } from "../types/veil-grey";
 
 export function useCharacterStats() {
-  const { attributes, inventory, hp, sustenance, energy, insanity } =
-    useCharacterStore();
+  const attributes = useCharacterStore((state) => state.attributes);
+  const inventory = useCharacterStore((state) => state.inventory);
+  const hp = useCharacterStore((state) => state.hp);
+  const sustenance = useCharacterStore((state) => state.sustenance);
+  const energy = useCharacterStore((state) => state.energy);
+  const insanity = useCharacterStore((state) => state.insanity);
 
   return useMemo(() => {
     const rules = VG_CONFIG.rules;

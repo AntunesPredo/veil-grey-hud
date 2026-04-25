@@ -11,9 +11,16 @@ import type { EquipableItem } from "../../shared/types/veil-grey";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export function VitalsResolutionModal() {
-  const { isOpen, mode, inputValue, setInputValue, closeModal } =
-    useVitalsStore();
-  const { applyDamage, applyHealing, inventory, name } = useCharacterStore();
+  const isOpen = useVitalsStore((state) => state.isOpen);
+  const mode = useVitalsStore((state) => state.mode);
+  const inputValue = useVitalsStore((state) => state.inputValue);
+  const setInputValue = useVitalsStore((state) => state.setInputValue);
+  const closeModal = useVitalsStore((state) => state.closeModal);
+  const name = useCharacterStore((state) => state.name);
+  const inventory = useCharacterStore((state) => state.inventory);
+  const applyDamage = useCharacterStore((state) => state.applyDamage);
+  const applyHealing = useCharacterStore((state) => state.applyHealing);
+
   const { maxHp } = useCharacterStats();
 
   const [step, setStep] = useState<"INPUT" | "MITIGATION">("INPUT");

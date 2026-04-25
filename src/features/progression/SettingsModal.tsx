@@ -12,15 +12,19 @@ export function SettingsModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const {
-    settings,
-    sandboxMode,
-    updateProgression,
-    importCharacterData,
-    resetCharacterData,
-    name,
-    addXp,
-  } = useCharacterStore();
+  const settings = useCharacterStore((state) => state.settings);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
+  const name = useCharacterStore((state) => state.name);
+  const updateProgression = useCharacterStore(
+    (state) => state.updateProgression,
+  );
+  const resetCharacterData = useCharacterStore(
+    (state) => state.resetCharacterData,
+  );
+  const importCharacterData = useCharacterStore(
+    (state) => state.importCharacterData,
+  );
+  const addXp = useCharacterStore((state) => state.addXp);
 
   const [xpInput, setXpInput] = useState("");
   const wipeModal = useDisclosure();

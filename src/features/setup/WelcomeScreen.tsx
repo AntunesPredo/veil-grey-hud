@@ -22,7 +22,9 @@ const fadeVariants: Variants = {
 };
 
 export function WelcomeScreen() {
-  const { updateProgression } = useCharacterStore();
+  const updateProgression = useCharacterStore(
+    (state) => state.updateProgression,
+  );
   const [localName, setLocalName] = useState("");
 
   const [step, setStep] = useState<"presentation" | "identification">(

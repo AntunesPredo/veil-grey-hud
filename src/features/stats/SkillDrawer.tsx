@@ -24,17 +24,19 @@ const getAttrShort = (attrId: string) => {
 export function SkillDrawer() {
   const { drawerRight, setDrawerState, accordions, toggleAccordion } =
     useUIStore();
-  const {
-    skills,
-    attributes,
-    updateSkill,
-    updateProgression,
-    level,
-    freePoints,
-    creationStatus,
-    sandboxMode,
-    lockedSnapshot,
-  } = useCharacterStore();
+
+  const skills = useCharacterStore((state) => state.skills);
+  const attributes = useCharacterStore((state) => state.attributes);
+  const level = useCharacterStore((state) => state.level);
+  const freePoints = useCharacterStore((state) => state.freePoints);
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
+  const lockedSnapshot = useCharacterStore((state) => state.lockedSnapshot);
+  const updateSkill = useCharacterStore((state) => state.updateSkill);
+  const updateProgression = useCharacterStore(
+    (state) => state.updateProgression,
+  );
+
   const { initiateRoll } = useRoller();
   const { getSkillMod } = useActiveModifiers();
   const { isOpen, isPinned, widthVW } = drawerRight;

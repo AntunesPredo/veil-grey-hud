@@ -18,7 +18,9 @@ export function InsanityTransactionModal({
   mode,
   onClose,
 }: InsanityTransactionModalProps) {
-  const { name, insanity, updateInsanity } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const insanity = useCharacterStore((state) => state.insanity);
+  const updateInsanity = useCharacterStore((state) => state.updateInsanity);
   const [inputValue, setInputValue] = useState("");
   const [step, setStep] = useState<"INPUT" | "CONFIRM">("INPUT");
   const [rolledAmount, setRolledAmount] = useState(0);

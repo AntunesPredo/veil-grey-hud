@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
@@ -32,14 +32,21 @@ export function InventoryManager({
   currentLoad?: number;
   maxLoad?: number;
 }) {
-  const {
-    inventory,
-    name,
-    moveInventoryItem,
-    deleteInventoryItem,
-    reorderInventoryItem,
-    updateInventoryItem,
-  } = useCharacterStore();
+  const inventory = useCharacterStore((state) => state.inventory);
+  const name = useCharacterStore((state) => state.name);
+  const moveInventoryItem = useCharacterStore(
+    (state) => state.moveInventoryItem,
+  );
+  const deleteInventoryItem = useCharacterStore(
+    (state) => state.deleteInventoryItem,
+  );
+  const reorderInventoryItem = useCharacterStore(
+    (state) => state.reorderInventoryItem,
+  );
+  const updateInventoryItem = useCharacterStore(
+    (state) => state.updateInventoryItem,
+  );
+
   const { isOverweight } = useCharacterStats();
 
   const itemModal = useDisclosure();
@@ -122,12 +129,26 @@ export function InventoryManager({
   };
 
   const activeDragItem = inventory.find((i) => i.id === activeDragId);
-  const rootItems = inventory.filter((i) => i.parentId === null);
-  const carriedItems = rootItems.filter((i) => i.isCarried);
-  const baseItems = rootItems.filter((i) => !i.isCarried);
-  const baseWeight = inventory
-    .filter((i) => !i.isCarried)
-    .reduce((acc, curr) => acc + curr.slots, 0);
+
+  const rootItems = useMemo(
+    () => inventory.filter((i) => i.parentId === null),
+    [inventory],
+  );
+  const carriedItems = useMemo(
+    () => rootItems.filter((i) => i.isCarried),
+    [rootItems],
+  );
+  const baseItems = useMemo(
+    () => rootItems.filter((i) => !i.isCarried),
+    [rootItems],
+  );
+  const baseWeight = useMemo(
+    () =>
+      inventory
+        .filter((i) => !i.isCarried)
+        .reduce((acc, curr) => acc + curr.slots, 0),
+    [inventory],
+  );
 
   return (
     <>

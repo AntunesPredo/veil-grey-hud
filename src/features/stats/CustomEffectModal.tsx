@@ -24,7 +24,7 @@ export function CustomEffectModal({
   allowedModes = ["FIXED", "OPTIONAL", "TEMP"],
   onSave,
 }: CustomEffectModalProps) {
-  const { addCustomEffect } = useCharacterStore();
+  const addCustomEffect = useCharacterStore((state) => state.addCustomEffect);
   const [desc, setDesc] = useState("");
   const [val, setVal] = useState(0);
   const [category, setCategory] = useState<string>("");

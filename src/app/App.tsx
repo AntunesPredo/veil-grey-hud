@@ -80,7 +80,7 @@ const screenVariants: Variants = {
 
 export default function App() {
   const { powerState, setPowerState, theme } = useSystemStore();
-  const { creationStatus } = useCharacterStore();
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
 
   const cssVars = {
     "--theme-background": theme.background,

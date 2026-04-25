@@ -17,7 +17,7 @@ export function RollResolverModal() {
     result,
     close,
   } = useRollStore();
-  const { name } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
 
   if (step === ("STANDBY" as string) || !payload) return null;
 

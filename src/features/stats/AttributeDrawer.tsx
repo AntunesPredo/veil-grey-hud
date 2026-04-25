@@ -14,16 +14,17 @@ import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 export function AttributeDrawer() {
   const { drawerLeft, setDrawerState, accordions, toggleAccordion } =
     useUIStore();
-  const {
-    attributes,
-    updateAttribute,
-    updateProgression,
-    level,
-    freePoints,
-    creationStatus,
-    sandboxMode,
-    lockedSnapshot,
-  } = useCharacterStore();
+  const attributes = useCharacterStore((state) => state.attributes);
+  const level = useCharacterStore((state) => state.level);
+  const freePoints = useCharacterStore((state) => state.freePoints);
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
+  const lockedSnapshot = useCharacterStore((state) => state.lockedSnapshot);
+  const updateAttribute = useCharacterStore((state) => state.updateAttribute);
+  const updateProgression = useCharacterStore(
+    (state) => state.updateProgression,
+  );
+
   const { getAttrMod } = useActiveModifiers();
   const { secondaryAttributes } = useCharacterStats();
   const { initiateRoll } = useRoller();

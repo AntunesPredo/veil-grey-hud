@@ -73,6 +73,7 @@ export interface Role {
 export type InstantActionTarget =
   | "HP_HEAL"
   | "HP_DRAIN"
+  | "HP_TEMP"
   | "ENERGY_RESTORE"
   | "ENERGY_DRAIN"
   | "SUSTENANCE_ADD"

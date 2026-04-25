@@ -17,7 +17,9 @@ export function MergeStackModal({
   isOpen,
   onClose,
 }: MergeStackModalProps) {
-  const { mergeInventoryItems } = useCharacterStore();
+  const mergeInventoryItems = useCharacterStore(
+    (state) => state.mergeInventoryItems,
+  );
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const compatibleItems = useMemo(() => {

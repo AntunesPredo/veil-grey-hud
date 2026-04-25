@@ -7,7 +7,9 @@ import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 import { motion } from "framer-motion";
 
 export function SystemModifiersWidget() {
-  const { removeCustomEffect } = useCharacterStore();
+  const removeCustomEffect = useCharacterStore(
+    (state) => state.removeCustomEffect,
+  );
   const { activeEffects, getTargetSum } = useActiveModifiers();
 
   const globalModal = useDisclosure();

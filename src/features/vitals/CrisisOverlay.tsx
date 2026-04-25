@@ -8,8 +8,12 @@ import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export function CrisisOverlay() {
-  const { name, crisis, applyHealing, updateCrisis, updateInsanity } =
-    useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const crisis = useCharacterStore((state) => state.crisis);
+  const applyHealing = useCharacterStore((state) => state.applyHealing);
+  const updateCrisis = useCharacterStore((state) => state.updateCrisis);
+  const updateInsanity = useCharacterStore((state) => state.updateInsanity);
+
   const { secondaryAttributes, maxHp } = useCharacterStats();
 
   if (!crisis.state || crisis.ignore) return null;

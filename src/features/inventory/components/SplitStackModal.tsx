@@ -15,7 +15,9 @@ export function SplitStackModal({
   isOpen,
   onClose,
 }: SplitStackModalProps) {
-  const { splitInventoryItem } = useCharacterStore();
+  const splitInventoryItem = useCharacterStore(
+    (state) => state.splitInventoryItem,
+  );
   const [mode, setMode] = useState<"SINGLE" | "TOTAL">("SINGLE");
   const [divisor, setDivisor] = useState(1);
 

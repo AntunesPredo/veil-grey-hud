@@ -67,10 +67,13 @@ export function InstantActionModal({
             className="w-full bg-[var(--theme-background)] text-[var(--theme-accent)] border border-[var(--theme-border)] p-1.5 outline-none text-xs font-mono uppercase"
           >
             <option value="">-- SELECIONE O ALVO --</option>
-            <option value="HP_HEAL">PONTOS DE VIDA (+ CURA / - DANO)</option>
+            <option value="HP_HEAL">PONTOS DE VIDA (+ CURA)</option>
+            <option value="HP_DRAIN">PONTOS DE VIDA (- DANO)</option>
+            <option value="HP_TEMP">VIDA TEMPORÁRIA (+ TEMP HP)</option>
             <option value="ENERGY_RESTORE">ENERGIA (RESTAURAR NÍVEL)</option>
             <option value="ENERGY_DRAIN">ENERGIA (DRENAR NÍVEL)</option>
-            <option value="SUSTENANCE_ADD">ALIMENTAÇÃO (+/- SACIEDADE)</option>
+            <option value="SUSTENANCE_ADD">ALIMENTAÇÃO (+ SACIEDADE)</option>
+            <option value="SUSTENANCE_DRAIN">ALIMENTAÇÃO (- SACIEDADE)</option>
             <option value="EVILNESS_ADD">LOUCURA (+ SUCUMBIR)</option>
             <option value="EVILNESS_SUB">LOUCURA (- RECENTRALIZAR)</option>
             <option value="EVILNESS_ADD">MALDADE (+ CORRUPÇÃO)</option>

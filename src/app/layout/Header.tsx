@@ -11,17 +11,17 @@ import { XpInjectionModal } from "../../features/progression/XpInjectionModal";
 import { useRoller } from "../../shared/hooks/useRoller";
 
 export function Header() {
-  const {
-    name,
-    role,
-    level,
-    xp,
-    creationStatus,
-    freePoints,
-    triggerLevelUp,
-    confirmDistribution,
-    sandboxMode,
-  } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const role = useCharacterStore((state) => state.role);
+  const level = useCharacterStore((state) => state.level);
+  const xp = useCharacterStore((state) => state.xp);
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const freePoints = useCharacterStore((state) => state.freePoints);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
+  const triggerLevelUp = useCharacterStore((state) => state.triggerLevelUp);
+  const confirmDistribution = useCharacterStore(
+    (state) => state.confirmDistribution,
+  );
 
   const settingsModal = useDisclosure();
   const confirmModal = useDisclosure();

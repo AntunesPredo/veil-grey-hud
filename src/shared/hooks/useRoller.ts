@@ -7,7 +7,9 @@ import { dispatchDiscordLog } from "../utils/discordWebhook";
 import type { CustomEffect } from "../types/veil-grey";
 
 export function useRoller() {
-  const { settings, name } = useCharacterStore();
+  const settings = useCharacterStore((state) => state.settings);
+  const name = useCharacterStore((state) => state.name);
+
   const { activeEffects } = useActiveModifiers();
   const rollStore = useRollStore();
 

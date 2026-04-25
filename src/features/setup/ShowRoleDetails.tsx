@@ -165,23 +165,23 @@ export function ShowRoleDetails({
                   key={skillKey}
                   className="flex flex-col bg-[var(--theme-background)] border border-[var(--theme-border)] hover:border-[var(--theme-accent)]/40 transition-colors p-3 gap-3"
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-[var(--theme-background)] uppercase tracking-wider">
+                  <div className="flex flex-col justify-between items-start gap-2">
+                    <div className="flex w-full items-center flex-row justify-between">
+                      <span className="text-xl font-bold text-[var(--theme-accent)] uppercase tracking-wider">
                         {skillLabel}
                       </span>
-                      <span className="text-[11px] text-[var(--theme-text)] line-clamp-7 mt-1">
-                        {skillDesc}
-                      </span>
+                      <NumberStepper
+                        size="md"
+                        value={totalVal}
+                        onDecrement={() => handlePointAllocation(skillKey, -1)}
+                        onIncrement={() => handlePointAllocation(skillKey, 1)}
+                        disableDecrement={addedVal === 0}
+                        disableIncrement={pointsRemaining === 0}
+                      />
                     </div>
-                    <NumberStepper
-                      size="md"
-                      value={totalVal}
-                      onDecrement={() => handlePointAllocation(skillKey, -1)}
-                      onIncrement={() => handlePointAllocation(skillKey, 1)}
-                      disableDecrement={addedVal === 0}
-                      disableIncrement={pointsRemaining === 0}
-                    />
+                    <span className="text-[11px] text-[var(--theme-text)] line-clamp-7 mt-1">
+                      {skillDesc}
+                    </span>
                   </div>
                   <div className="flex gap-1 w-full h-1.5 mt-auto">
                     {Array.from(

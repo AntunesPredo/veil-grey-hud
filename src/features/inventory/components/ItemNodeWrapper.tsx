@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useCharacterStore } from "../../character/store";
@@ -38,25 +38,32 @@ export const ItemNodeWrapper = React.memo(
     isOverlay = false,
     isNestedAmmo = false,
   }: ItemNodeWrapperProps) => {
-    const {
-      updateInventoryItem,
-      toggleEquipItem,
-      consumeItem,
-      consumeRechargeable,
-      name,
-      skills,
-    } = useCharacterStore();
+    const name = useCharacterStore((state) => state.name);
+    const skills = useCharacterStore((state) => state.skills);
+    const updateInventoryItem = useCharacterStore(
+      (state) => state.updateInventoryItem,
+    );
+    const toggleEquipItem = useCharacterStore((state) => state.toggleEquipItem);
+    const consumeItem = useCharacterStore((state) => state.consumeItem);
+    const consumeRechargeable = useCharacterStore(
+      (state) => state.consumeRechargeable,
+    );
+
     const { getSkillById } = useSystemData();
     const [isDescOpen, setIsDescOpen] = useState(false);
 
-    const childrenItems = allInventory.filter((i) => i.parentId === item.id);
+    const childrenItems = useMemo(
+      () => allInventory.filter((i) => i.parentId === item.id),
+      [allInventory, item.id],
+    );
+
     const isAbleToContain =
       (item.type === "CONTAINER" || item.type === "EQUIPABLE") &&
       !!item.containerProps;
     const isMicroContainer =
       item.type === "RECHARGEABLE" ||
       item.type === "KIT" ||
-      (item.type === "ACTIVE" && item.requiresAmmo);
+      (item.type === "ACTIVE" && "requiresAmmo" in item && item.requiresAmmo);
     const canEquip = item.parentId === null && item.isCarried;
     const isEquippableType =
       item.type === "EQUIPABLE" || item.type === "ACTIVE";
@@ -71,7 +78,7 @@ export const ItemNodeWrapper = React.memo(
           : 0;
 
     let hasAmmo = true;
-    if (item.type === "ACTIVE" && item.requiresAmmo) {
+    if (item.type === "ACTIVE" && "requiresAmmo" in item && item.requiresAmmo) {
       const ammos = childrenItems.filter(
         (i) => i.type === "CONSUMABLE" && i.uses > 0,
       );
@@ -88,38 +95,41 @@ export const ItemNodeWrapper = React.memo(
     }
     const disableUse =
       item.type === "ACTIVE" &&
-      (!item.isEquipped || (item.requiresAmmo && !hasAmmo));
+      (!item.isEquipped ||
+        ("requiresAmmo" in item && item.requiresAmmo && !hasAmmo));
+    const inheritedEffects = useMemo(() => {
+      let effects: CustomEffect[] = [];
+      if (
+        item.type === "RECHARGEABLE" ||
+        item.type === "KIT" ||
+        (item.type === "ACTIVE" && "requiresAmmo" in item && item.requiresAmmo)
+      ) {
+        const ammos = childrenItems.filter((i) => i.type === "CONSUMABLE");
+        const effMap = new Map();
 
-    let inheritedEffects: CustomEffect[] = [];
-    if (
-      item.type === "RECHARGEABLE" ||
-      item.type === "KIT" ||
-      (item.type === "ACTIVE" && item.requiresAmmo)
-    ) {
-      const ammos = childrenItems.filter((i) => i.type === "CONSUMABLE");
-      const effMap = new Map();
-
-      ammos.forEach((ammo) => {
-        ammo.effects?.forEach((e) => {
-          effMap.set(e.description + e.target + e.val, e);
-        });
-      });
-
-      const rechargeables = childrenItems.filter(
-        (i) => i.type === "RECHARGEABLE",
-      );
-      rechargeables.forEach((mag) => {
-        allInventory
-          .filter((i) => i.parentId === mag.id && i.type === "CONSUMABLE")
-          .forEach((ammo) => {
-            ammo.effects?.forEach((e) => {
-              effMap.set(e.description + e.target + e.val, e);
-            });
+        ammos.forEach((ammo) => {
+          ammo.effects?.forEach((e) => {
+            effMap.set(e.description + e.target + e.val, e);
           });
-      });
+        });
 
-      inheritedEffects = Array.from(effMap.values());
-    }
+        const rechargeables = childrenItems.filter(
+          (i) => i.type === "RECHARGEABLE",
+        );
+        rechargeables.forEach((mag) => {
+          allInventory
+            .filter((i) => i.parentId === mag.id && i.type === "CONSUMABLE")
+            .forEach((ammo) => {
+              ammo.effects?.forEach((e) => {
+                effMap.set(e.description + e.target + e.val, e);
+              });
+            });
+        });
+
+        effects = Array.from(effMap.values());
+        return effects;
+      }
+    }, [item, childrenItems, allInventory]);
 
     const {
       attributes,

@@ -3,7 +3,9 @@ import { useCharacterStats } from "./useCharacterStats";
 import type { CustomEffect } from "../types/veil-grey";
 
 export function useActiveModifiers() {
-  const { customEffects, inventory } = useCharacterStore();
+  const customEffects = useCharacterStore((state) => state.customEffects);
+  const inventory = useCharacterStore((state) => state.inventory);
+
   const { systemEffects } = useCharacterStats();
 
   const equippedItemEffects: CustomEffect[] = inventory

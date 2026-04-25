@@ -11,7 +11,8 @@ import { InsanityTransactionModal } from "./InsanityTransactionModal";
 import { useCustomSvgIcons } from "../../shared/hooks/useCustomSvgIcons";
 
 export function MadnessGaugeWidget() {
-  const { name, insanity } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const insanity = useCharacterStore((state) => state.insanity);
   const { getSpecificIcon } = useCustomSvgIcons();
   const { maxInsanity, insanityState, insStages } = useCharacterStats();
   const [modalMode, setModalMode] = useState<"ADD" | "SUB" | null>(null);

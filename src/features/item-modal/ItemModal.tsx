@@ -90,7 +90,11 @@ interface ItemModalProps {
 }
 
 export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
-  const { addInventoryItem, updateInventoryItem } = useCharacterStore();
+  const addInventoryItem = useCharacterStore((state) => state.addInventoryItem);
+  const updateInventoryItem = useCharacterStore(
+    (state) => state.updateInventoryItem,
+  );
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<ItemFormData>(defaultFormData);
 

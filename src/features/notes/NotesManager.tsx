@@ -26,20 +26,24 @@ const crtVariants: Variants = {
 };
 
 export function NotesManager() {
-  const {
-    notes,
-    mainNote,
-    isMainNoteEditing,
-    mainNoteHeight,
-    updateMainNote,
-    addNote,
-    updateNote,
-    deleteNote,
-    toggleNoteEditMode,
-    customEffects,
-    removeCustomEffect,
-    updateNoteHeight,
-  } = useCharacterStore();
+  const notes = useCharacterStore((state) => state.notes);
+  const mainNote = useCharacterStore((state) => state.mainNote);
+  const isMainNoteEditing = useCharacterStore(
+    (state) => state.isMainNoteEditing,
+  );
+  const mainNoteHeight = useCharacterStore((state) => state.mainNoteHeight);
+  const customEffects = useCharacterStore((state) => state.customEffects);
+  const updateMainNote = useCharacterStore((state) => state.updateMainNote);
+  const addNote = useCharacterStore((state) => state.addNote);
+  const updateNote = useCharacterStore((state) => state.updateNote);
+  const deleteNote = useCharacterStore((state) => state.deleteNote);
+  const toggleNoteEditMode = useCharacterStore(
+    (state) => state.toggleNoteEditMode,
+  );
+  const removeCustomEffect = useCharacterStore(
+    (state) => state.removeCustomEffect,
+  );
+  const updateNoteHeight = useCharacterStore((state) => state.updateNoteHeight);
 
   const effectModal = useDisclosure();
   const deleteModal = useDisclosure();

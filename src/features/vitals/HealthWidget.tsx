@@ -71,7 +71,7 @@ function BioClusterChassis({
   children: React.ReactNode;
   chassisRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const { inventory } = useCharacterStore();
+  const inventory = useCharacterStore((state) => state.inventory);
 
   const equippedArmor = inventory.find(
     (i) => i.isEquipped && (i as EquipableItem).armorProps,
@@ -165,7 +165,10 @@ function BioClusterChassis({
 }
 
 export function HealthWidget() {
-  const { hp, toggleAutoInjury, setManualInjury } = useCharacterStore();
+  const hp = useCharacterStore((state) => state.hp);
+  const toggleAutoInjury = useCharacterStore((state) => state.toggleAutoInjury);
+  const setManualInjury = useCharacterStore((state) => state.setManualInjury);
+
   const { maxHp, isInjured, isVeryInjured } = useCharacterStats();
   const { openModal } = useVitalsStore();
 
@@ -207,14 +210,22 @@ export function HealthWidget() {
           <div className="flex items-baseline gap-2">
             <span
               className="text-7xl font-black font-mono tracking-tighter leading-none"
-              style={{ color: hpColor, textShadow: `0 0 15px ${hpColor}40` }}
+              style={{
+                color: hp.temp ? "var(--theme-success)" : hpColor,
+                textShadow: `0 0 15px ${hpColor}40`,
+              }}
             >
-              {String(hp.current).padStart(2, "0")}
+              {String(hp.current + hp.temp).padStart(2, "0")}
             </span>
             <div className="flex gap-2">
               <span className="text-xl text-[var(--theme-accent)]/60 font-mono font-bold leading-none">
                 / {String(maxHp).padStart(2, "0")}
               </span>
+              {hp.temp ? (
+                <span className="text-xl text-[var(--theme-success)]/60 font-bold leading-none">
+                  + {hp.temp.toString().padStart(2, "0")}
+                </span>
+              ) : null}
               <span className="text-[9px] font-mono tracking-widest text-[var(--theme-border)] mt-1">
                 MAX_CAPACITY
               </span>

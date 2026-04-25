@@ -16,7 +16,8 @@ export function RepairActiveModal({
   isOpen,
   onClose,
 }: RepairActiveModalProps) {
-  const { repairActiveItem, name } = useCharacterStore();
+  const name = useCharacterStore((state) => state.name);
+  const repairActiveItem = useCharacterStore((state) => state.repairActiveItem);
 
   if (!item || item.type !== "ACTIVE") return null;
 

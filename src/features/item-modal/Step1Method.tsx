@@ -13,7 +13,7 @@ interface Step1MethodProps {
 
 export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
   const [hash, setHash] = useState("");
-  const { addInventoryItem } = useCharacterStore();
+  const addInventoryItem = useCharacterStore((state) => state.addInventoryItem);
 
   const handleImport = () => {
     if (!hash.trim()) return;
