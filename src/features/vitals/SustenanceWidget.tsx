@@ -1,15 +1,12 @@
-import { Button, Input } from "../../shared/ui/Form";
-import { useCharacterStore } from "../character/store";
-
 export function SustenanceWidget() {
-  const { sustenance, currentLoad, maxLoad, updateSustenance } =
-    useCharacterStore();
-  const susPorc =
-    sustenance.limit === 0 ? 0 : (sustenance.current / sustenance.limit) * 100;
+  // const { sustenance, currentLoad, maxLoad, updateSustenance } =
+  //   useCharacterStore();
+  // const susPorc =
+  //   sustenance.limit === 0 ? 0 : (sustenance.current / sustenance.limit) * 100;
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-center flex-wrap gap-2">
+      {/* <div className="flex justify-between items-center flex-wrap gap-2">
         <div className="flex flex-col">
           <span className="font-bold text-[var(--theme-warning)]">
             ALIMENTAÇÃO (MÁX: {sustenance.limit})
@@ -85,7 +82,7 @@ export function SustenanceWidget() {
         >
           CHEIO
         </span>
-      </div>
+      </div> */}
     </div>
   );
 }
