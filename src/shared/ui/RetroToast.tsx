@@ -47,6 +47,5 @@ export const RetroToast = {
         primary: "var(--theme-warning)",
         secondary: "var(--theme-backgroud)",
       },
-      duration: 500000,
     }),
 };

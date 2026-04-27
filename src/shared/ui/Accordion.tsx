@@ -14,7 +14,7 @@ export function Accordion({
   onToggle,
 }: AccordionProps) {
   return (
-    <div className="flex flex-col bg-[var(--theme-background)] border border-[var(--theme-border)] mb-1">
+    <div className="flex flex-col bg-[var(--theme-background)] border border-[var(--theme-border)]">
       <button
         onClick={() => onToggle()}
         className={`flex justify-between items-center p-2 font-bold tracking-widest text-[12px] uppercase transition-colors hover:bg-[var(--theme-accent)]/40 hover:text-[var(--theme-accent)] ${isOpen ? "bg-[var(--theme-accent)] text-[var(--theme-background)]" : "bg-[var(--theme-background)] text-[var(--theme-accent)]"}`}

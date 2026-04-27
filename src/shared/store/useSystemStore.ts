@@ -27,7 +27,7 @@ const defaultTheme: ThemeColors = {
   success: "#099709",
   background: "#0a0a0a",
   border: "#2c2c2c",
-  text: "#FFF000",
+  text: "#2dc9ee",
 };
 
 export const useSystemStore = create<SystemState>()(

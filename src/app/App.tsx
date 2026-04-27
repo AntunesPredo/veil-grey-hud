@@ -7,6 +7,7 @@ import { useCharacterStore } from "../features/character/store";
 import { WelcomeScreen } from "../features/setup/WelcomeScreen";
 import { RoleSelectionScreen } from "../features/setup/RoleSelectionScreen";
 import { Booting } from "./layout/Booting";
+import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
 
 const inDevelopment = import.meta.env.VITE_IN_DEVELOPMENT === "true";
 
@@ -177,8 +178,12 @@ export default function App() {
               >
                 {creationStatus === "NOT_STARTED" && <WelcomeScreen />}
                 {creationStatus === "PRE_STARTED" && <RoleSelectionScreen />}
+                {creationStatus === "FLAWS_SELECTION" && (
+                  <DisadvantagesScreen />
+                )}
                 {creationStatus !== "NOT_STARTED" &&
-                  creationStatus !== "PRE_STARTED" && <SystemHud />}
+                  creationStatus !== "PRE_STARTED" &&
+                  creationStatus !== "FLAWS_SELECTION" && <SystemHud />}
               </motion.div>
             )}
           </AnimatePresence>

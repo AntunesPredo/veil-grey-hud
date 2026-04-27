@@ -1,3 +1,4 @@
+import { DisadvantagesWidget } from "./DisadvantagesWidget";
 import { HealthWidget } from "./HealthWidget";
 import { MadnessGaugeWidget } from "./MadnessGaugeWidget";
 import { SystemModifiersWidget } from "./SystemModifiersWidget";
@@ -7,15 +8,26 @@ function WidgetBlade({
   number,
   children,
   classContainer,
+  isDanger,
 }: {
   title: string;
   number: string;
   children: React.ReactElement;
   classContainer?: string;
+  isDanger?: boolean;
 }) {
+  const titleClass = isDanger
+    ? "bg-[var(--theme-danger)] text-white border-[var(--theme-danger)]"
+    : "bg-[var(--theme-accent)] text-[var(--theme-background)] border-[var(--theme-border)]";
+  const borderColor = isDanger ? "var(--theme-danger)" : "var(--theme-border)";
+
   return (
-    <div className="border-2 border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col relative group">
-      <div className="bg-[var(--theme-accent)] text-black border-b-2 border-[var(--theme-border)] px-3 py-1.5 font-bold tracking-[0.2em] uppercase text-xs flex justify-between">
+    <div
+      className={`border-2 border-[${borderColor}] bg-[var(--theme-background)] flex flex-col relative group`}
+    >
+      <div
+        className={`border-b-2 px-3 py-1.5 font-bold tracking-[0.2em] uppercase text-xs flex justify-between ${titleClass}`}
+      >
         <span>{title.toUpperCase()}</span>
         <span className="opacity-70">BLADE_{number.padStart(2, "0")}</span>
       </div>
@@ -72,13 +84,18 @@ export function VitalsPanel() {
           <MadnessGaugeWidget />
         </WidgetBlade>
       </div>
-      <WidgetBlade
-        title="Sistema de modificadores"
-        number="3"
-        classContainer="p-5"
-      >
-        <SystemModifiersWidget />
-      </WidgetBlade>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <WidgetBlade title="ANOMALIAS REGISTRADAS" number="3" isDanger>
+          <DisadvantagesWidget />
+        </WidgetBlade>
+        <WidgetBlade
+          title="Sistema de modificadores"
+          number="4"
+          classContainer="p-5"
+        >
+          <SystemModifiersWidget />
+        </WidgetBlade>
+      </div>
     </div>
   );
 }

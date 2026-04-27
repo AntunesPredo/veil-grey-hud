@@ -78,16 +78,16 @@ export function Booting() {
           glitchIntensity="low"
         />
         <h1 className="text-5xl font-bold tracking-[0.5em] mb-1">ID-SYS</h1>
-        <h2 className="text-sm font-bold tracking-[0.2em] text-center text-[var(--theme-accent)] opacity-70">
+        <h2 className="text-sm font-bold tracking-[0.2em] text-center text-white opacity-70">
           CONECTANDO VOCÊ A UMA SOCIEDADE MAIS EFICIENTE.
         </h2>
       </motion.div>
 
       <div className="w-[80vw] p-4 flex flex-col gap-2">
         <div className="flex items-center gap-4 w-full">
-          <div className="flex-1 h-[2px] bg-[var(--theme-accent)]/10 relative overflow-hidden">
+          <div className="flex-1 h-[2px] bg-white/10 relative overflow-hidden">
             <motion.div
-              className="absolute inset-y-0 left-0 bg-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]"
+              className="absolute inset-y-0 left-0 bg-white shadow-[0_0_10px_white"
               style={{ width: `${progress}%` }}
               transition={{ ease: "linear" }}
             />

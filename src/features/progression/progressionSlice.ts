@@ -2,9 +2,9 @@ import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
 import type {
   CreationStatus,
-  Disadvantage,
   Role,
   SnapshotStats,
+  Disadvantage,
 } from "../../shared/types/veil-grey";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { buildSustenanceStages } from "../../shared/utils/mathUtils";
@@ -14,12 +14,12 @@ export interface ProgressionSlice {
   level: number;
   xp: { current: number; max: number; usedXpLogs: string[] };
   creationStatus: CreationStatus;
-  disadvantages: Disadvantage[];
   sandboxMode: boolean;
   freePoints: { attributes: number; skills: number; specializations: number };
   role: Role | null;
   settings: { lockPoints: boolean; showRollDetails: boolean };
   lockedSnapshot: SnapshotStats | null;
+  disadvantages: Disadvantage[];
 
   updateProgression: (data: Partial<ProgressionSlice>) => void;
   addXp: (amount: number, log?: string) => void;
@@ -32,7 +32,7 @@ export interface ProgressionSlice {
   ) => void;
   confirmDisadvantages: (
     flaws: Disadvantage[],
-    attPoints: number,
+    attrPoints: number,
     skillPoints: number,
   ) => void;
 }
@@ -47,12 +47,12 @@ export const createProgressionSlice: StateCreator<
   level: 1,
   xp: { current: 0, max: 100, usedXpLogs: [] },
   creationStatus: "NOT_STARTED",
-  disadvantages: [],
   sandboxMode: false,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
   role: null,
   settings: { lockPoints: true, showRollDetails: true },
   lockedSnapshot: null,
+  disadvantages: [],
 
   updateCreationStatus: (status) => set({ creationStatus: status }),
 
@@ -120,6 +120,7 @@ export const createProgressionSlice: StateCreator<
         updates.hp = {
           ...state.hp,
           current: startHp,
+          baseMax: startHp,
         };
         updates.crisis = { ...state.crisis, ignore: false };
         updates.sustenance = { ...state.sustenance, current: satiatedMax };
@@ -191,11 +192,14 @@ export const createProgressionSlice: StateCreator<
       return updates;
     });
   },
+
   confirmDisadvantages: (flaws, attrPoints, skillPoints) => {
     set((state) => {
       const allEffects = flaws.flatMap((f) =>
         f.effects.map((e) => ({ ...e, id: Date.now() + Math.random() })),
       );
+
+      const hasVolatilePsyche = flaws.some((f) => f.id === "psique_volatil");
 
       return {
         disadvantages: flaws,
@@ -204,6 +208,10 @@ export const createProgressionSlice: StateCreator<
           ...state.freePoints,
           attributes: state.freePoints.attributes + attrPoints,
           skills: state.freePoints.skills + skillPoints,
+        },
+        insanity: {
+          ...state.insanity,
+          volatile: hasVolatilePsyche ? true : state.insanity.volatile,
         },
         creationStatus: "STARTED",
       };

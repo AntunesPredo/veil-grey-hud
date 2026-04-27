@@ -60,7 +60,7 @@ export function SkillDrawer() {
     !isPinned && !isOpen ? "translate-x-full" : "translate-x-0";
   const layoutClass = isPinned
     ? "relative flex-shrink-0 border-l z-20 h-full"
-    : "fixed top-0 bottom-0 right-0 h-[100vh] z-[100] border-l-2 shadow-[-20px_0_30px_rgba(0,0,0,0.8)]";
+    : `fixed top-0 bottom-0 right-0 h-[100vh] border-l-2 shadow-[-20px_0_30px_rgba(0,0,0,0.8)] ${isOpen ? "z-[110]" : "z-[100]"}`;
 
   const allSkillsFlat = Object.entries(VG_CONFIG.skill_groups).flatMap(
     ([, group]) =>
@@ -303,8 +303,8 @@ export function SkillDrawer() {
   return (
     <div
       ref={drawerRef}
-      className={`bg-[var(--theme-background)] flex flex-col transition-transform duration-300 ease-in-out border-[var(--theme-accent)] ${layoutClass} ${transformClass}`}
-      style={{ width: `${widthVW}vw` }}
+      className={`bg-[var(--theme-background)] flex flex-col transition-transform duration-300 ease-in-out border-[var(--theme-accent)] w-[calc(100vw-24px)] md:w-[var(--desktop-w)] ${layoutClass} ${transformClass}`}
+      style={{ "--desktop-w": `${widthVW}vw` } as React.CSSProperties}
     >
       {!isPinned && (
         <button
@@ -428,7 +428,7 @@ export function SkillDrawer() {
       </div>
 
       <div
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--theme-accent)]/30 transition-colors z-50 flex items-center justify-center"
+        className="hidden md:flex absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--theme-accent)]/30 transition-colors z-50 flex items-center justify-center"
         onMouseDown={handleMouseDown}
       >
         <div className="h-8 w-[1px] bg-[var(--theme-accent)]/50" />

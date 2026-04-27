@@ -47,7 +47,7 @@ export function AttributeDrawer() {
     !isPinned && !isOpen ? "-translate-x-full" : "translate-x-0";
   const layoutClass = isPinned
     ? "relative flex-shrink-0 border-r z-20 h-full"
-    : "fixed top-0 bottom-0 left-0 h-[100vh] z-[100] border-r-2 shadow-[20px_0_30px_rgba(0,0,0,0.8)]";
+    : `fixed top-0 bottom-0 left-0 h-[100vh] border-r-2 shadow-[20px_0_30px_rgba(0,0,0,0.8)] ${isOpen ? "z-[110]" : "z-[100]"}`;
 
   const handleAttributeChange = (attrKey: Attribute, delta: number) => {
     const currentVal = attributes[attrKey];
@@ -99,8 +99,8 @@ export function AttributeDrawer() {
   return (
     <div
       ref={drawerRef}
-      className={`bg-[var(--theme-background)] flex flex-col transition-transform duration-300 ease-in-out border-[var(--theme-accent)] ${layoutClass} ${transformClass}`}
-      style={{ width: `${widthVW}vw` }}
+      className={`bg-[var(--theme-background)] flex flex-col transition-transform duration-300 ease-in-out border-[var(--theme-accent)] w-[calc(100vw-24px)] md:w-[var(--desktop-w)] ${layoutClass} ${transformClass}`}
+      style={{ "--desktop-w": `${widthVW}vw` } as React.CSSProperties}
     >
       {!isPinned && (
         <button
@@ -173,7 +173,7 @@ export function AttributeDrawer() {
                 return (
                   <div
                     key={attrKey}
-                    className="flex justify-between items-center bg-[var(--theme-background)]/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
+                    className="flex flex-col sm:flex-row justify-between items-center bg-[var(--theme-background)]/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
                   >
                     <span className="text-[12px] uppercase font-bold">
                       {attr.label}
@@ -290,7 +290,7 @@ export function AttributeDrawer() {
       </div>
 
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--theme-accent)]/30 transition-colors z-50 flex items-center justify-center"
+        className="hidden md:flex absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--theme-accent)]/30 transition-colors z-50 flex items-center justify-center"
         onMouseDown={handleMouseDown}
       >
         <div className="h-8 w-[1px] bg-[var(--theme-accent)]/50" />
@@ -337,11 +337,11 @@ function SecondaryStatRow({
       </div>
       <div className="flex gap-2 items-center shrink-0">
         <span
-          className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
+          className={`font-mono px-2 py-1 border text-[14px] min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
         >
           {finalVal}
           {modVal !== 0 && (
-            <span className="text-[10px] opacity-80">
+            <span className="text-[14px]">
               [{modVal > 0 ? `+${modVal}` : modVal}]
             </span>
           )}

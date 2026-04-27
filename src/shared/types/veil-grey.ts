@@ -33,9 +33,18 @@ export type Skill = PhysicalSkills | MentalSkills | SocialSkills;
 export type CreationStatus =
   | "NOT_STARTED"
   | "PRE_STARTED"
+  | "FLAWS_SELECTION"
   | "STARTED"
   | "LEVEL_UP"
   | "CLOSED";
+
+export interface Disadvantage {
+  id: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  effects: CustomEffect[];
+}
 
 export type EnergyLevel = "rested" | "tired" | "exhausted";
 

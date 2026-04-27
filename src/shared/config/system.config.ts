@@ -1,3 +1,4 @@
+import { SYSTEM_DISADVANTAGES } from "./disadvantages";
 import { PLAYER_ROLES } from "./roles";
 import { SKILLS } from "./skills";
 
@@ -56,6 +57,7 @@ export const VG_CONFIG = {
     },
   },
   roles: PLAYER_ROLES,
+  disadvantages: SYSTEM_DISADVANTAGES,
   labels: {
     evilness: "MALDADE",
     evilnessLabel: "(0-10)",
