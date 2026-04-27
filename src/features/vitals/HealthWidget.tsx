@@ -325,7 +325,7 @@ export function HealthWidget() {
           >
             <div className="flex items-center justify-center gap-2">
               <span className="text-xl font-black">!</span>
-              <span className="text-[11px] font-black tracking-widest text-[var(--theme-danger)] group-hover:text-white transition-colors uppercase">
+              <span className="text-[11px] font-black tracking-widest group-hover:text-white transition-colors uppercase">
                 Registrar Trauma
               </span>
             </div>

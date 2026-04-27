@@ -125,22 +125,22 @@ export const VG_CONFIG = {
   },
   att_secondary: {
     agility: {
-      id: "sec_agility",
+      id: "agility",
       label: "AGILIDADE",
       rollCategory: "ATT_PHYSICAL",
     },
     mass: {
-      id: "sec_mass",
+      id: "mass",
       label: "MASSA CORPÓREA",
       rollCategory: "ATT_PHYSICAL",
     },
     perception: {
-      id: "sec_perception",
+      id: "perception",
       label: "PERCEPÇÃO",
       rollCategory: "ATT_MENTAL",
     },
     mental_health: {
-      id: "sec_mental_healt",
+      id: "mental_healt",
       label: "SAÚDE MENTAL",
       rollCategory: "ATT_MENTAL",
     },

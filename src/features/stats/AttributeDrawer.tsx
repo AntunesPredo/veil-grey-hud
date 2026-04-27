@@ -237,7 +237,7 @@ export function AttributeDrawer() {
           >
             <SecondaryStatRow
               label="AGILIDADE"
-              rollKey="sec_agility"
+              rollKey="agility"
               rollCategory={VG_CONFIG.att_secondary.agility.rollCategory}
               baseValue={secondaryAttributes.agility}
               isDistributing={isDistributing}
@@ -245,7 +245,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="MASSA CORPÓREA"
-              rollKey="sec_mass"
+              rollKey="mass"
               rollCategory={VG_CONFIG.att_secondary.mass.rollCategory}
               baseValue={secondaryAttributes.mass}
               isDistributing={isDistributing}
@@ -259,7 +259,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="PERCEPÇÃO"
-              rollKey="sec_perception"
+              rollKey="perception"
               rollCategory={VG_CONFIG.att_secondary.perception.rollCategory}
               baseValue={secondaryAttributes.perception}
               isDistributing={isDistributing}
@@ -273,7 +273,7 @@ export function AttributeDrawer() {
             />
             <SecondaryStatRow
               label="SAÚDE MENTAL"
-              rollKey="sec_mental_healt"
+              rollKey="mental_healt"
               rollCategory={VG_CONFIG.att_secondary.mental_health.rollCategory}
               baseValue={secondaryAttributes.mental_health}
               isDistributing={isDistributing}

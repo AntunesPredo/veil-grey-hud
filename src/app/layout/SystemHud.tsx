@@ -30,12 +30,12 @@ export function SystemHud() {
   }, [enforceLayoutConstraints]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--theme-background)] text-[var(--theme-accent)] font-mono p-2 md:p-4 gap-4">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--theme-background)] text-[var(--theme-accent)] font-mono md:p-4 gap-4">
       <CrisisOverlay />
       <RollResolverModal />
       <VitalsResolutionModal />
       <Header />
-      <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)]">
+      <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)] ">
         <AttributeDrawer />
 
         <div className="flex-1 flex flex-col relative bg-[var(--theme-background)] z-10 shadow-[0_0_50px_rgba(0,0,0,0.8)_inset] min-w-[320px]">

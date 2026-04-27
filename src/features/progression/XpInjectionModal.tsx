@@ -6,7 +6,7 @@ import { Button, Input } from "../../shared/ui/Form";
 import CryptoJS from "crypto-js";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
 
-const SECRET_KEY = import.meta.env.VITE_SECRET_KEY;
+const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const isDev = import.meta.env.VITE_IN_DEVELOPMENT;
 
 export function XpInjectionModal({

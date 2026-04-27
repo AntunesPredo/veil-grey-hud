@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCharacterStore } from "../character/store";
 import { Button, Input } from "../../shared/ui/Form";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
+import { useDisclosure } from "../../shared/hooks/useDisclosure";
+import { useImportData } from "../../shared/hooks/useImportData";
+import { ConfirmModal } from "../../shared/ui/Overlays";
 
 const fadeVariants: Variants = {
   hidden: { opacity: 0, filter: "blur(4px)", scale: 0.95 },
@@ -26,10 +29,22 @@ export function WelcomeScreen() {
     (state) => state.updateProgression,
   );
   const [localName, setLocalName] = useState("");
-
   const [step, setStep] = useState<"presentation" | "identification">(
     "presentation",
   );
+  const errorModal = useDisclosure();
+  const [confirmModalMessage, setConfirmModalMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null!);
+  const { handleImportJSON } = useImportData({
+    fileInputRef,
+    onClose: () => {},
+    onError(error) {
+      errorModal.onOpen();
+      setConfirmModalMessage(
+        `Erro durante o processamento do arquivo - ${(error as Error).message ?? "Desconhecido"}`,
+      );
+    },
+  });
 
   useEffect(() => {
     if (step === "presentation") {
@@ -143,6 +158,20 @@ export function WelcomeScreen() {
               <Button className="w-full py-3" onClick={handleStart}>
                 INICIAR PROTOCOLO
               </Button>
+              <Button
+                variant="warning"
+                className="w-full border-dashed"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                [ IMPORTAR .JSON ]
+              </Button>
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImportJSON}
+              />
             </div>
             <div className="border-t border-dashed border-[var(--theme-border)] pt-4 w-full">
               <Button
@@ -156,6 +185,17 @@ export function WelcomeScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmModal
+        isOpen={errorModal.isOpen}
+        onClose={errorModal.onClose}
+        title="IMPORT ERROR"
+        message={confirmModalMessage}
+        isDanger
+        onConfirm={() => {
+          setConfirmModalMessage("");
+          errorModal.onClose();
+        }}
+      />
     </div>
   );
 }

@@ -291,7 +291,7 @@ export function MadnessGaugeWidget() {
                 </div>
 
                 {creationStatus === "CLOSED" ? (
-                  <div className="flex gap-2 pb-1">
+                  <div className="hidden md:flex gap-2 pb-1">
                     <Button
                       variant="success"
                       size="sm"
@@ -332,6 +332,47 @@ export function MadnessGaugeWidget() {
       </div>
 
       <div className="flex flex-col px-5 pb-5 border-[var(--theme-border)] gap-5 mt-3">
+        {creationStatus === "CLOSED" ? (
+          <div className="flex md:hidden gap-2 pb-1">
+            <Button
+              variant="success"
+              size="sm"
+              className="w-full"
+              onClick={() => setModalMode("SUB")}
+            >
+              <div className="flex flex-1 py-1 justify-center">
+                <svg
+                  className="w-14 h-5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M1 10L1 6L15 6V10L1 10Z" fill="currentColor" />
+                </svg>
+              </div>
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              className="w-full"
+              onClick={() => setModalMode("ADD")}
+            >
+              <div className="flex flex-1 py-1 justify-center">
+                <svg
+                  className="w-14 h-5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+            </Button>
+          </div>
+        ) : null}
         <div className="flex justify-between text-[11px] font-bold font-mono tracking-wider bg-[var(--theme-background)] border-2 border-[var(--theme-border)] p-1">
           <div className="flex flex-1 gap-1.5 items-center justify-center">
             <div className="w-2 h-2 bg-[var(--theme-accent)]"></div>

@@ -126,7 +126,7 @@ export function RollResolverModal() {
             {payload.fixedEffects.length > 0 && (
               <div className="flex flex-col gap-1 mt-2">
                 <span className="text-[9px] font-bold text-[var(--theme-text)]/50 tracking-widest uppercase">
-                  MODIFICADORES RÍGIDOS APLICADOS:
+                  MODIFICADORES FIXOS APLICADOS:
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {payload.fixedEffects.map((eff) => (
@@ -134,8 +134,8 @@ export function RollResolverModal() {
                       key={eff.id}
                       className="text-[9px] border border-[var(--theme-border)] bg-[var(--theme-background)] px-1 py-0.5 text-[var(--theme-text)]/70 font-mono"
                     >
-                      {eff.description} [{eff.val > 0 ? `+${eff.val}` : eff.val}
-                      ]
+                      {eff.description.toUpperCase()} [
+                      {eff.val > 0 ? `+${eff.val}` : eff.val}]
                     </span>
                   ))}
                 </div>

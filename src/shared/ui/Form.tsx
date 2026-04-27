@@ -62,7 +62,7 @@ export function Button({
     primary:
       "border-2 border-[var(--theme-accent)] text-[var(--theme-accent)] hover:bg-[var(--theme-accent)] hover:text-black hover:shadow-[0_0_10px_var(--theme-accent)]",
     success:
-      "border-2 border-[var(--theme-success)] bg-[var(--theme-success)]/10 text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-white hover:shadow-[0_0_10px_var(--theme-success)]",
+      "border-2 border-[var(--theme-success)] bg-[var(--theme-success)]/10 text-white hover:bg-[var(--theme-success)] hover:text-white hover:shadow-[0_0_10px_var(--theme-success)]",
     danger:
       "border-2 border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 text-white hover:bg-[var(--theme-danger)] hover:text-white hover:shadow-[0_0_10px_var(--theme-danger)]",
     warning:

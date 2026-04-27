@@ -4,6 +4,7 @@ import { Modal, ConfirmModal } from "../../shared/ui/Overlays";
 import { Button, Checkbox, Input } from "../../shared/ui/Form";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { useImportData } from "../../shared/hooks/useImportData";
 
 export function SettingsModal({
   isOpen,
@@ -21,16 +22,25 @@ export function SettingsModal({
   const resetCharacterData = useCharacterStore(
     (state) => state.resetCharacterData,
   );
-  const importCharacterData = useCharacterStore(
-    (state) => state.importCharacterData,
-  );
+  const fileInputRef = useRef<HTMLInputElement>(null!);
+
+  const { handleImportJSON } = useImportData({
+    fileInputRef,
+    onClose,
+    onError(error) {
+      errorModal.onOpen();
+      setConfirmModalMessage(
+        `Erro durante o processamento do arquivo - ${(error as Error).message ?? "Desconhecido"}`,
+      );
+    },
+  });
+
   const addXp = useCharacterStore((state) => state.addXp);
 
   const [xpInput, setXpInput] = useState("");
   const wipeModal = useDisclosure();
   const errorModal = useDisclosure();
   const [confirmModalMessage, setConfirmModalMessage] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isDev = import.meta.env.DEV;
 
@@ -48,27 +58,6 @@ export function SettingsModal({
     a.href = dataStr;
     a.download = `VG_BACKUP_${name || "UNNAMED"}.json`;
     a.click();
-  };
-
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const jsonData = JSON.parse(event.target?.result as string);
-        importCharacterData(jsonData);
-        RetroToast.success("IMPORTADO COM SUCESSO.");
-        onClose();
-      } catch (error) {
-        errorModal.onOpen();
-        setConfirmModalMessage(
-          `Erro durante o processamento do arquivo - ${(error as Error).message ?? "Desconhecido"}`,
-        );
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleAddXp = () => {

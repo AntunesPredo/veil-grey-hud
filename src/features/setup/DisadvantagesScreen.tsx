@@ -48,7 +48,7 @@ export function DisadvantagesScreen() {
       }
 
       if (prev.length >= 4) {
-        RetroToast.warning("MÁXIMO DE 4 ANOMALIAS ALCANÇADO.");
+        RetroToast.warning("MÁXIMO DE 4 DESVANTAGENS ALCANÇADO.");
         return prev;
       }
 
