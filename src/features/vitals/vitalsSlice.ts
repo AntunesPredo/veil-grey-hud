@@ -5,7 +5,9 @@ import type { EnergyLevel, CrisisState } from "../../shared/types/veil-grey";
 export interface VitalsSlice {
   hp: {
     current: number;
+    baseMax: number;
     temp: number;
+    maxBonus: number;
     isInjured: boolean;
     isVeryInjured: boolean;
     autoApplyInjury: boolean;
@@ -25,6 +27,7 @@ export interface VitalsSlice {
   ) => void;
 
   updateHpTemp: (amount: number) => void;
+  addMaxHpBonus: (amount: number) => void;
   updateInsanity: (current: number) => void;
   updateSustenance: (current: number) => void;
   updateEnergy: (energy: EnergyLevel) => void;
@@ -43,7 +46,9 @@ export const createVitalsSlice: StateCreator<
 > = (set, get) => ({
   hp: {
     current: 65,
+    baseMax: 0,
     temp: 0,
+    maxBonus: 0,
     isInjured: false,
     isVeryInjured: false,
     autoApplyInjury: true,
@@ -57,6 +62,15 @@ export const createVitalsSlice: StateCreator<
   applyHealing: (amount, maxHp) =>
     set((state) => ({
       hp: { ...state.hp, current: Math.min(maxHp, state.hp.current + amount) },
+    })),
+
+  addMaxHpBonus: (amount) =>
+    set((state) => ({
+      hp: {
+        ...state.hp,
+        maxBonus: state.hp.maxBonus + amount,
+        current: state.hp.current + amount,
+      },
     })),
 
   applyDamage: (amount, mitigateMode, armorId, maxHp) => {

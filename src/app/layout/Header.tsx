@@ -9,6 +9,7 @@ import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
 import { XpInjectionModal } from "../../features/progression/XpInjectionModal";
 import { useRoller } from "../../shared/hooks/useRoller";
+import { LevelUpFlowModal } from "../../features/progression/LevelUpFlowModal";
 
 export function Header() {
   const name = useCharacterStore((state) => state.name);
@@ -26,6 +27,7 @@ export function Header() {
   const settingsModal = useDisclosure();
   const confirmModal = useDisclosure();
   const xpModal = useDisclosure();
+  const levelUpModal = useDisclosure();
 
   const isDistributing =
     creationStatus === "STARTED" || creationStatus === "LEVEL_UP";
@@ -38,7 +40,13 @@ export function Header() {
       .reverse()
       .find((t) => level >= t.minLevel) || VG_CONFIG.progression.tiers[0];
 
-  const handleConfirmDistribution = () => confirmModal.onOpen();
+  const handleConfirmDistribution = () => {
+    if (creationStatus === "LEVEL_UP") {
+      levelUpModal.onOpen();
+    } else {
+      confirmModal.onOpen();
+    }
+  };
 
   return (
     <header className="bg-[var(--theme-background)] border-b border-[var(--theme-accent)] p-3 md:p-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 relative z-50">
@@ -227,14 +235,19 @@ export function Header() {
         isOpen={confirmModal.isOpen}
         onClose={confirmModal.onClose}
         onConfirm={confirmDistribution}
-        title={hasFreePoints ? "PONTOS NÃO ALOCADOS" : "FINALIZAR EVOLUÇÃO?"}
+        title={hasFreePoints ? "PONTOS NÃO ALOCADOS" : "FINALIZAR CRIAÇÃO?"}
         message={
           hasFreePoints
-            ? "Existem pontos livres não distribuídos. Eles serão acumulados e poderão ser gastos no próximo Nível. Deseja prosseguir e concluir a evolução?"
-            : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e travar os pontos?"
+            ? "Existem pontos livres não distribuídos. Eles serão acumulados e poderão ser gastos no próximo Nível. Deseja prosseguir e concluir a criação?"
+            : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e finalizar a criação?"
         }
       />
       <XpInjectionModal isOpen={xpModal.isOpen} onClose={xpModal.onClose} />
+      <LevelUpFlowModal
+        isOpen={levelUpModal.isOpen}
+        onClose={levelUpModal.onClose}
+        hasFreePoints={hasFreePoints}
+      />
     </header>
   );
 }

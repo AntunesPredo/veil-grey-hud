@@ -2,6 +2,7 @@ import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
 import type {
   CreationStatus,
+  Disadvantage,
   Role,
   SnapshotStats,
 } from "../../shared/types/veil-grey";
@@ -13,6 +14,7 @@ export interface ProgressionSlice {
   level: number;
   xp: { current: number; max: number; usedXpLogs: string[] };
   creationStatus: CreationStatus;
+  disadvantages: Disadvantage[];
   sandboxMode: boolean;
   freePoints: { attributes: number; skills: number; specializations: number };
   role: Role | null;
@@ -28,6 +30,11 @@ export interface ProgressionSlice {
     roleId: keyof typeof VG_CONFIG.roles,
     allocatedPoints: Record<string, number>,
   ) => void;
+  confirmDisadvantages: (
+    flaws: Disadvantage[],
+    attPoints: number,
+    skillPoints: number,
+  ) => void;
 }
 
 export const createProgressionSlice: StateCreator<
@@ -40,6 +47,7 @@ export const createProgressionSlice: StateCreator<
   level: 1,
   xp: { current: 0, max: 100, usedXpLogs: [] },
   creationStatus: "NOT_STARTED",
+  disadvantages: [],
   sandboxMode: false,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
   role: null,
@@ -171,7 +179,7 @@ export const createProgressionSlice: StateCreator<
         specializations: 0,
       };
 
-      updates.creationStatus = "STARTED";
+      updates.creationStatus = "FLAWS_SELECTION";
       updates.crisis.ignore = true;
 
       updates.settings = { ...state.settings, lockPoints: false };
@@ -181,6 +189,24 @@ export const createProgressionSlice: StateCreator<
       };
 
       return updates;
+    });
+  },
+  confirmDisadvantages: (flaws, attrPoints, skillPoints) => {
+    set((state) => {
+      const allEffects = flaws.flatMap((f) =>
+        f.effects.map((e) => ({ ...e, id: Date.now() + Math.random() })),
+      );
+
+      return {
+        disadvantages: flaws,
+        customEffects: [...state.customEffects, ...allEffects],
+        freePoints: {
+          ...state.freePoints,
+          attributes: state.freePoints.attributes + attrPoints,
+          skills: state.freePoints.skills + skillPoints,
+        },
+        creationStatus: "STARTED",
+      };
     });
   },
 });

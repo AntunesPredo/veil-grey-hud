@@ -31,7 +31,13 @@ export function useCharacterStats() {
       ),
     };
 
-    const maxHp: number = rules.baseHp;
+    const isInitialCreation = hp.baseMax === 0;
+    const resolvedBaseHp = isInitialCreation
+      ? rules.baseHp + attributes.constitution * 4
+      : hp.baseMax;
+
+    const maxHp: number = resolvedBaseHp + (hp.maxBonus || 0);
+
     const maxInsanity = rules.baseInsanity + secondaryAttributes.mental_health;
     const maxSustenance = rules.baseSustenance + secondaryAttributes.mass;
     const maxLoad = rules.baseLoad + secondaryAttributes.mass;
