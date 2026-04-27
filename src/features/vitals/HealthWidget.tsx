@@ -168,6 +168,7 @@ export function HealthWidget() {
   const hp = useCharacterStore((state) => state.hp);
   const toggleAutoInjury = useCharacterStore((state) => state.toggleAutoInjury);
   const setManualInjury = useCharacterStore((state) => state.setManualInjury);
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
 
   const { maxHp, isInjured, isVeryInjured } = useCharacterStats();
   const { openModal } = useVitalsStore();
@@ -315,29 +316,31 @@ export function HealthWidget() {
         </BioClusterChassis>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-2">
-        <Button
-          onClick={() => openModal("DAMAGE")}
-          variant="danger"
-          className="w-full group overflow-hidden transition-all"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xl font-black">!</span>
-            <span className="text-[11px] font-black tracking-widest text-[var(--theme-danger)] group-hover:text-white transition-colors uppercase">
-              Registrar Trauma
-            </span>
-          </div>
-        </Button>
+      {creationStatus === "CLOSED" ? (
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <Button
+            onClick={() => openModal("DAMAGE")}
+            variant="danger"
+            className="w-full group overflow-hidden transition-all"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-black">!</span>
+              <span className="text-[11px] font-black tracking-widest text-[var(--theme-danger)] group-hover:text-white transition-colors uppercase">
+                Registrar Trauma
+              </span>
+            </div>
+          </Button>
 
-        <Button variant="success" onClick={() => openModal("HEALING")}>
-          <div className="relative flex items-center justify-center gap-2">
-            <span className="text-xl font-black leading-none">+</span>
-            <span className="text-[11px] font-black tracking-widest uppercase">
-              Injetar Cura
-            </span>
-          </div>
-        </Button>
-      </div>
+          <Button variant="success" onClick={() => openModal("HEALING")}>
+            <div className="relative flex items-center justify-center gap-2">
+              <span className="text-xl font-black leading-none">+</span>
+              <span className="text-[11px] font-black tracking-widest uppercase">
+                Injetar Cura
+              </span>
+            </div>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="bg-[var(--theme-background)] border-2 border-[var(--theme-border)] p-2 relative flex items-center gap-2 mt-1 min-h-[50px] overflow-hidden">
         <motion.div layout className="flex gap-2 w-full h-full">

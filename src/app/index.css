@@ -98,6 +98,12 @@ textarea,
 .glow-danger {
   text-shadow: 0 0 6px var(--theme-danger);
 }
+.glow-warning {
+  text-shadow: 0 0 6px var(--theme-warning);
+}
+.glow-success {
+  text-shadow: 0 0 6px var(--theme-success);
+}
 
 button,
 select,
@@ -312,6 +318,12 @@ input {
 .madness-unstable {
   animation: madness-unstable-animation 2.2s infinite steps(3, end);
 }
+.madness-unstable-2x {
+  animation: madness-unstable-animation 1.8s infinite steps(3, end);
+}
+.madness-unstable-3x {
+  animation: madness-unstable-animation 1.3s infinite steps(3, end);
+}
 
 @keyframes madness-vibrate-animation {
   0% {
@@ -377,6 +389,7 @@ input {
 @keyframes madness-burst-animation {
   0%,
   55%,
+  90%,
   100% {
     transform: translate(0, 0) scale(1) rotate(0deg) skew(0deg);
     filter: none;

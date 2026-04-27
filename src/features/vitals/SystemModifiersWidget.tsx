@@ -24,7 +24,7 @@ export function SystemModifiersWidget() {
       <span
         className={`font-mono font-bold ${value > 0 ? "text-[var(--theme-success)]" : value < 0 ? "text-[var(--theme-danger)]" : "text-[var(--theme-text)]"}`}
       >
-        {value === 0 ? value : value > 0 ? `+${value}` : `-${value}`}
+        {value === 0 ? value : value > 0 ? `+${value}` : value}
       </span>
     );
   };

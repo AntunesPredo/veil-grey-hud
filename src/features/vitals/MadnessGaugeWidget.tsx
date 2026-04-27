@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCharacterStore } from "../character/store";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
@@ -13,9 +13,25 @@ import { useCustomSvgIcons } from "../../shared/hooks/useCustomSvgIcons";
 export function MadnessGaugeWidget() {
   const name = useCharacterStore((state) => state.name);
   const insanity = useCharacterStore((state) => state.insanity);
+  const creationStatus = useCharacterStore((state) => state.creationStatus);
+
   const { getSpecificIcon } = useCustomSvgIcons();
   const { maxInsanity, insanityState, insStages } = useCharacterStats();
   const [modalMode, setModalMode] = useState<"ADD" | "SUB" | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [svgWidth, setSvgWidth] = useState(450);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setSvgWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleTestInsanity = () => {
     const expression = `${VG_CONFIG.rules.mainDice}+${insanity.current}`;
@@ -62,8 +78,11 @@ export function MadnessGaugeWidget() {
 
   const coreX = 75;
   const coreY = 80;
-  const pathD = `M ${coreX} 130 A 50 50 0 0 1 ${coreX} 30 L 430 30`;
-  const tickPath = `M 80 18 L 430 18`;
+
+  const endX = Math.max(150, svgWidth - 28);
+
+  const pathD = `M ${coreX} 130 A 50 50 0 0 1 ${coreX} 30 L ${endX} 30 L ${endX} 45`;
+  const tickPath = `M 80 18 L ${endX} 18`;
 
   const icon = useMemo(() => {
     const iconId =
@@ -79,11 +98,14 @@ export function MadnessGaugeWidget() {
 
   return (
     <>
-      <div className="relative w-full h-[190px] bg-[var(--theme-background)] overflow-hidden">
+      <div
+        ref={containerRef}
+        className="relative w-full h-[140px] bg-[var(--theme-background)] overflow-hidden"
+      >
         <svg
-          viewBox="0 0 450 180"
+          viewBox={`0 0 ${svgWidth} 140`}
           className="absolute inset-0 w-full h-full"
-          preserveAspectRatio="xMinYMid meet"
+          preserveAspectRatio="none"
         >
           <defs>
             <filter id="glow">
@@ -104,7 +126,7 @@ export function MadnessGaugeWidget() {
             <line
               x1="15"
               y1={coreY}
-              x2="435"
+              x2={svgWidth}
               y2={coreY}
               strokeDasharray="4 4"
             />
@@ -246,7 +268,7 @@ export function MadnessGaugeWidget() {
             {(progress * 100).toFixed(1)}%
           </text>
 
-          <foreignObject x="140" y="45" width="300" height="130">
+          <foreignObject x="140" y="45" width={svgWidth - 150} height="100">
             <div className="flex flex-col w-full h-full justify-start mt-2 pr-2">
               <div className="flex justify-between items-end mb-2">
                 <div className="flex flex-col">
@@ -268,60 +290,41 @@ export function MadnessGaugeWidget() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 pb-1">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setModalMode("ADD")}
-                  >
-                    <svg
-                      className="w-7 h-3"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+                {creationStatus === "CLOSED" ? (
+                  <div className="flex gap-2 pb-1">
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => setModalMode("SUB")}
                     >
-                      <path
-                        d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </Button>
-                  <Button
-                    variant="success"
-                    size="sm"
-                    onClick={() => setModalMode("SUB")}
-                  >
-                    <svg
-                      className="w-7 h-3"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+                      <svg
+                        className="w-14 h-5"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M1 10L1 6L15 6V10L1 10Z" fill="currentColor" />
+                      </svg>
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setModalMode("ADD")}
                     >
-                      <path d="M1 10L1 6L15 6V10L1 10Z" fill="currentColor" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex justify-between text-[11px] font-bold font-mono tracking-wider bg-[var(--theme-background)] border-2 border-[var(--theme-border)] p-1">
-                <div className="flex gap-1.5 items-center px-1">
-                  <div className="w-2 h-2 bg-[var(--theme-accent)]"></div>
-                  <span className="text-[var(--theme-accent)] mt-0.5">
-                    EST: {insStages[0] - 1}
-                  </span>
-                </div>
-                <div className="flex gap-1.5 items-center px-1 border-l-2 border-[var(--theme-border)]">
-                  <div className="w-2 h-2 bg-[var(--theme-warning)]"></div>
-                  <span className="text-[var(--theme-warning)] mt-0.5">
-                    INS: {insStages[1]}
-                  </span>
-                </div>
-                <div className="flex gap-1.5 items-center px-1 border-l-2 border-[var(--theme-border)]">
-                  <div className="w-2 h-2 bg-[var(--theme-danger)]"></div>
-                  <span className="text-[var(--theme-danger)] mt-0.5">
-                    INSANO: {insStages[2]}
-                  </span>
-                </div>
+                      <svg
+                        className="w-14 h-5"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </foreignObject>
@@ -329,15 +332,35 @@ export function MadnessGaugeWidget() {
       </div>
 
       <div className="flex flex-col px-5 pb-5 border-[var(--theme-border)] gap-5 mt-3">
+        <div className="flex justify-between text-[11px] font-bold font-mono tracking-wider bg-[var(--theme-background)] border-2 border-[var(--theme-border)] p-1">
+          <div className="flex flex-1 gap-1.5 items-center justify-center">
+            <div className="w-2 h-2 bg-[var(--theme-accent)]"></div>
+            <span className="text-[var(--theme-accent)] mt-0.5">
+              ESTÁVEL: {insStages[0] - 1}
+            </span>
+          </div>
+          <div className="flex flex-1 gap-1.5 items-center justify-center border-x-2 border-[var(--theme-border)]">
+            <div className="w-2 h-2 bg-[var(--theme-warning)]"></div>
+            <span className="text-[var(--theme-warning)] mt-0.5">
+              INSTÁVEL: {insStages[1]}
+            </span>
+          </div>
+          <div className="flex flex-1 gap-1.5 items-center justify-center">
+            <div className="w-2 h-2 bg-[var(--theme-danger)]"></div>
+            <span className="text-[var(--theme-danger)] mt-0.5">
+              INSANO: {insStages[2]}
+            </span>
+          </div>
+        </div>
         <div
           className={`p-4 bg-[${insanityState === "INSANE" ? "var(--theme-danger)" : "var(--theme-accent)"}]/10`}
           style={{ borderLeft: `4px solid ${activeConf.strokeColor}` }}
         >
           <div
-            className={`flex items-start gap-2 ${insanityState === "INSANE" ? "text-withe" : activeConf.colorClass}`}
+            className={`flex items-start gap-2 ${insanityState === "INSANE" ? "text-white" : activeConf.colorClass}`}
           >
             <span className="text-[12px] font-mono font-bold mt-0.5">&gt;</span>
-            <span className="block text-[12px] font-mono tracking-wide leading-relaxed font-bold uppercase">
+            <span className="block text-[10px] md:text-[12px] font-mono tracking-wide leading-relaxed font-bold uppercase">
               {activeConf.desc}
             </span>
           </div>
@@ -346,7 +369,7 @@ export function MadnessGaugeWidget() {
         <Button
           variant={insanityState === "INSANE" ? "danger" : "primary"}
           size="sm"
-          className="py-3 text-[14px]"
+          className="py-4 text-[12px] md:text-[14px]"
           onClick={handleTestInsanity}
         >
           [ TESTE DE INSANIDADE ]

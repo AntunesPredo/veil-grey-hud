@@ -64,7 +64,7 @@ export function Button({
     success:
       "border-2 border-[var(--theme-success)] bg-[var(--theme-success)]/10 text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-white hover:shadow-[0_0_10px_var(--theme-success)]",
     danger:
-      "border-2 border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 text-[var(--theme-danger)] hover:bg-[var(--theme-danger)] hover:text-white hover:shadow-[0_0_10px_var(--theme-danger)]",
+      "border-2 border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 text-white hover:bg-[var(--theme-danger)] hover:text-white hover:shadow-[0_0_10px_var(--theme-danger)]",
     warning:
       "border-2 border-[var(--theme-warning)] bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] hover:bg-[var(--theme-warning)] hover:text-black hover:shadow-[0_0_10px_var(--theme-warning)]",
   };

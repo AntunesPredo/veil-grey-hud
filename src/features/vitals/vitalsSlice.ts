@@ -18,12 +18,11 @@ export interface VitalsSlice {
   evilness: number;
   crisis: { state: CrisisState; fails: number; ignore: boolean };
 
-  applyHealing: (amount: number, maxHp: number) => void;
+  applyHealing: (amount: number) => void;
   applyDamage: (
     amount: number,
     mitigateMode: "FULL" | "HALF" | "IGNORE",
     armorId: number | null,
-    maxHp: number,
   ) => void;
 
   updateHpTemp: (amount: number) => void;
@@ -59,9 +58,15 @@ export const createVitalsSlice: StateCreator<
   evilness: 0,
   crisis: { state: null, fails: 0, ignore: false },
 
-  applyHealing: (amount, maxHp) =>
+  applyHealing: (amount) =>
     set((state) => ({
-      hp: { ...state.hp, current: Math.min(maxHp, state.hp.current + amount) },
+      hp: {
+        ...state.hp,
+        current: Math.min(
+          state.hp.baseMax + state.hp.maxBonus,
+          state.hp.current + amount,
+        ),
+      },
     })),
 
   addMaxHpBonus: (amount) =>
@@ -73,7 +78,7 @@ export const createVitalsSlice: StateCreator<
       },
     })),
 
-  applyDamage: (amount, mitigateMode, armorId, maxHp) => {
+  applyDamage: (amount, mitigateMode, armorId) => {
     const state = get();
     let finalDamage = amount;
 
@@ -96,6 +101,8 @@ export const createVitalsSlice: StateCreator<
     set((s) => {
       let remainingDamage = finalDamage;
       let newTemp = s.hp.temp;
+      const maxHp = s.hp.baseMax + s.hp.maxBonus;
+
       let newCurrent = Math.min(s.hp.current, maxHp);
 
       if (newTemp > 0) {
@@ -111,8 +118,12 @@ export const createVitalsSlice: StateCreator<
       if (remainingDamage > 0) {
         newCurrent = Math.max(0, newCurrent - remainingDamage);
       }
+      let crisis = s.crisis;
+      if (newCurrent === 0) {
+        crisis = { state: "DEATH", fails: 0, ignore: false };
+      }
 
-      return { hp: { ...s.hp, temp: newTemp, current: newCurrent } };
+      return { hp: { ...s.hp, temp: newTemp, current: newCurrent }, crisis };
     });
   },
 

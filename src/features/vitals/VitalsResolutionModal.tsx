@@ -8,7 +8,6 @@ import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import type { EquipableItem } from "../../shared/types/veil-grey";
-import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export function VitalsResolutionModal() {
   const isOpen = useVitalsStore((state) => state.isOpen);
@@ -20,8 +19,6 @@ export function VitalsResolutionModal() {
   const inventory = useCharacterStore((state) => state.inventory);
   const applyDamage = useCharacterStore((state) => state.applyDamage);
   const applyHealing = useCharacterStore((state) => state.applyHealing);
-
-  const { maxHp } = useCharacterStats();
 
   const [step, setStep] = useState<"INPUT" | "MITIGATION">("INPUT");
   const [rolledAmount, setRolledAmount] = useState(0);
@@ -70,7 +67,7 @@ export function VitalsResolutionModal() {
       overrideAmount !== undefined ? overrideAmount : rolledAmount;
 
     if (mode === "HEALING") {
-      applyHealing(finalAmount, maxHp);
+      applyHealing(finalAmount);
       dispatchDiscordLog(
         "PLAYER",
         name,
@@ -89,7 +86,7 @@ export function VitalsResolutionModal() {
 
       const logMsg = `Dano total recebido: ${finalAmount}, redução utilizada: ${mitigation} [${rdValue}], Dano na vida: ${damageToHp}.`;
 
-      applyDamage(finalAmount, mitigation, equippedArmor?.id || null, maxHp);
+      applyDamage(finalAmount, mitigation, equippedArmor?.id || null);
       dispatchDiscordLog("PLAYER", name, logMsg);
       RetroToast.error(`TRAUMA PROCESSADO: -${damageToHp}`);
     }
