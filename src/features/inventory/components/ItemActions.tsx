@@ -52,7 +52,7 @@ export function ItemActions({
     : [];
 
   return (
-    <div className="flex flex-col gap-2 bg-[var(--theme-background)]/40 p-2 border border-[var(--theme-border)] mt-1">
+    <div className="flex flex-col gap-2 bg-[var(--theme-background)]/40">
       {canStack && (
         <div className="flex items-center gap-2">
           {item.quantity > 1 && (
@@ -139,7 +139,7 @@ export function ItemActions({
       {hasUses &&
         item.type !== "ACTIVE" &&
         !(item.type === "CONSUMABLE" && item.quantity > 1) && (
-          <div className="flex flex-col w-full gap-1 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
+          <div className="flex flex-col w-full gap-1 mt-1 pt-2">
             <div className="flex justify-between items-center w-full">
               <span className="text-[9px] font-bold text-[var(--theme-warning)] uppercase tracking-widest">
                 CARGAS

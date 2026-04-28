@@ -4,6 +4,10 @@ import { useCustomSvgIcons } from "../../../shared/hooks/useCustomSvgIcons";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { useSystemData } from "../../../shared/hooks/useSystemData";
+import { generateInjectionHash } from "../../../shared/utils/hashIntegration";
+
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 interface ItemHeaderProps {
   item: Item;
@@ -20,6 +24,7 @@ interface ItemHeaderProps {
   attributes: DraggableAttributes | undefined;
   isNestedAmmo?: boolean;
   disableUse?: boolean;
+  sandboxMode?: boolean;
 }
 
 const renderUseBlocks = (uses: number, maxUses: number) => {
@@ -62,6 +67,7 @@ export function ItemHeader({
   attributes,
   isNestedAmmo = false,
   disableUse = false,
+  sandboxMode = false,
 }: ItemHeaderProps) {
   const { getSpecificIcon } = useCustomSvgIcons();
   const { getSkillById } = useSystemData();
@@ -98,53 +104,55 @@ export function ItemHeader({
               {...attributes}
               className={`p-1.5 border bg-[var(--theme-background)] cursor-grab active:cursor-grabbing shadow-[0_0_8px_rgba(0,0,0,0.5)_inset] touch-none ${item.isEquipped ? "text-[var(--theme-success)] border-[var(--theme-success)]/30 hover:border-[var(--theme-success)]" : "text-[var(--theme-accent)] border-[var(--theme-border)] hover:border-[var(--theme-accent)]/50"}`}
             >
-              <svg className="w-5 h-5 fill-current" viewBox={icon.viewBox}>
+              <svg className="w-7 h-7 fill-current" viewBox={icon.viewBox}>
                 {icon.svg}
               </svg>
             </div>
           )}
         </div>
-
-        <div className="flex flex-col min-w-0 flex-1 pr-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`font-bold uppercase truncate text-xs tracking-wider ${item.isEquipped ? "text-[var(--theme-success)]" : "text-[var(--theme-accent)]"}`}
-            >
-              {item.name}
-            </span>
-            {!isEditMode && isEquippable && (
-              <Button
-                size="sm"
-                onClick={onToggleEquip}
-                className={`h-6 text-[10px] border-dashed shrink-0 ${item.isEquipped ? "bg-[var(--theme-success)]/20 border-[var(--theme-success)] text-[var(--theme-success)]" : "border-[var(--theme-border)] text-[var(--theme-text)]/50"}`}
+        <div className="flex justify-between w-[50%]">
+          <div className="flex flex-col min-w-0 flex-1 pr-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`font-bold uppercase truncate text-xs tracking-wider ${item.isEquipped ? "text-[var(--theme-success)]" : "text-[var(--theme-accent)]"}`}
               >
-                {item.isEquipped ? "[EQUIPADO]" : "[DESEQUIPADO]"}
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            <span className="text-[9px] font-mono text-[var(--theme-text)]/60 bg-[var(--theme-background)]/60 px-1 border border-[var(--theme-border)] shrink-0">
-              SLOTS: {item.slots * item.quantity}{" "}
-              {item.quantity > 1 && `(${item.slots}/UN)`}
-            </span>
-            {item.quantity > 1 && (
-              <span className="text-[9px] font-mono text-[var(--theme-accent)] bg-[var(--theme-accent)]/10 px-1 border border-[var(--theme-accent)]/30 shrink-0">
-                QTD: {item.quantity}
+                {item.name}
               </span>
-            )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-[9px] font-mono text-[var(--theme-text)]/60 bg-[var(--theme-background)]/60 px-1 border border-[var(--theme-border)] shrink-0">
+                SLOTS: {item.slots * item.quantity}{" "}
+                {item.quantity > 1 && `(${item.slots}/UN)`}
+              </span>
+              {item.quantity > 1 && (
+                <span className="text-[9px] font-mono text-[var(--theme-accent)] bg-[var(--theme-accent)]/10 px-1 border border-[var(--theme-accent)]/30 shrink-0">
+                  QTD: {item.quantity}
+                </span>
+              )}
 
-            {hasUses && maxUses > 1 && !isActive && (
-              <span className="text-[9px] font-mono text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 px-1 border border-[var(--theme-warning)]/30 whitespace-nowrap">
-                {renderUseBlocks(currentUses, maxUses)}
-              </span>
-            )}
+              {hasUses && maxUses > 1 && !isActive && (
+                <span className="text-[9px] font-mono text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 px-1 border border-[var(--theme-warning)]/30 whitespace-nowrap">
+                  {renderUseBlocks(currentUses, maxUses)}
+                </span>
+              )}
 
-            {hasUses && isActive && (
-              <span className="text-[9px] px-1 bg-[var(--theme-background)]/40 border border-[var(--theme-border)] whitespace-nowrap">
-                {renderIntegrityBlocks(pct)}
-              </span>
-            )}
+              {hasUses && isActive && (
+                <span className="text-[9px] px-1 bg-[var(--theme-background)]/40 border border-[var(--theme-border)] whitespace-nowrap">
+                  {renderIntegrityBlocks(pct)}
+                </span>
+              )}
+            </div>
           </div>
+          {!isEditMode && isEquippable && (
+            <Button
+              size="sm"
+              onClick={onToggleEquip}
+              variant="success"
+              className={`w-35 text-[10px] ${item.isEquipped ? "" : "border-dashed"}`}
+            >
+              {item.isEquipped ? "[EQUIPADO]" : "[DESEQUIPADO]"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -153,20 +161,20 @@ export function ItemHeader({
         onClick={(e) => e.stopPropagation()}
       >
         {isEditMode ? (
-          <div className="flex flex-col gap-1">
+          <div className="flex gap-1">
+            {sandboxMode || isDev ? (
+              <Button
+                variant="primary"
+                onClick={onEdit}
+                className="px-2 border-dashed text-[9px]"
+              >
+                MOD
+              </Button>
+            ) : null}
             <Button
-              size="sm"
-              variant="primary"
-              onClick={onEdit}
-              className="px-2 h-5 border-dashed text-[9px]"
-            >
-              MOD
-            </Button>
-            <Button
-              size="sm"
               variant="danger"
               onClick={onDelete}
-              className="px-2 h-5 border-dashed text-[9px]"
+              className="px-2 border-dashed text-[9px]"
             >
               DEL
             </Button>
@@ -179,15 +187,36 @@ export function ItemHeader({
                 variant="warning"
                 onClick={onQuickUse}
                 disabled={disableUse}
-                className="h-6 px-1.5 border-dashed text-[10px] mr-1 shadow-[0_0_8px_rgba(204,122,0,0.2)]"
+                className="border-dashed text-[10px] mr-1 shadow-[0_0_8px_rgba(204,122,0,0.2)]"
               >
                 {itemSkill ? `USAR - ${itemSkill.label}` : "USAR"}
+              </Button>
+            )}
+            {isDev && (
+              <Button
+                size="sm"
+                variant="warning"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  generateInjectionHash({
+                    type: "ITEM",
+                    singleUse: true,
+                    data: {
+                      ...item,
+                      parentId: null,
+                      isCarried: true,
+                      isEquipped: false,
+                    },
+                  });
+                }}
+              >
+                [C]
               </Button>
             )}
             <Button
               size="sm"
               onClick={onWebhook}
-              className="h-6 px-1.5 border-none text-[var(--theme-text)]/40 hover:text-[var(--theme-accent)]"
+              className="text-[var(--theme-accent)] hover:text-[var(--theme-accent)]"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

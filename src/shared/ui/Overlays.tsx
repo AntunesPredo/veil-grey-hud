@@ -9,12 +9,14 @@ export function Modal({
   title,
   children,
   isDanger = false,
+  maxWidth = "max-w-2xl",
 }: {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   isDanger?: boolean;
+  maxWidth?: string;
 }) {
   if (!isOpen) return null;
   const borderClass = isDanger
@@ -27,7 +29,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-[8000] flex items-center justify-center bg-[var(--theme-background)]/90 backdrop-blur-sm p-4">
       <div
-        className={`bg-[var(--theme-background)] border-2 ${borderClass} max-w-2xl w-full flex flex-col max-h-[90vh]`}
+        className={`bg-[var(--theme-background)] border-2 ${borderClass} ${maxWidth} w-full flex flex-col max-h-[90vh]`}
       >
         <div
           className={`flex justify-between items-center border-b p-2 text-[var(--theme-accent)] ${headerClass}`}

@@ -7,9 +7,9 @@ import { ConfirmModal } from "../../shared/ui/Overlays";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
 import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
-import { XpInjectionModal } from "../../features/progression/XpInjectionModal";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { LevelUpFlowModal } from "../../features/progression/LevelUpFlowModal";
+import { SystemInjectionModal } from "../../features/progression/SystemInjectionModal";
 
 export function Header() {
   const name = useCharacterStore((state) => state.name);
@@ -135,28 +135,27 @@ export function Header() {
                 />
               </div>
 
-              <div className="w-full flex gap-2 items-center mt-3">
-                {!sandboxMode ||
-                  (!isDistributing && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={xpModal.onOpen}
-                      className="h-full"
+              <div className="w-full flex gap-2 justify-center items-center mt-3">
+                {!sandboxMode && creationStatus === "CLOSED" ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={xpModal.onOpen}
+                    className="h-full"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
-                          fill="currentColor"
-                        />
-                      </svg>
-                    </Button>
-                  ))}
+                      <path
+                        d="M10 1H6V6L1 6V10H6V15H10V10H15V6L10 6V1Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </Button>
+                ) : null}
                 <AnimatePresence>
                   {canLevelUp && !isDistributing && (
                     <motion.div
@@ -268,7 +267,7 @@ export function Header() {
                   : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e finalizar a criação?"
               }
             />
-            <XpInjectionModal
+            <SystemInjectionModal
               isOpen={xpModal.isOpen}
               onClose={xpModal.onClose}
             />

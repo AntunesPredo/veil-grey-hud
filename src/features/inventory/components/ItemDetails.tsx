@@ -24,7 +24,7 @@ export function ItemDetails({ item, inheritedEffects = [] }: ItemDetailsProps) {
     return null;
 
   return (
-    <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-[var(--theme-border)] border-dashed">
+    <div className="flex flex-col gap-2 pt-2 ">
       {item.type === "ACTIVE" && item.requiresAmmo && (
         <span className="text-[9px] bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] border border-[var(--theme-warning)]/30 px-2 py-1 w-fit font-bold tracking-widest">
           REQUER MUNIÇÃO: {item.commsType}

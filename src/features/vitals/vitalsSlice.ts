@@ -1,6 +1,10 @@
 import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
-import type { EnergyLevel, CrisisState } from "../../shared/types/veil-grey";
+import type {
+  EnergyLevel,
+  CrisisState,
+  InstantAction,
+} from "../../shared/types/veil-grey";
 
 export interface VitalsSlice {
   hp: {
@@ -35,6 +39,7 @@ export interface VitalsSlice {
   setManualInjury: (type: "isInjured" | "isVeryInjured", val: boolean) => void;
   toggleAutoInjury: () => void;
   toggleVolatilePsyche: () => void;
+  processDirectAction: (action: InstantAction) => void;
 }
 
 export const createVitalsSlice: StateCreator<
@@ -154,4 +159,44 @@ export const createVitalsSlice: StateCreator<
     set((state) => ({
       insanity: { ...state.insanity, volatile: !state.insanity.volatile },
     })),
+
+  processDirectAction: (act) => {
+    set((state) => {
+      const updatedHp = { ...state.hp };
+      const updatedSustenance = { ...state.sustenance };
+      let updatedEnergy = state.energy;
+      let updatedEvilness = state.evilness;
+
+      if (act.target === "HP_HEAL")
+        updatedHp.current = Math.min(
+          updatedHp.baseMax + updatedHp.maxBonus,
+          updatedHp.current + act.val,
+        );
+      if (act.target === "HP_DRAIN")
+        updatedHp.current = Math.max(0, updatedHp.current - act.val);
+      if (act.target === "HP_TEMP") updatedHp.temp += act.val;
+      if (act.target === "ENERGY_RESTORE") {
+        if (updatedEnergy === "exhausted") updatedEnergy = "tired";
+        else if (updatedEnergy === "tired") updatedEnergy = "rested";
+      }
+      if (act.target === "ENERGY_DRAIN") {
+        if (updatedEnergy === "rested") updatedEnergy = "tired";
+        else if (updatedEnergy === "tired") updatedEnergy = "exhausted";
+      }
+      if (act.target === "SUSTENANCE_ADD") updatedSustenance.current += act.val;
+      if (act.target === "SUSTENANCE_DRAIN")
+        updatedSustenance.current -= act.val;
+      if (act.target === "EVILNESS_ADD")
+        updatedEvilness = Math.min(10, updatedEvilness + act.val);
+      if (act.target === "EVILNESS_SUB")
+        updatedEvilness = Math.max(0, updatedEvilness - act.val);
+
+      return {
+        hp: updatedHp,
+        sustenance: updatedSustenance,
+        energy: updatedEnergy,
+        evilness: updatedEvilness,
+      };
+    });
+  },
 });

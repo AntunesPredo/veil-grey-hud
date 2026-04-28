@@ -210,6 +210,9 @@ export function ItemRecursion({
   const savedDrawers =
     "containerProps" in item ? item.containerProps?.drawers || [] : [];
 
+  const capacity =
+    "containerProps" in item ? item.containerProps?.slotCapacity : null;
+
   const allDrawers = Array.from(
     new Set([
       ...savedDrawers,
@@ -217,21 +220,25 @@ export function ItemRecursion({
     ]),
   );
   if (childrenItems.some((c) => !c.drawer) || allDrawers.length === 0) {
-    if (!allDrawers.includes("GERAL")) allDrawers.unshift("GERAL");
+    if (isMicroContainer) {
+      allDrawers.unshift("RECARGA");
+    } else if (
+      !allDrawers.includes("GERAL") &&
+      capacity !== null &&
+      capacity !== 0
+    )
+      allDrawers.unshift("GERAL");
   }
 
   const groupedChildren = childrenItems.reduce(
     (acc, child) => {
-      const d = child.drawer || "GERAL";
+      const d = child.drawer || isMicroContainer ? "RECARGA" : "GERAL";
       if (!acc[d]) acc[d] = [];
       acc[d].push(child);
       return acc;
     },
     {} as Record<string, Item[]>,
   );
-
-  const capacity =
-    "containerProps" in item ? item.containerProps?.slotCapacity : null;
 
   const usedSlots = childrenItems.reduce(
     (acc, child) => acc + child.slots * child.quantity,
@@ -268,39 +275,41 @@ export function ItemRecursion({
   };
 
   return (
-    <div className="mt-2 border-t border-dashed border-[var(--theme-border)] pt-2">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-[8px] font-bold text-[var(--theme-success)] tracking-widest uppercase">
-          {item.type === "ACTIVE"
-            ? "COMPARTIMENTO DE MUNIÇÃO:"
-            : isMicroContainer
-              ? "COMPARTIMENTO DE RECARGA:"
-              : `ARMAZENAMENTO INTERNO (${usedSlots}/${capacity} SLOTS):`}
-        </span>
-        {!isMicroContainer && (
-          <div className="flex items-center gap-2">
-            {allDrawers.length > 1 ? (
+    <div>
+      {capacity !== null && capacity! > 0 && !isMicroContainer ? (
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[8px] font-bold text-[var(--theme-success)] tracking-widest uppercase">
+            {item.type === "ACTIVE"
+              ? "COMPARTIMENTO DE MUNIÇÃO:"
+              : isMicroContainer
+                ? "COMPARTIMENTO DE RECARGA:"
+                : `ARMAZENAMENTO INTERNO (${usedSlots}/${capacity} SLOTS):`}
+          </span>
+          {!isMicroContainer && (
+            <div className="flex items-center gap-2">
+              {allDrawers.length > 1 ? (
+                <Button
+                  size="sm"
+                  className="px-1 text-[8px] border-dashed"
+                  onClick={() => setIsEditingDrawers(!isEditingDrawers)}
+                >
+                  {isEditingDrawers ? "OK" : "EDITAR GAVETAS"}
+                </Button>
+              ) : null}
               <Button
                 size="sm"
                 className="px-1 text-[8px] border-dashed"
-                onClick={() => setIsEditingDrawers(!isEditingDrawers)}
+                onClick={() => {
+                  setCreatingDrawer(true);
+                  setDrawerInput("");
+                }}
               >
-                {isEditingDrawers ? "OK" : "EDITAR GAVETAS"}
+                + GAVETA
               </Button>
-            ) : null}
-            <Button
-              size="sm"
-              className="px-1 text-[8px] border-dashed"
-              onClick={() => {
-                setCreatingDrawer(true);
-                setDrawerInput("");
-              }}
-            >
-              + GAVETA
-            </Button>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {creatingDrawer && (
         <div className="flex gap-1 mb-2 bg-[var(--theme-accent)]/10 p-1">
@@ -331,34 +340,36 @@ export function ItemRecursion({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {allDrawers.map((drawerName) => (
-          <DrawerZone
-            key={drawerName as string}
-            containerId={item.id}
-            drawerName={drawerName}
-            items={groupedChildren[drawerName as string] || []}
-            allInventory={allInventory}
-            isMicroContainer={isMicroContainer}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            activeDragId={activeDragId}
-            isEditMode={isEditMode}
-            editingDrawer={editingDrawer}
-            setEditingDrawer={setEditingDrawer}
-            drawerInput={drawerInput}
-            setDrawerInput={setDrawerInput}
-            onRename={handleRenameDrawer}
-            onRemoveDrawer={handleDeleteDrawer}
-            isNestedAmmo={
-              item.type === "RECHARGEABLE" ||
-              item.type === "ACTIVE" ||
-              item.type === "KIT"
-            }
-            isEditingDrawers={isEditingDrawers}
-          />
-        ))}
-      </div>
+      {allDrawers.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {allDrawers.map((drawerName) => (
+            <DrawerZone
+              key={drawerName as string}
+              containerId={item.id}
+              drawerName={drawerName}
+              items={groupedChildren[drawerName as string] || []}
+              allInventory={allInventory}
+              isMicroContainer={isMicroContainer}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              activeDragId={activeDragId}
+              isEditMode={isEditMode}
+              editingDrawer={editingDrawer}
+              setEditingDrawer={setEditingDrawer}
+              drawerInput={drawerInput}
+              setDrawerInput={setDrawerInput}
+              onRename={handleRenameDrawer}
+              onRemoveDrawer={handleDeleteDrawer}
+              isNestedAmmo={
+                item.type === "RECHARGEABLE" ||
+                item.type === "ACTIVE" ||
+                item.type === "KIT"
+              }
+              isEditingDrawers={isEditingDrawers}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

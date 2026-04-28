@@ -19,6 +19,9 @@ import { ItemNodeWrapper } from "./components/ItemNodeWrapper";
 import { ItemModal } from "../item-modal/ItemModal";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
+
 const dropAnimationConfig = {
   sideEffects: defaultDropAnimationSideEffects({
     styles: { active: { opacity: "0.4" } },
@@ -34,6 +37,7 @@ export function InventoryManager({
 }) {
   const inventory = useCharacterStore((state) => state.inventory);
   const name = useCharacterStore((state) => state.name);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
   const moveInventoryItem = useCharacterStore(
     (state) => state.moveInventoryItem,
   );
@@ -177,7 +181,7 @@ export function InventoryManager({
           )}
 
           <AnimatePresence>
-            {isEditMode && (
+            {(sandboxMode || isDev) && isEditMode && (
               <motion.button
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "auto" }}

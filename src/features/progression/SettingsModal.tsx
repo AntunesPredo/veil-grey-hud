@@ -42,7 +42,8 @@ export function SettingsModal({
   const errorModal = useDisclosure();
   const [confirmModalMessage, setConfirmModalMessage] = useState("");
 
-  const isDev = import.meta.env.DEV;
+  const isDev =
+    import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
   const handleExportJSON = () => {
     const { resetCharacterData, importCharacterData, ...dataToSave } =
@@ -50,6 +51,7 @@ export function SettingsModal({
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const noSave = [resetCharacterData, importCharacterData];
+
     console.log({ noSave });
     const dataStr =
       "data:text/json;charset=utf-8," +

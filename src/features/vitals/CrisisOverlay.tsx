@@ -99,7 +99,6 @@ export function CrisisOverlay() {
       applyHealing(1);
       RetroToast.info("SINAIS VITAIS RESTABELECIDOS.");
     } else {
-      console.log({ insStages });
       updateInsanity(insStages[0] + insStages[1] - 1);
       RetroToast.info("COLAPSO MENTAL EVITADO.");
     }

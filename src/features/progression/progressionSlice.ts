@@ -13,6 +13,7 @@ export interface ProgressionSlice {
   name: string;
   level: number;
   xp: { current: number; max: number; usedXpLogs: string[] };
+  usedInjectIds: string[];
   creationStatus: CreationStatus;
   sandboxMode: boolean;
   freePoints: { attributes: number; skills: number; specializations: number };
@@ -23,6 +24,7 @@ export interface ProgressionSlice {
 
   updateProgression: (data: Partial<ProgressionSlice>) => void;
   addXp: (amount: number, log?: string) => void;
+  registerInjectId: (id: string) => void;
   triggerLevelUp: () => void;
   confirmDistribution: () => void;
   updateCreationStatus: (status: CreationStatus) => void;
@@ -46,6 +48,7 @@ export const createProgressionSlice: StateCreator<
   name: "",
   level: 1,
   xp: { current: 0, max: 100, usedXpLogs: [] },
+  usedInjectIds: [],
   creationStatus: "NOT_STARTED",
   sandboxMode: false,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
@@ -70,6 +73,9 @@ export const createProgressionSlice: StateCreator<
       };
       return updates;
     }),
+
+  registerInjectId: (id) =>
+    set((state) => ({ usedInjectIds: [...state.usedInjectIds, id] })),
 
   triggerLevelUp: () => {
     set((state) => {
@@ -126,8 +132,6 @@ export const createProgressionSlice: StateCreator<
         updates.sustenance = { ...state.sustenance, current: satiatedMax };
         updates.energy = "rested";
         updates.insanity = { ...state.insanity, current: 0 };
-      } else {
-        // TODO: apply result of levelUp hp dice.
       }
 
       if (state.creationStatus === "LEVEL_UP") {

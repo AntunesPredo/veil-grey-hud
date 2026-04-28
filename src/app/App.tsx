@@ -9,7 +9,8 @@ import { RoleSelectionScreen } from "../features/setup/RoleSelectionScreen";
 import { Booting } from "./layout/Booting";
 import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
 
-const inDevelopment = import.meta.env.VITE_IN_DEVELOPMENT === "true";
+const inDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 const screenVariants: Variants = {
   off: {
@@ -102,7 +103,7 @@ export default function App() {
   // }, [powerState, setPowerState]);
 
   useEffect(() => {
-    if (inDevelopment) return;
+    if (inDev) return;
     const disableContextMenu = (e: MouseEvent) => e.preventDefault();
     window.addEventListener("contextmenu", disableContextMenu);
     return () => window.removeEventListener("contextmenu", disableContextMenu);
@@ -124,7 +125,7 @@ export default function App() {
             animate={{ opacity: 1, transition: { duration: 1 } }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
             onClick={() => {
-              if (inDevelopment) {
+              if (inDev) {
                 setPowerState("ONLINE");
               } else {
                 setPowerState("BOOTING");

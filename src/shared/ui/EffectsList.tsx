@@ -1,11 +1,15 @@
 import type { CustomEffect } from "../types/veil-grey";
 import { Button } from "./Form";
+import { generateInjectionHash } from "../utils/hashIntegration";
 
 export type EffectsListProps = {
   effects: CustomEffect[];
   onRemove?: (id: number) => void;
   title?: string;
 };
+
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 export function EffectsList({ effects, onRemove, title }: EffectsListProps) {
   if (!effects || effects.length === 0) return null;
@@ -41,26 +45,46 @@ export function EffectsList({ effects, onRemove, title }: EffectsListProps) {
               ({eff.mode})
             </span>
           </div>
-          {onRemove && (
-            <Button
-              size="sm"
-              variant="danger"
-              className="border-none py-0 px-1.5 h-6 ml-2 shrink-0 text-[8px]"
-              onClick={() => onRemove(eff.id)}
-            >
-              <svg
-                viewBox="0 0 16 16"
-                className="w-4 h-4"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+
+          <div className="flex gap-1 items-center shrink-0">
+            {isDev && (
+              <Button
+                size="sm"
+                variant="warning"
+                className="border-none py-0 px-1.5 h-6 ml-2 text-[8px]"
+                onClick={() =>
+                  generateInjectionHash({
+                    type: "EFFECT",
+                    singleUse: false,
+                    data: { ...eff, link: null },
+                  })
+                }
+                title="Copiar Hash de Injeção"
               >
-                <path
-                  d="M5.1716 8.00003L1.08582 3.91424L3.91424 1.08582L8.00003 5.1716L12.0858 1.08582L14.9142 3.91424L10.8285 8.00003L14.9142 12.0858L12.0858 14.9142L8.00003 10.8285L3.91424 14.9142L1.08582 12.0858L5.1716 8.00003Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </Button>
-          )}
+                [COPY]
+              </Button>
+            )}
+            {onRemove && (
+              <Button
+                size="sm"
+                variant="danger"
+                className="border-none py-0 px-1.5 h-6 text-[8px]"
+                onClick={() => onRemove(eff.id)}
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  className="w-4 h-4"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5.1716 8.00003L1.08582 3.91424L3.91424 1.08582L8.00003 5.1716L12.0858 1.08582L14.9142 3.91424L10.8285 8.00003L14.9142 12.0858L12.0858 14.9142L8.00003 10.8285L3.91424 14.9142L1.08582 12.0858L5.1716 8.00003Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </Button>
+            )}
+          </div>
         </div>
       ))}
     </div>

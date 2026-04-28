@@ -40,6 +40,7 @@ export const ItemNodeWrapper = React.memo(
   }: ItemNodeWrapperProps) => {
     const name = useCharacterStore((state) => state.name);
     const skills = useCharacterStore((state) => state.skills);
+    const sandboxMode = useCharacterStore((state) => state.sandboxMode);
     const updateInventoryItem = useCharacterStore(
       (state) => state.updateInventoryItem,
     );
@@ -264,6 +265,7 @@ export const ItemNodeWrapper = React.memo(
             attributes={attributes}
             isNestedAmmo={isNestedAmmo}
             disableUse={disableUse}
+            sandboxMode={sandboxMode}
           />
         </div>
 
