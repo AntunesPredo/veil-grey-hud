@@ -9,6 +9,8 @@ import { LogisticsPanel } from "../../features/inventory/LogisticsPanel";
 import { BioPanel } from "../../features/notes/BioPanel";
 import { RollResolverModal } from "../../features/stats/RollResolverModal";
 import { VitalsResolutionModal } from "../../features/vitals/VitalsResolutionModal";
+import { InsanityTransactionModal } from "../../features/vitals/InsanityTransactionModal";
+import { CombatDefenseModal } from "../../features/vitals/CombatDefenseModal";
 
 export function SystemHud() {
   const tabs = [
@@ -34,6 +36,8 @@ export function SystemHud() {
       <CrisisOverlay />
       <RollResolverModal />
       <VitalsResolutionModal />
+      <CombatDefenseModal />
+      <InsanityTransactionModal />
       <Header />
       <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)] ">
         <AttributeDrawer />

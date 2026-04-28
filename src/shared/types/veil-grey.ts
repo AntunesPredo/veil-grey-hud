@@ -47,11 +47,8 @@ export interface Disadvantage {
 }
 
 export type EnergyLevel = "rested" | "tired" | "exhausted";
-
 export type SustenanceState = "STARVING" | "HUNGRY" | "SATIATED" | "FULL";
-
 export type InsanityState = "STABLE" | "UNSTABLE" | "INSANE";
-
 export type CrisisState = "COLLAPSE" | "DEATH" | null;
 
 export type CustomEffectTarget =
@@ -119,6 +116,24 @@ export type ItemType =
   | "CONTAINER"
   | "EQUIPABLE";
 
+export type WeaponRange =
+  | "QUEIMA-ROUPA"
+  | "CURTÍSSIMO"
+  | "CURTO"
+  | "MÉDIO"
+  | "LONGO";
+
+export type WeaponScaling = "S" | "A" | "B" | "C" | "D" | "NONE";
+
+export interface CombatProps {
+  weaponType: "MELEE" | "RANGED" | "NONE";
+  baseDamage: number;
+  range: WeaponRange;
+  baseDifficulty: number;
+  scalingAttr: Attribute | null;
+  scalingTier: WeaponScaling;
+}
+
 export interface BaseItem {
   id: number;
   name: string;
@@ -144,6 +159,7 @@ export interface ConsumableItem extends BaseItem {
   maxUses: number;
   commsType: string;
   instantActions: InstantAction[];
+  bonusDamage?: number;
 }
 
 export interface RechargeableItem extends BaseItem {
@@ -163,6 +179,7 @@ export interface ActiveItem extends BaseItem {
   commsType: string;
   requiresAmmo: boolean;
   skillId: Skill | null;
+  combatProps?: CombatProps;
 }
 
 export interface KitItem extends BaseItem {

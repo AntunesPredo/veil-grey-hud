@@ -110,7 +110,7 @@ export function ItemHeader({
             </div>
           )}
         </div>
-        <div className="flex justify-between w-[50%]">
+        <div className="flex justify-between items-center">
           <div className="flex flex-col min-w-0 flex-1 pr-2">
             <div className="flex flex-wrap items-center gap-2">
               <span

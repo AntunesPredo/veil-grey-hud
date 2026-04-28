@@ -7,17 +7,17 @@ import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { VG_CONFIG } from "../../shared/config/system.config";
-import { InsanityTransactionModal } from "./InsanityTransactionModal";
 import { useCustomSvgIcons } from "../../shared/hooks/useCustomSvgIcons";
+import { useVitalsStore } from "./useVitalsStore";
 
 export function MadnessGaugeWidget() {
   const name = useCharacterStore((state) => state.name);
   const insanity = useCharacterStore((state) => state.insanity);
   const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const openInsanityModal = useVitalsStore((state) => state.openInsanityModal);
 
   const { getSpecificIcon } = useCustomSvgIcons();
   const { maxInsanity, insanityState, insStages } = useCharacterStats();
-  const [modalMode, setModalMode] = useState<"ADD" | "SUB" | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgWidth, setSvgWidth] = useState(450);
@@ -295,7 +295,7 @@ export function MadnessGaugeWidget() {
                     <Button
                       variant="success"
                       size="sm"
-                      onClick={() => setModalMode("SUB")}
+                      onClick={() => openInsanityModal("SUB")}
                     >
                       <svg
                         className="w-14 h-5"
@@ -309,7 +309,7 @@ export function MadnessGaugeWidget() {
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => setModalMode("ADD")}
+                      onClick={() => openInsanityModal("ADD")}
                     >
                       <svg
                         className="w-14 h-5"
@@ -338,7 +338,7 @@ export function MadnessGaugeWidget() {
               variant="success"
               size="sm"
               className="w-full"
-              onClick={() => setModalMode("SUB")}
+              onClick={() => openInsanityModal("SUB")}
             >
               <div className="flex flex-1 py-1 justify-center">
                 <svg
@@ -355,7 +355,7 @@ export function MadnessGaugeWidget() {
               variant="danger"
               size="sm"
               className="w-full"
-              onClick={() => setModalMode("ADD")}
+              onClick={() => openInsanityModal("ADD")}
             >
               <div className="flex flex-1 py-1 justify-center">
                 <svg
@@ -416,12 +416,6 @@ export function MadnessGaugeWidget() {
           [ TESTE DE INSANIDADE ]
         </Button>
       </div>
-
-      <InsanityTransactionModal
-        isOpen={modalMode !== null}
-        mode={modalMode}
-        onClose={() => setModalMode(null)}
-      />
     </>
   );
 }

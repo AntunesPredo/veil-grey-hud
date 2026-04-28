@@ -8,17 +8,13 @@ import { WelcomeScreen } from "../features/setup/WelcomeScreen";
 import { RoleSelectionScreen } from "../features/setup/RoleSelectionScreen";
 import { Booting } from "./layout/Booting";
 import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
+import { useUIStore } from "../shared/store/useUIStore";
 
 const inDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 const screenVariants: Variants = {
-  off: {
-    scaleX: 0,
-    scaleY: 0,
-    opacity: 0,
-    filter: "brightness(0)",
-  },
+  off: { scaleX: 0, scaleY: 0, opacity: 0, filter: "brightness(0)" },
   on: {
     scaleX: [2, 2, 2, 2, 2, 2, 2, 2, 2, 1.3, 1, 1],
     scaleY: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.6, 1, 1],
@@ -83,6 +79,7 @@ const screenVariants: Variants = {
 export default function App() {
   const { powerState, setPowerState, theme } = useSystemStore();
   const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const setPendingInjection = useUIStore((state) => state.setPendingInjection);
 
   const cssVars = {
     "--theme-background": theme.background,
@@ -93,6 +90,19 @@ export default function App() {
     "--theme-warning": theme.warning,
     "--theme-success": theme.success,
   } as React.CSSProperties;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const injectHash = params.get("inject");
+
+    if (injectHash) {
+      setPendingInjection(injectHash);
+
+      setPowerState("ONLINE");
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [setPendingInjection, setPowerState]);
 
   // useEffect(() => {
   //   let timer: ReturnType<typeof setTimeout>;

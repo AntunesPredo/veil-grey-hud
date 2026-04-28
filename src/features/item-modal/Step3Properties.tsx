@@ -9,6 +9,7 @@ import { ChargeConfig } from "./components/ChargeConfig";
 import { ActiveCondition } from "./components/ActiveCondition";
 import { ContainerConfig } from "./components/ContainerConfig";
 import { getAllowedModes } from "../../shared/utils/effectUtils";
+import { CombatConfig } from "./components/CombatConfig";
 
 interface Step3PropertiesProps {
   formData: ItemFormData;
@@ -72,8 +73,24 @@ export function Step3Properties({
         allowStack={allowStack}
       />
 
+      <div className="hidden">CombatConfig</div>
       {isActive && (
-        <div className="flex items-center gap-2 bg-[var(--theme-danger)]/10 p-2 border border-[var(--theme-danger)]/30">
+        <div className="flex flex-col gap-3 bg-[var(--theme-danger)]/10 border border-[var(--theme-danger)]/30 p-3">
+          <Checkbox
+            label="PROPRIEDADES DE COMBATE"
+            checked={formData.combatProps.weaponType !== "NONE"}
+            onChange={() =>
+              setFormData((p) => ({
+                ...p,
+                combatProps: {
+                  ...p.combatProps,
+                  weaponType:
+                    p.combatProps.weaponType === "NONE" ? "MELEE" : "NONE",
+                },
+              }))
+            }
+          />
+          <div className="border-t border-dashed border-[var(--theme-danger)]/30" />
           <Checkbox
             label="REQUER MUNIÇÃO / CARGA"
             checked={formData.requiresAmmo}
@@ -82,6 +99,29 @@ export function Step3Properties({
             }
           />
         </div>
+      )}
+
+      {isConsumable && (
+        <div className="flex flex-col gap-1 bg-[var(--theme-danger)]/5 p-2 border border-[var(--theme-danger)]/30">
+          <span className="text-[10px] font-bold text-[var(--theme-danger)] tracking-widest uppercase">
+            DANO BÔNUS BALÍSTICO (SE MUNIÇÃO)
+          </span>
+          <Input
+            type="number"
+            value={formData.bonusDamage}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                bonusDamage: parseInt(e.target.value) || 0,
+              }))
+            }
+            className="font-mono text-center border-[var(--theme-danger)]/50 text-[var(--theme-danger)]"
+          />
+        </div>
+      )}
+
+      {isActive && formData.combatProps.weaponType !== "NONE" && (
+        <CombatConfig formData={formData} setFormData={setFormData} />
       )}
 
       {hasCommsType && (
@@ -117,7 +157,6 @@ export function Step3Properties({
           onActiveChange={handleActiveChange}
         />
       )}
-
       {isRechargeable && (
         <div className="flex flex-col gap-1 bg-[var(--theme-success)]/10 border border-[var(--theme-success)]/30 p-3">
           <span className="text-[10px] font-bold text-[var(--theme-success)] tracking-widest uppercase">
@@ -155,7 +194,6 @@ export function Step3Properties({
               setFormData((prev) => ({ ...prev, hasArmor: !prev.hasArmor }))
             }
           />
-
           {formData.hasArmor && (
             <div className="grid grid-cols-2 gap-4 border-t border-dashed border-[var(--theme-warning)]/30 pt-3">
               <div className="flex flex-col gap-1">

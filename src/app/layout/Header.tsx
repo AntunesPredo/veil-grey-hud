@@ -10,6 +10,7 @@ import { useCharacterStore } from "../../features/character/store";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { LevelUpFlowModal } from "../../features/progression/LevelUpFlowModal";
 import { SystemInjectionModal } from "../../features/progression/SystemInjectionModal";
+import { useUIStore } from "../../shared/store/useUIStore";
 
 export function Header() {
   const name = useCharacterStore((state) => state.name);
@@ -24,10 +25,19 @@ export function Header() {
     (state) => state.confirmDistribution,
   );
 
+  const pendingInjection = useUIStore((state) => state.pendingInjection);
+
   const settingsModal = useDisclosure();
   const confirmModal = useDisclosure();
   const xpModal = useDisclosure();
   const levelUpModal = useDisclosure();
+
+  useEffect(() => {
+    if (pendingInjection) {
+      xpModal.onOpen();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingInjection]);
 
   const [isExpanded, setIsExpanded] = useState(window.innerWidth >= 768);
 

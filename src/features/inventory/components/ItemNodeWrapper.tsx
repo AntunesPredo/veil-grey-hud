@@ -4,8 +4,9 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { useCharacterStore } from "../../character/store";
 import type {
   Item,
-  Skill,
   CustomEffect,
+  ActiveItem,
+  ConsumableItem,
 } from "../../../shared/types/veil-grey";
 import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
 import { RetroToast } from "../../../shared/ui/RetroToast";
@@ -15,6 +16,9 @@ import { ItemDetails } from "./ItemDetails";
 import { ItemRecursion } from "./ItemRecursion";
 import { executeRawRoll } from "../../../shared/utils/diceEngine";
 import { useSystemData } from "../../../shared/hooks/useSystemData";
+import { generateInjectionHash } from "../../../shared/utils/hashIntegration";
+
+const baseUrl = import.meta.env.VITE_APP_BASE_URL || window.location.href;
 
 type ItemNodeWrapperProps = {
   item: Item;
@@ -207,19 +211,134 @@ export const ItemNodeWrapper = React.memo(
           let msg = `  **AÇÃO:** [${name}] usou **${item.name}**.`;
 
           if (item.type === "ACTIVE") {
+            const activeItem = item as ActiveItem;
+            let attackRoll = 0;
+            let isCrit = false;
+
             if (res.rollData?.skillId) {
-              const itemSkill = getSkillById(res.rollData.skillId as Skill);
               const skillVal =
                 skills[res.rollData.skillId as keyof typeof skills] || 0;
-
               const rollRes = executeRawRoll(`1d20+${skillVal}`);
-              msg += `\n **ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
+              attackRoll = rollRes.total;
+              isCrit = rollRes.isCriticalSuccess;
             }
-            msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
-          }
 
-          dispatchDiscordLog("INVENTORY", name, msg);
-          RetroToast.success(`USADO: ${item.name}`);
+            if (
+              activeItem.combatProps &&
+              activeItem.combatProps.weaponType !== "NONE"
+            ) {
+              const props = activeItem.combatProps;
+              let finalDmg = props.baseDamage;
+              const urlPrefix = baseUrl.split("?")[0] + "?inject=";
+
+              if (props.weaponType === "RANGED") {
+                let ammoBonus = 0;
+                if (activeItem.requiresAmmo) {
+                  const ammos = childrenItems.filter(
+                    (i) => i.type === "CONSUMABLE" && i.uses > 0,
+                  );
+                  if (ammos.length > 0 && "bonusDamage" in ammos[0]) {
+                    ammoBonus = (ammos[0] as ConsumableItem).bonusDamage || 0;
+                  }
+                }
+                finalDmg += ammoBonus;
+
+                const linkDamageHash = generateInjectionHash(
+                  {
+                    type: "ACTION",
+                    singleUse: false,
+                    data: {
+                      target: "HP_DRAIN",
+                      val: finalDmg,
+                      description: `Tiro recebido de ${name}`,
+                    },
+                  },
+                  { silent: true },
+                );
+
+                msg = `**ATAQUE À DISTÂNCIA**\n**Atirador:** ${name}\n**Arma:** ${item.name}\n**Alcance:** ${props.range}\n**Dificuldade Base:** ${props.baseDifficulty}`;
+                if (attackRoll > 0)
+                  msg += `\n**Roll Ataque:** ${attackRoll} ${isCrit ? " *(CRÍTICO!)*" : ""}`;
+                msg += `\n**Dano Potencial:** ${finalDmg}`;
+                msg += `\n\n[💥 APLICAR DANO DIRETO](${urlPrefix}${linkDamageHash})`;
+              } else if (props.weaponType === "MELEE") {
+                const scalingMap: Record<string, number> = {
+                  S: 5,
+                  A: 3,
+                  B: 2,
+                  C: 1,
+                  D: 0.5,
+                  NONE: 0,
+                };
+                const mult = scalingMap[props.scalingTier] || 0;
+
+                const attrStore = useCharacterStore.getState().attributes;
+                const attrVal = props.scalingAttr
+                  ? attrStore[props.scalingAttr] || 0
+                  : 0;
+
+                finalDmg += Math.floor(attrVal * mult);
+                if (isCrit) finalDmg *= 2;
+
+                const linkDamageHash = generateInjectionHash(
+                  {
+                    type: "ACTION",
+                    singleUse: false,
+                    data: {
+                      target: "HP_DRAIN",
+                      val: finalDmg,
+                      description: `Ataque Melee de ${name}`,
+                    },
+                  },
+                  { silent: true },
+                );
+                const linkDodgeHash = generateInjectionHash(
+                  {
+                    type: "COMBAT_DEFENSE",
+                    singleUse: false,
+                    data: {
+                      attackRoll,
+                      damage: finalDmg,
+                      defenseType: "DODGE",
+                      attackerName: name,
+                    },
+                  },
+                  { silent: true },
+                );
+                const linkBlockHash = generateInjectionHash(
+                  {
+                    type: "COMBAT_DEFENSE",
+                    singleUse: false,
+                    data: {
+                      attackRoll,
+                      damage: finalDmg,
+                      defenseType: "BLOCK",
+                      attackerName: name,
+                    },
+                  },
+                  { silent: true },
+                );
+
+                msg = `**ATAQUE CORPO-A-CORPO**\n**Atacante:** ${name}\n**Arma:** ${item.name}\n**Alcance:** ${props.range}`;
+                if (attackRoll > 0)
+                  msg += `\n**Ataque:** ${attackRoll} ${isCrit ? " *(CRÍTICO! Double Damage)*" : ""}`;
+                msg += `\n**Dano Potencial:** ${finalDmg}`;
+                msg += `\n\n[💨 TENTAR ESQUIVA (DES)](${urlPrefix}${linkDodgeHash})`;
+                msg += `\n[🛡️ TENTAR BLOQUEIO (CON)](${urlPrefix}${linkBlockHash})`;
+                msg += `\n[💥 RECEBER DANO DIRETO](${urlPrefix}${linkDamageHash})`;
+              }
+            } else {
+              msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
+            }
+
+            dispatchDiscordLog("INVENTORY", name, msg);
+            RetroToast.success(
+              `USADO: ${item.name} -${res.rollData?.loss} Integridade.`,
+            );
+          } else {
+            dispatchDiscordLog("INVENTORY", name, msg);
+            RetroToast.success(`USADO: ${item.name}`);
+          }
         } else {
           RetroToast.error(res.message);
         }

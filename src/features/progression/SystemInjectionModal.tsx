@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCharacterStore } from "../character/store";
+import { useVitalsStore } from "../vitals/useVitalsStore";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { ConfirmModal, Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
@@ -11,8 +12,9 @@ import type {
   InstantAction,
 } from "../../shared/types/veil-grey";
 import type { InjectPayload } from "../../shared/utils/hashIntegration";
-import { HashGeneratorModal } from "./HashGeneratorModal";
+import { useUIStore } from "../../shared/store/useUIStore";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { HashGeneratorModal } from "./HashGeneratorModal";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const isDev =
@@ -35,9 +37,22 @@ export function SystemInjectionModal({
   const usedInjectIds = useCharacterStore((state) => state.usedInjectIds);
   const registerInjectId = useCharacterStore((state) => state.registerInjectId);
   const hashBuilderModal = useDisclosure();
+  const openVitalsModal = useVitalsStore((state) => state.openModal);
+  const openInsanityModal = useVitalsStore((state) => state.openInsanityModal);
+  const openDefenseModal = useVitalsStore((state) => state.openDefenseModal);
+
   const confirmModal = useDisclosure();
   const [hashInput, setHashInput] = useState("");
   const [confirmModalMessage, setConfirmModalMessage] = useState("");
+  const pendingInjection = useUIStore((state) => state.pendingInjection);
+  const setPendingInjection = useUIStore((state) => state.setPendingInjection);
+
+  useEffect(() => {
+    if (isOpen && pendingInjection) {
+      setHashInput(pendingInjection);
+      setPendingInjection(null);
+    }
+  }, [isOpen, pendingInjection, setPendingInjection]);
 
   const handleClose = () => {
     setHashInput("");
@@ -49,11 +64,14 @@ export function SystemInjectionModal({
     if (!hashInput.trim()) return;
 
     try {
-      const bytes = CryptoJS.AES.decrypt(hashInput.trim(), SECRET_KEY);
+      let cleanHash = decodeURIComponent(hashInput.trim());
+      cleanHash = cleanHash.replace(/\s/g, "+");
+
+      const bytes = CryptoJS.AES.decrypt(cleanHash, SECRET_KEY);
       const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
 
       if (!decryptedString) {
-        throw new Error("Payload criptográfico corrompido ou incorreto.");
+        RetroToast.error("Payload criptográfico corrompido ou incorreto.");
       }
 
       const parsedData = JSON.parse(decryptedString);
@@ -61,10 +79,8 @@ export function SystemInjectionModal({
       const payloads: InjectPayload[] = Array.isArray(parsedData)
         ? parsedData
         : [parsedData];
-
-      if (payloads.length === 0) {
+      if (payloads.length === 0)
         throw new Error("O pacote de injeção está vazio.");
-      }
 
       let successCount = 0;
       let msg = ` **[ ${name || "SUJEITO"} ] - INJECTIONS: ** `;
@@ -117,11 +133,32 @@ export function SystemInjectionModal({
           }
           case "ACTION": {
             const actionData = payload.data as InstantAction;
-            processDirectAction(actionData);
-            RetroToast.success(
-              `AÇÃO IMEDIATA PROCESSADA: [${actionData.description}]`,
+            if (actionData.target === "HP_DRAIN") {
+              openVitalsModal("DAMAGE", actionData.val.toString(), true);
+            } else if (actionData.target === "HP_HEAL") {
+              openVitalsModal("HEALING", actionData.val.toString(), true);
+            } else if (actionData.target === "INSANITY_ADD") {
+              openInsanityModal("ADD", actionData.val.toString(), true);
+            } else if (actionData.target === "INSANITY_DRAIN") {
+              openInsanityModal("SUB", actionData.val.toString(), true);
+            } else {
+              processDirectAction(actionData);
+              RetroToast.success(
+                `AÇÃO IMEDIATA PROCESSADA: [${actionData.description}]`,
+              );
+              msg += `\n- [SUCESSO] Ação imediata processada: ${actionData.description}`;
+            }
+            break;
+          }
+          case "COMBAT_DEFENSE": {
+            openDefenseModal(
+              payload.data as {
+                attackRoll: number;
+                damage: number;
+                defenseType: "DODGE" | "BLOCK";
+                attackerName: string;
+              },
             );
-            msg += `\n- [SUCESSO] Ação imediata processada: ${actionData.description}`;
             break;
           }
           default:

@@ -6,6 +6,7 @@ export interface UIState {
   drawerRight: { isOpen: boolean; isPinned: boolean; widthVW: number };
   accordions: Record<string, boolean>;
   isSettingsModalOpen: boolean;
+  pendingInjection: string | null;
 }
 
 export interface UIActions {
@@ -16,6 +17,7 @@ export interface UIActions {
   toggleAccordion: (id: string) => void;
   toggleSettingsModal: () => void;
   enforceLayoutConstraints: (screenWidth: number) => void;
+  setPendingInjection: (hash: string | null) => void;
 }
 
 export const useUIStore = create<UIState & UIActions>()(
@@ -33,6 +35,7 @@ export const useUIStore = create<UIState & UIActions>()(
       },
       accordions: {},
       isSettingsModalOpen: false,
+      pendingInjection: null,
 
       setDrawerState: (side, data) =>
         set((state) => ({
@@ -73,6 +76,7 @@ export const useUIStore = create<UIState & UIActions>()(
           }
           return updates;
         }),
+      setPendingInjection: (hash) => set({ pendingInjection: hash }),
     }),
     { name: "vg_ui_data" },
   ),

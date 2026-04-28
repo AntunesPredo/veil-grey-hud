@@ -10,6 +10,7 @@ import type {
   Skill,
   ConsumableItem,
   InstantAction,
+  CombatProps,
 } from "../../shared/types/veil-grey";
 import { useCharacterStore } from "../character/store";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
@@ -35,6 +36,8 @@ export interface ItemFormData {
   quality: number;
   condition: number;
   commsType: string;
+  bonusDamage: number;
+  combatProps: CombatProps;
   perItemSlotReduction: number;
   containerProps: {
     slotCapacity: number;
@@ -81,6 +84,15 @@ const defaultFormData: ItemFormData = {
   armorProps: { pe: 120, maxPe: 120, rd: 30 },
   hasInstantActions: false,
   instantActions: [],
+  bonusDamage: 0,
+  combatProps: {
+    weaponType: "NONE",
+    baseDamage: 0,
+    range: "CURTO",
+    baseDifficulty: 10,
+    scalingAttr: null,
+    scalingTier: "NONE",
+  },
 };
 
 interface ItemModalProps {

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCharacterStore } from "../character/store";
+import { useVitalsStore } from "./useVitalsStore";
 import { Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
@@ -8,33 +9,44 @@ import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
-interface InsanityTransactionModalProps {
-  isOpen: boolean;
-  mode: "ADD" | "SUB" | null;
-  onClose: () => void;
-}
+export function InsanityTransactionModal() {
+  const isInsanityOpen = useVitalsStore((state) => state.isInsanityOpen);
+  const insanityMode = useVitalsStore((state) => state.insanityMode);
+  const isInsanitySystemInjection = useVitalsStore(
+    (state) => state.isInsanitySystemInjection,
+  );
+  const insanityInputValue = useVitalsStore(
+    (state) => state.insanityInputValue,
+  );
+  const setInsanityInputValue = useVitalsStore(
+    (state) => state.setInsanityInputValue,
+  );
+  const closeInsanityModal = useVitalsStore(
+    (state) => state.closeInsanityModal,
+  );
 
-export function InsanityTransactionModal({
-  isOpen,
-  mode,
-  onClose,
-}: InsanityTransactionModalProps) {
   const name = useCharacterStore((state) => state.name);
   const insanity = useCharacterStore((state) => state.insanity);
   const updateInsanity = useCharacterStore((state) => state.updateInsanity);
   const updateCrisis = useCharacterStore((state) => state.updateCrisis);
   const { maxInsanity } = useCharacterStats();
 
-  const [inputValue, setInputValue] = useState("");
   const [step, setStep] = useState<"INPUT" | "CONFIRM">("INPUT");
   const [rolledAmount, setRolledAmount] = useState(0);
 
-  if (!isOpen || !mode) return null;
+  useEffect(() => {
+    if (isInsanityOpen && isInsanitySystemInjection && step === "INPUT") {
+      handleProcessInput(insanityInputValue);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInsanityOpen]);
 
-  const handleProcessInput = () => {
-    if (!inputValue.trim()) return;
+  if (!isInsanityOpen || !insanityMode) return null;
 
-    const result = executeRawRoll(inputValue);
+  const handleProcessInput = (valToProcess: string = insanityInputValue) => {
+    if (!valToProcess.trim()) return;
+
+    const result = executeRawRoll(valToProcess);
     if (result.error) return RetroToast.error(result.error);
 
     setRolledAmount(result.total);
@@ -42,7 +54,7 @@ export function InsanityTransactionModal({
   };
 
   const handleConfirm = () => {
-    const isAdding = mode === "ADD";
+    const isAdding = insanityMode === "ADD";
 
     let newTotal = isAdding
       ? insanity.current + rolledAmount
@@ -78,21 +90,21 @@ export function InsanityTransactionModal({
   };
 
   const handleClose = () => {
-    setInputValue("");
+    setInsanityInputValue("");
     setStep("INPUT");
-    onClose();
+    closeInsanityModal();
   };
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen={isInsanityOpen}
       onClose={handleClose}
       title={
-        mode === "ADD"
+        insanityMode === "ADD"
           ? "REGISTRAR CORRUPÇÃO MENTAL"
           : "REGISTRAR RECENTRALIZAÇÃO"
       }
-      isDanger={mode === "ADD"}
+      isDanger={insanityMode === "ADD"}
     >
       <div className="flex flex-col gap-4">
         {step === "INPUT" ? (
@@ -103,16 +115,20 @@ export function InsanityTransactionModal({
               </span>
               <Input
                 autoFocus
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleProcessInput()}
-                className="text-center text-xl font-bold py-3"
+                value={insanityInputValue}
+                onChange={(e) => setInsanityInputValue(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && handleProcessInput(insanityInputValue)
+                }
+                className={`text-center text-xl font-bold py-3 ${isInsanitySystemInjection ? "opacity-50 cursor-not-allowed border-dashed" : ""}`}
+                disabled={isInsanitySystemInjection}
               />
             </div>
             <Button
-              variant={mode === "ADD" ? "danger" : "success"}
-              onClick={handleProcessInput}
+              variant={insanityMode === "ADD" ? "danger" : "success"}
+              onClick={() => handleProcessInput(insanityInputValue)}
               className="py-3"
+              disabled={isInsanitySystemInjection}
             >
               PROCESSAR
             </Button>
@@ -124,10 +140,10 @@ export function InsanityTransactionModal({
             className="flex flex-col gap-4"
           >
             <div
-              className={`bg-[var(--theme-background)] border-2 p-3 text-center ${mode === "ADD" ? "border-[var(--theme-danger)] text-[var(--theme-danger)] glow-danger" : "border-[var(--theme-success)] text-[var(--theme-success)] glow-success"}`}
+              className={`bg-[var(--theme-background)] border-2 p-3 text-center ${insanityMode === "ADD" ? "border-[var(--theme-danger)] text-[var(--theme-danger)] glow-danger" : "border-[var(--theme-success)] text-[var(--theme-success)] glow-success"}`}
             >
               <span className="text-xl font-bold block mb-1">
-                {mode === "ADD"
+                {insanityMode === "ADD"
                   ? "LOUCURA A SER INJETADA"
                   : "LOUCURA A SER REMOVIDA"}
               </span>
@@ -141,11 +157,12 @@ export function InsanityTransactionModal({
                 variant="primary"
                 onClick={() => setStep("INPUT")}
                 className="flex-1"
+                disabled={isInsanitySystemInjection}
               >
                 CANCELAR
               </Button>
               <Button
-                variant={mode === "ADD" ? "danger" : "success"}
+                variant={insanityMode === "ADD" ? "danger" : "success"}
                 onClick={handleConfirm}
                 className="flex-1"
               >

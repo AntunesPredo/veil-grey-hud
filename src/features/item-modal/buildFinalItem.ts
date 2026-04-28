@@ -36,6 +36,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
         maxUses: data.maxUses,
         commsType: data.commsType || "",
         instantActions: data.hasInstantActions ? data.instantActions : [],
+        bonusDamage: data.bonusDamage || 0,
       } as ConsumableItem;
     case "RECHARGEABLE":
       return {
@@ -57,6 +58,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
         commsType: data.commsType || "",
         requiresAmmo: data.requiresAmmo,
         skillId: data.skillId,
+        combatProps: data.combatProps,
       } as ActiveItem;
     case "KIT":
       return {

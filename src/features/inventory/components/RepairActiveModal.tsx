@@ -27,7 +27,7 @@ export function RepairActiveModal({
       dispatchDiscordLog(
         "INVENTORY",
         name,
-        ` **MANUTENÇÃO:** [${name}] realizou manutenção em **${item.name}**.\n**MODO:** ${label} (x${multiplier})\n**RECUPERADO:** +${res.recovered} Integridade.`,
+        ` **MANUTENÇÃO:** [${name}] realizou manutenção em **${item.name}**.\n**${label}** \n**RECUPERADO:** +${res.recovered} Integridade.`,
       );
       RetroToast.success(`CONSERTO: +${res.recovered} INTEGRIDADE.`);
     } else {
