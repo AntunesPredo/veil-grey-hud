@@ -214,13 +214,19 @@ export const ItemNodeWrapper = React.memo(
             const activeItem = item as ActiveItem;
             let attackRoll = 0;
             let isCrit = false;
+            let isFail = false;
+            let rollLog = "";
 
             if (res.rollData?.skillId) {
               const skillVal =
                 skills[res.rollData.skillId as keyof typeof skills] || 0;
-              const rollRes = executeRawRoll(`1d20+${skillVal}`);
+              const rollRes = executeRawRoll(
+                `1d20+${skillVal > 1 ? skillVal : -1}`,
+              );
               attackRoll = rollRes.total;
               isCrit = rollRes.isCriticalSuccess;
+              isFail = rollRes.isCriticalFail;
+              rollLog = rollRes.log;
             }
 
             if (
@@ -255,14 +261,15 @@ export const ItemNodeWrapper = React.memo(
                   },
                   { silent: true },
                 );
-
+                console.log({ rollLog });
                 msg = `**ATAQUE À DISTÂNCIA**\n-# Atirador: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**\n> * * Dificuldade Base: **${props.baseDifficulty}**`;
                 if (attackRoll > props.baseDifficulty) {
                   msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
                   msg += `\n\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
                 } else {
-                  msg += `\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
+                  msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
                 }
+                msg += `\n**LOG:**\n${"```"}${rollLog}${"```"}`;
               } else if (props.weaponType === "MELEE") {
                 const scalingMap: Record<string, number> = {
                   S: 5,
@@ -328,8 +335,9 @@ export const ItemNodeWrapper = React.memo(
                   msg += `\n[🛡️ BLOQUEIO (CON) 🛡️](${urlPrefix}${linkBlockHash})`;
                   msg += `\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
                 } else {
-                  msg += `\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
+                  msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
                 }
+                msg += `\n**LOG:**\n${"```"}${rollLog}${"```"}`;
               }
             } else {
               msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
