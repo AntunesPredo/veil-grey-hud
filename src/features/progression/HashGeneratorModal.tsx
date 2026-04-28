@@ -32,7 +32,6 @@ export function HashGeneratorModal({
 
   const [singleUse, setSingleUse] = useState(true);
 
-  // Action State
   const [actTarget, setActTarget] = useState<InstantActionTarget | "">("");
   const [actVal, setActVal] = useState<number>(0);
   const [actDesc, setActDesc] = useState("");

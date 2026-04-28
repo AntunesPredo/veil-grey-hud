@@ -25,10 +25,6 @@ export const useImportData = ({
         onClose();
       } catch (error) {
         onError(error as Error);
-        // errorModal.onOpen();
-        // setConfirmModalMessage(
-        //   `Erro durante o processamento do arquivo - ${(error as Error).message ?? "Desconhecido"}`,
-        // );
       }
     };
     reader.readAsText(file);
