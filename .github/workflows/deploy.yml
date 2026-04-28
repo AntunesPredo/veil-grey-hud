@@ -29,6 +29,8 @@ jobs:
         env: 
           VITE_PLAYER_WEBHOOK: ${{ secrets.VITE_PLAYER_WEBHOOK }}
           VITE_INVENTORY_WEBHOOK: ${{ secrets.VITE_INVENTORY_WEBHOOK }}
+          VITE_APP_BASE_URL: ${{ secrets.VITE_APP_BASE_URL }}
+          VITE_SECRET_KEY: ${{ secrets.VITE_SECRET_KEY }}
       
       - name: Delete old artifacts
         uses: geekyeggo/delete-artifact@v5

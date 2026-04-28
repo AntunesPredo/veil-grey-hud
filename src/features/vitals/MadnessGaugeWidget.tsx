@@ -100,10 +100,10 @@ export function MadnessGaugeWidget() {
     <>
       <div
         ref={containerRef}
-        className="relative w-full h-[140px] bg-[var(--theme-background)] overflow-hidden"
+        className="relative w-full h-[154px] bg-[var(--theme-background)] overflow-hidden"
       >
         <svg
-          viewBox={`0 0 ${svgWidth} 140`}
+          viewBox={`0 0 ${svgWidth} 154`}
           className="absolute inset-0 w-full h-full"
           preserveAspectRatio="none"
         >
@@ -331,7 +331,7 @@ export function MadnessGaugeWidget() {
         </svg>
       </div>
 
-      <div className="flex flex-col px-5 pb-5 border-[var(--theme-border)] gap-5 mt-3">
+      <div className="flex flex-col px-5 pb-5 border-[var(--theme-border)] gap-5">
         {creationStatus === "CLOSED" ? (
           <div className="flex md:hidden gap-2 pb-1">
             <Button
