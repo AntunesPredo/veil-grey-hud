@@ -83,8 +83,8 @@ export function ItemHeader({
   const pct = hasUses ? Math.min((currentUses / maxUses) * 100, 100) : 0;
 
   return (
-    <div className="flex items-center justify-between p-2 cursor-pointer group hover:bg-[var(--theme-accent)]/5 transition-colors">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+    <div className="flex flex-col gap-2 items-center justify-between p-2 cursor-pointer group hover:bg-[var(--theme-accent)]/5 transition-colors">
+      <div className="flex w-full items-center gap-3 min-w-0 flex-1">
         <div className="flex items-center shrink-0">
           {isEditMode ? (
             <div
@@ -110,7 +110,7 @@ export function ItemHeader({
             </div>
           )}
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex w-full justify-between items-center">
           <div className="flex flex-col min-w-0 flex-1 pr-2">
             <div className="flex flex-wrap items-center gap-2">
               <span
@@ -157,7 +157,7 @@ export function ItemHeader({
       </div>
 
       <div
-        className="flex items-center gap-2 shrink-0 pl-2"
+        className="flex w-full justify-between items-center gap-2 shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isEditMode ? (
@@ -192,36 +192,38 @@ export function ItemHeader({
                 {itemSkill ? `USAR - ${itemSkill.label}` : "USAR"}
               </Button>
             )}
-            {isDev && (
+            <div className="flex gap-2 items-center">
+              {isDev && (
+                <Button
+                  size="sm"
+                  variant="warning"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    generateInjectionHash({
+                      type: "ITEM",
+                      singleUse: true,
+                      data: {
+                        ...item,
+                        parentId: null,
+                        isCarried: true,
+                        isEquipped: false,
+                      },
+                    });
+                  }}
+                >
+                  [C]
+                </Button>
+              )}
               <Button
                 size="sm"
-                variant="warning"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  generateInjectionHash({
-                    type: "ITEM",
-                    singleUse: true,
-                    data: {
-                      ...item,
-                      parentId: null,
-                      isCarried: true,
-                      isEquipped: false,
-                    },
-                  });
-                }}
+                onClick={onWebhook}
+                className="text-[var(--theme-accent)] hover:text-[var(--theme-accent)]"
               >
-                [C]
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
               </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={onWebhook}
-              className="text-[var(--theme-accent)] hover:text-[var(--theme-accent)]"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-              </svg>
-            </Button>
+            </div>
           </>
         )}
       </div>

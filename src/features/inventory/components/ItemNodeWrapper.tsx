@@ -256,11 +256,13 @@ export const ItemNodeWrapper = React.memo(
                   { silent: true },
                 );
 
-                msg = `**ATAQUE À DISTÂNCIA**\n**Atirador:** ${name}\n**Arma:** ${item.name}\n**Alcance:** ${props.range}\n**Dificuldade Base:** ${props.baseDifficulty}`;
-                if (attackRoll > 0)
-                  msg += `\n**Roll Ataque:** ${attackRoll} ${isCrit ? " *(CRÍTICO!)*" : ""}`;
-                msg += `\n**Dano Potencial:** ${finalDmg}`;
-                msg += `\n\n[💥 APLICAR DANO DIRETO](${urlPrefix}${linkDamageHash})`;
+                msg = `**ATAQUE À DISTÂNCIA**\n-# Atirador: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**\n> * * Dificuldade Base: **${props.baseDifficulty}**`;
+                if (attackRoll > props.baseDifficulty) {
+                  msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
+                  msg += `\n\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
+                } else {
+                  msg += `\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
+                }
               } else if (props.weaponType === "MELEE") {
                 const scalingMap: Record<string, number> = {
                   S: 5,
@@ -319,13 +321,15 @@ export const ItemNodeWrapper = React.memo(
                   { silent: true },
                 );
 
-                msg = `**ATAQUE CORPO-A-CORPO**\n**Atacante:** ${name}\n**Arma:** ${item.name}\n**Alcance:** ${props.range}`;
-                if (attackRoll > 0)
-                  msg += `\n**Ataque:** ${attackRoll} ${isCrit ? " *(CRÍTICO! Double Damage)*" : ""}`;
-                msg += `\n**Dano Potencial:** ${finalDmg}`;
-                msg += `\n\n[💨 TENTAR ESQUIVA (DES)](${urlPrefix}${linkDodgeHash})`;
-                msg += `\n[🛡️ TENTAR BLOQUEIO (CON)](${urlPrefix}${linkBlockHash})`;
-                msg += `\n[💥 RECEBER DANO DIRETO](${urlPrefix}${linkDamageHash})`;
+                msg = `**ATAQUE CORPO-A-CORPO**\n-# Origem: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**`;
+                if (attackRoll > 4) {
+                  msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
+                  msg += `\n**AÇÕES:**\n[⚡ ESQUIVA (DES) ⚡](${urlPrefix}${linkDodgeHash})`;
+                  msg += `\n[🛡️ BLOQUEIO (CON) 🛡️](${urlPrefix}${linkBlockHash})`;
+                  msg += `\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
+                } else {
+                  msg += `\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
+                }
               }
             } else {
               msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
