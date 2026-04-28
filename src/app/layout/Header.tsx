@@ -259,33 +259,6 @@ export function Header() {
                 </span>
               </Button>
             </div>
-
-            <SettingsModal
-              isOpen={settingsModal.isOpen}
-              onClose={settingsModal.onClose}
-            />
-            <ConfirmModal
-              isOpen={confirmModal.isOpen}
-              onClose={confirmModal.onClose}
-              onConfirm={confirmDistribution}
-              title={
-                hasFreePoints ? "PONTOS NÃO ALOCADOS" : "FINALIZAR CRIAÇÃO?"
-              }
-              message={
-                hasFreePoints
-                  ? "Existem pontos livres não distribuídos. Eles serão acumulados e poderão ser gastos no próximo Nível. Deseja prosseguir e concluir a criação?"
-                  : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e finalizar a criação?"
-              }
-            />
-            <SystemInjectionModal
-              isOpen={xpModal.isOpen}
-              onClose={xpModal.onClose}
-            />
-            <LevelUpFlowModal
-              isOpen={levelUpModal.isOpen}
-              onClose={levelUpModal.onClose}
-              hasFreePoints={hasFreePoints}
-            />
           </motion.header>
         )}
       </AnimatePresence>
@@ -298,6 +271,28 @@ export function Header() {
           ? "▲ ESCONDER PAINEL DE CONTROLE ▲"
           : "▼ MOSTRAR PAINEL DE CONTROLE ▼"}
       </button>
+
+      <SettingsModal
+        isOpen={settingsModal.isOpen}
+        onClose={settingsModal.onClose}
+      />
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmDistribution}
+        title={hasFreePoints ? "PONTOS NÃO ALOCADOS" : "FINALIZAR CRIAÇÃO?"}
+        message={
+          hasFreePoints
+            ? "Existem pontos livres não distribuídos. Eles serão acumulados e poderão ser gastos no próximo Nível. Deseja prosseguir e concluir a criação?"
+            : "Você gastou todos os pontos disponíveis. Deseja confirmar as alocações e finalizar a criação?"
+        }
+      />
+      <SystemInjectionModal isOpen={xpModal.isOpen} onClose={xpModal.onClose} />
+      <LevelUpFlowModal
+        isOpen={levelUpModal.isOpen}
+        onClose={levelUpModal.onClose}
+        hasFreePoints={hasFreePoints}
+      />
     </div>
   );
 }
