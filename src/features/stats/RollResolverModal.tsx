@@ -32,21 +32,21 @@ export function RollResolverModal() {
     }
 
     let toastMsg = `[${payload.title}] = ${rollResult.total}`;
-    let logMsg = `**ROLAGEM:** ${payload.title}\n\`\`\`\n${rollResult.log}\n\`\`\``;
+    let logMsg = `**Rolling:** ${payload.title}\n\`\`\`\n${rollResult.log}\n\`\`\``;
 
     if (rollResult.isCriticalSuccess) {
       toastMsg = `CRÍTICO! ${toastMsg}`;
-      logMsg += `\n[ SUCESSO CRÍTICO ]`;
+      logMsg += `\n## >>[ SUCESSO CRÍTICO ]<<`;
     } else if (rollResult.isCriticalFail) {
       toastMsg = `FALHA CRÍTICA! ${toastMsg}`;
-      logMsg += `\n[ FALHA CRÍTICA ]`;
+      logMsg += `\n## >>[ FALHA CRÍTICA ]<<`;
     } else if (payload.dc !== undefined) {
       if (rollResult.total >= payload.dc) {
         toastMsg += ` (SUCESSO VS DC ${payload.dc})`;
-        logMsg += `\n[ SUCESSO VS DC ${payload.dc} ]`;
+        logMsg += `\n## >>[ SUCESSO VS DC ${payload.dc} ]<<`;
       } else {
         toastMsg += ` (FALHA VS DC ${payload.dc})`;
-        logMsg += `\n[ FALHA VS DC ${payload.dc} ]`;
+        logMsg += `\n## >>[ FALHA VS DC ${payload.dc} ]<<`;
       }
     }
 
@@ -68,9 +68,10 @@ export function RollResolverModal() {
 
   let resultColor = "text-[var(--theme-accent)]";
   if (result) {
-    if (result.isCriticalSuccess) resultColor = "text-[var(--theme-success)]";
+    if (result.isCriticalSuccess)
+      resultColor = "text-[var(--theme-success)] glow-success";
     if (result.isCriticalFail)
-      resultColor = "text-[var(--theme-danger)] animate-pulse";
+      resultColor = "text-[var(--theme-danger)] glow-danger animate-pulse";
   }
 
   return (
@@ -187,7 +188,7 @@ export function RollResolverModal() {
             </div>
 
             <Button onClick={close} className="w-full border-dashed">
-              FINALIZAR LEITURA
+              ACEITAR
             </Button>
           </motion.div>
         )}

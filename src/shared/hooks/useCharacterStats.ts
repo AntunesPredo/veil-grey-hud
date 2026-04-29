@@ -171,42 +171,42 @@ export function useCharacterStats() {
     }
 
     // 3. SUSTENANCE
-    if (sustenanceState === "FULL") {
-      const desc = "[SISTEMA: BEM ALIMENTADO]";
-      addSysEffect("ATT_PHYSICAL", 1, desc);
-      addSysEffect("SKILL_PHYSICAL", 1, desc);
-      addSysEffect("ATT_MENTAL", 1, desc);
-      addSysEffect("SKILL_MENTAL", 1, desc);
-    } else if (sustenanceState === "HUNGRY") {
-      const desc = "[SISTEMA: FAMINTO]";
-      addSysEffect("ATT_PHYSICAL", -1, desc);
-      addSysEffect("SKILL_PHYSICAL", -1, desc);
-      addSysEffect("ATT_MENTAL", -1, desc);
-      addSysEffect("SKILL_MENTAL", -1, desc);
-    } else if (sustenanceState === "STARVING") {
-      const desc = "[SISTEMA: INANIÇÃO]";
-      addSysEffect("ATT_PHYSICAL", -2, desc);
-      addSysEffect("SKILL_PHYSICAL", -2, desc);
-      addSysEffect("ATT_MENTAL", -2, desc);
-      addSysEffect("SKILL_MENTAL", -2, desc);
-    }
+    // if (sustenanceState === "FULL") {
+    //   const desc = "[SISTEMA: BEM ALIMENTADO]";
+    //   addSysEffect("ATT_PHYSICAL", 1, desc);
+    //   addSysEffect("SKILL_PHYSICAL", 1, desc);
+    //   addSysEffect("ATT_MENTAL", 1, desc);
+    //   addSysEffect("SKILL_MENTAL", 1, desc);
+    // } else if (sustenanceState === "HUNGRY") {
+    //   const desc = "[SISTEMA: FAMINTO]";
+    //   addSysEffect("ATT_PHYSICAL", -1, desc);
+    //   addSysEffect("SKILL_PHYSICAL", -1, desc);
+    //   addSysEffect("ATT_MENTAL", -1, desc);
+    //   addSysEffect("SKILL_MENTAL", -1, desc);
+    // } else if (sustenanceState === "STARVING") {
+    //   const desc = "[SISTEMA: INANIÇÃO]";
+    //   addSysEffect("ATT_PHYSICAL", -2, desc);
+    //   addSysEffect("SKILL_PHYSICAL", -2, desc);
+    //   addSysEffect("ATT_MENTAL", -2, desc);
+    //   addSysEffect("SKILL_MENTAL", -2, desc);
+    // }
 
-    // 4. ENERGY
-    if (energy === "tired") {
-      const desc = "[SISTEMA: CANSADO]";
-      addSysEffect("ATT_PHYSICAL", -2, desc);
-      addSysEffect("SKILL_PHYSICAL", -2, desc);
-      addSysEffect("ATT_SOCIAL", -1, desc);
-      addSysEffect("SKILL_SOCIAL", -1, desc);
-    } else if (energy === "exhausted") {
-      const desc = "[SISTEMA: EXAUSTO]";
-      addSysEffect("ATT_PHYSICAL", -3, desc);
-      addSysEffect("SKILL_PHYSICAL", -3, desc);
-      addSysEffect("ATT_SOCIAL", -2, desc);
-      addSysEffect("SKILL_SOCIAL", -2, desc);
-      addSysEffect("ATT_MENTAL", -2, desc);
-      addSysEffect("SKILL_MENTAL", -2, desc);
-    }
+    // // 4. ENERGY
+    // if (energy === "tired") {
+    //   const desc = "[SISTEMA: CANSADO]";
+    //   addSysEffect("ATT_PHYSICAL", -2, desc);
+    //   addSysEffect("SKILL_PHYSICAL", -2, desc);
+    //   addSysEffect("ATT_SOCIAL", -1, desc);
+    //   addSysEffect("SKILL_SOCIAL", -1, desc);
+    // } else if (energy === "exhausted") {
+    //   const desc = "[SISTEMA: EXAUSTO]";
+    //   addSysEffect("ATT_PHYSICAL", -3, desc);
+    //   addSysEffect("SKILL_PHYSICAL", -3, desc);
+    //   addSysEffect("ATT_SOCIAL", -2, desc);
+    //   addSysEffect("SKILL_SOCIAL", -2, desc);
+    //   addSysEffect("ATT_MENTAL", -2, desc);
+    //   addSysEffect("SKILL_MENTAL", -2, desc);
+    // }
 
     return {
       secondaryAttributes,

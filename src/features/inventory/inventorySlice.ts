@@ -43,7 +43,7 @@ export interface InventorySlice {
   consumeItem: (id: number) => {
     success: boolean;
     message: string;
-    rollData?: { skillId: string | null; loss: number };
+    rollData?: { skillId: string | null; loss: number; bonusDamage?: number };
   };
   consumeRechargeable: (id: number) => void;
   repairActiveItem: (id: number, multiplier: number) => { recovered: number };
@@ -403,7 +403,7 @@ export const createInventorySlice: StateCreator<
     let result: {
       success: boolean;
       message: string;
-      rollData?: { skillId: string | null; loss: number };
+      rollData?: { skillId: string | null; loss: number; bonusDamage?: number };
     } = { success: false, message: "" };
 
     set((state) => {
@@ -416,6 +416,7 @@ export const createInventorySlice: StateCreator<
       let newInventory = [...state.inventory];
       const consumedTempEffects: CustomEffect[] = [];
       const consumedActions: InstantAction[] = [];
+      let ammoBonusDamage = 0;
 
       if (item.effects) {
         consumedTempEffects.push(
@@ -482,6 +483,8 @@ export const createInventorySlice: StateCreator<
             return 0;
           })[0] as ConsumableItem;
 
+          ammoBonusDamage = ammo.bonusDamage || 0;
+
           if (ammo.effects) {
             consumedTempEffects.push(
               ...ammo.effects
@@ -533,7 +536,11 @@ export const createInventorySlice: StateCreator<
         result = {
           success: true,
           message: "OK",
-          rollData: { skillId: activeItem.skillId, loss },
+          rollData: {
+            skillId: activeItem.skillId,
+            loss,
+            bonusDamage: ammoBonusDamage,
+          },
         };
         newInventory = newInventory.map((i) =>
           i.id === activeItem.id ? { ...i, uses: newUses } : i,

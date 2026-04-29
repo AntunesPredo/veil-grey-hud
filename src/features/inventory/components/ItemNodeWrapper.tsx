@@ -6,7 +6,6 @@ import type {
   Item,
   CustomEffect,
   ActiveItem,
-  ConsumableItem,
 } from "../../../shared/types/veil-grey";
 import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
 import { RetroToast } from "../../../shared/ui/RetroToast";
@@ -98,10 +97,13 @@ export const ItemNodeWrapper = React.memo(
         });
       hasAmmo = ammos.length > 0 || magAmmos > 0;
     }
+
     const disableUse =
       item.type === "ACTIVE" &&
       (!item.isEquipped ||
+        ("uses" in item && item.uses <= 0) ||
         ("requiresAmmo" in item && item.requiresAmmo && !hasAmmo));
+
     const inheritedEffects = useMemo(() => {
       let effects: CustomEffect[] = [];
       if (
@@ -238,15 +240,7 @@ export const ItemNodeWrapper = React.memo(
               const urlPrefix = baseUrl.split("?")[0] + "?inject=";
 
               if (props.weaponType === "RANGED") {
-                let ammoBonus = 0;
-                if (activeItem.requiresAmmo) {
-                  const ammos = childrenItems.filter(
-                    (i) => i.type === "CONSUMABLE" && i.uses > 0,
-                  );
-                  if (ammos.length > 0 && "bonusDamage" in ammos[0]) {
-                    ammoBonus = (ammos[0] as ConsumableItem).bonusDamage || 0;
-                  }
-                }
+                const ammoBonus = res.rollData?.bonusDamage || 0;
                 finalDmg += ammoBonus;
 
                 const linkDamageHash = generateInjectionHash(
@@ -261,7 +255,7 @@ export const ItemNodeWrapper = React.memo(
                   },
                   { silent: true },
                 );
-                console.log({ rollLog });
+
                 msg = `**ATAQUE À DISTÂNCIA**\n-# Atirador: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**\n> * * Dificuldade Base: **${props.baseDifficulty}**`;
                 if (attackRoll > props.baseDifficulty) {
                   msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
@@ -269,7 +263,7 @@ export const ItemNodeWrapper = React.memo(
                 } else {
                   msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
                 }
-                msg += `\n**LOG:**\n${"```"}${rollLog}${"```"}`;
+                msg += `\n\n**LOG:**\n${"```"}${rollLog}${"```"}`;
               } else if (props.weaponType === "MELEE") {
                 const scalingMap: Record<string, number> = {
                   S: 5,
@@ -337,7 +331,7 @@ export const ItemNodeWrapper = React.memo(
                 } else {
                   msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
                 }
-                msg += `\n**LOG:**\n${"```"}${rollLog}${"```"}`;
+                msg += `\n\n**LOG:**\n${"```"}${rollLog}${"```"}`;
               }
             } else {
               msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;

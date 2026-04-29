@@ -30,7 +30,8 @@ export function HashGeneratorModal({
   const [queue, setQueue] = useState<DraftPayload[]>([]);
   const [activeTab, setActiveTab] = useState<InjectPayloadType>("XP");
 
-  const [singleUse, setSingleUse] = useState(true);
+  const [singleUse, setSingleUse] = useState(false);
+  const [hashByLink, setHashByLink] = useState(true);
 
   const [actTarget, setActTarget] = useState<InstantActionTarget | "">("");
   const [actVal, setActVal] = useState<number>(0);
@@ -53,7 +54,6 @@ export function HashGeneratorModal({
   const handleTabChange = (tab: InjectPayloadType) => {
     setActiveTab(tab);
     resetForms();
-    setSingleUse(tab !== "EFFECT");
   };
 
   const handleAddAction = () => {
@@ -122,7 +122,7 @@ export function HashGeneratorModal({
     if (queue.length === 0) return;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payloadsToEncode = queue.map(({ _tempId, label, ...rest }) => rest);
-    generateInjectionHash(payloadsToEncode);
+    generateInjectionHash(payloadsToEncode, { hashByLink });
     setQueue([]);
     onClose();
   };
@@ -492,15 +492,21 @@ export function HashGeneratorModal({
               ))}
             </AnimatePresence>
           </div>
-
-          <Button
-            variant="warning"
-            className="w-full py-4 text-sm border-dashed animate-pulse shadow-[0_0_15px_var(--theme-warning)]"
-            disabled={queue.length === 0}
-            onClick={generateFinalHash}
-          >
-            GERAR HASH MESTRE
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Checkbox
+              label="Compactar para link"
+              checked={hashByLink}
+              onChange={() => setHashByLink(!hashByLink)}
+            />
+            <Button
+              variant="warning"
+              className="w-full py-4 text-sm border-dashed animate-pulse shadow-[0_0_15px_var(--theme-warning)]"
+              disabled={queue.length === 0}
+              onClick={generateFinalHash}
+            >
+              GERAR HASH MESTRE
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

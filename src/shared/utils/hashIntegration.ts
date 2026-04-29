@@ -2,6 +2,7 @@ import CryptoJS from "crypto-js";
 import { RetroToast } from "../ui/RetroToast";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
+const baseUrl = import.meta.env.VITE_APP_BASE_URL || window.location.href;
 
 export type InjectPayloadType =
   | "XP"
@@ -19,7 +20,7 @@ export interface InjectPayload {
 
 export const generateInjectionHash = (
   payloads: Omit<InjectPayload, "id"> | Omit<InjectPayload, "id">[],
-  options?: { silent?: boolean },
+  options?: { silent?: boolean; hashByLink?: boolean },
 ) => {
   const arrayPayloads = Array.isArray(payloads) ? payloads : [payloads];
 
@@ -35,11 +36,17 @@ export const generateInjectionHash = (
 
   const safeUrlHash = encodeURIComponent(hash);
   if (!options?.silent) {
-    navigator.clipboard.writeText(safeUrlHash);
     RetroToast.success(
       `[DEV] HASH GERADA E COPIADA (${finalPayloads.length} payloads).`,
     );
   }
+  if (options?.hashByLink) {
+    const msg = `[ CLAIM-INJECTIONS ](${baseUrl}?inject=${safeUrlHash})`;
+    navigator.clipboard.writeText(msg);
+  } else {
+    navigator.clipboard.writeText(safeUrlHash);
+  }
+
   return safeUrlHash;
 };
 

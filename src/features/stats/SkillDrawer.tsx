@@ -270,7 +270,7 @@ export function SkillDrawer() {
                 onClick={() => {
                   initiateRoll(
                     skillData.label,
-                    `${VG_CONFIG.rules.mainDice}+${baseVal}`,
+                    `${VG_CONFIG.rules.mainDice}+${baseVal > 0 ? baseVal : -1}`,
                     [skillData.id, skillData.rollCategory],
                   );
                   setSearchQuery("");

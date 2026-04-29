@@ -222,7 +222,7 @@ export function InventoryManager({
               isEditMode={isEditMode}
             />
 
-            <div className="relative flex-1 flex flex-col">
+            <div className="relative md:flex-1 flex flex-col">
               <InventoryDropColumn
                 id="zone-base"
                 title="BASE / ARMAZÉM"
@@ -246,7 +246,7 @@ export function InventoryManager({
               />
 
               {!isEditMode && (
-                <div className="absolute inset-0 z-20 bg-[var(--theme-background)]/60 backdrop-blur-[2px] flex flex-col items-center justify-center border border-[var(--theme-warning)]/50 transition-all duration-300">
+                <div className="absolute inset-0 z-20 bg-[var(--theme-background)]/20 backdrop-blur-[1px] flex flex-col items-center justify-center border border-[var(--theme-warning)]/50 transition-all duration-300">
                   <svg
                     className="w-10 h-10 text-[var(--theme-warning)] mb-3 opacity-80"
                     viewBox="0 0 24 24"

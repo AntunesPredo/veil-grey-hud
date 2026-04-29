@@ -67,7 +67,7 @@ const defaultFormData: ItemFormData = {
   quantity: 1,
   type: "MATERIAL",
   drawer: "",
-  svgId: "mat_gear",
+  svgId: "mataterial_commum",
   uses: 1,
   maxUses: 1,
   quality: 4,
@@ -169,6 +169,8 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
 
     setFormData((prev) => {
       let newProps = prev.containerProps;
+      let newUses = prev.uses;
+      let newMaxUses = prev.maxUses;
 
       if (newType === "EQUIPABLE") {
         newProps = {
@@ -187,10 +189,24 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
         };
       }
 
+      if (newType === "ACTIVE") {
+        newMaxUses = Math.floor(prev.condition * prev.quality);
+        newUses = newMaxUses;
+      } else if (
+        newType === "CONSUMABLE" ||
+        newType === "RECHARGEABLE" ||
+        newType === "KIT"
+      ) {
+        newUses = 1;
+        newMaxUses = 1;
+      }
+
       return {
         ...prev,
         type: newType,
         svgId: newSvgId,
+        uses: newUses,
+        maxUses: newMaxUses,
         quantity: allowedStack ? prev.quantity : 1,
         effects: prev.effects.filter((e) => allowedModes.includes(e.mode)),
         containerProps: newProps,
