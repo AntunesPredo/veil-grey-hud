@@ -1,5 +1,5 @@
 import type { Item } from "../../../shared/types/veil-grey";
-import { Button, NumberStepper } from "../../../shared/ui/Form";
+import { Button } from "../../../shared/ui/Form";
 import { useDisclosure } from "../../../shared/hooks/useDisclosure";
 import { SplitStackModal } from "./SplitStackModal";
 import { MergeStackModal } from "./MergeStackModal";
@@ -27,7 +27,7 @@ export function ItemActions({
   allInventory,
   currentUses,
   onUse,
-  onUpdateQty,
+  // onUpdateQty,
   isNestedAmmo = false,
   disableUse = false,
 }: ItemActionsProps) {
@@ -85,7 +85,7 @@ export function ItemActions({
         </div>
       )}
 
-      {item.type === "MATERIAL" && (
+      {/* {item.type === "MATERIAL" && (
         <div className="flex items-center gap-2 mt-1 border-t border-dashed border-[var(--theme-border)] pt-2">
           <span className="text-[9px] font-bold text-[var(--theme-text)]/50 uppercase tracking-widest">
             STACK:
@@ -97,7 +97,7 @@ export function ItemActions({
             onIncrement={() => onUpdateQty(item.quantity + 1)}
           />
         </div>
-      )}
+      )} */}
 
       {hasUses && item.type === "ACTIVE" && (
         <div className="flex flex-col w-full gap-1">
