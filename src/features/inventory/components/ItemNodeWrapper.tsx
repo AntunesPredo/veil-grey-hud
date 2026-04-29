@@ -259,7 +259,7 @@ export const ItemNodeWrapper = React.memo(
                 msg = `**ATAQUE À DISTÂNCIA**\n-# Atirador: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**\n> * * Dificuldade Base: **${props.baseDifficulty}**`;
                 if (attackRoll > props.baseDifficulty) {
                   msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
-                  msg += `\n\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
+                  msg += `\n\n# [💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
                 } else {
                   msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
                 }
@@ -325,9 +325,9 @@ export const ItemNodeWrapper = React.memo(
                 msg = `**ATAQUE CORPO-A-CORPO**\n-# Origem: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**`;
                 if (attackRoll > 4) {
                   msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
-                  msg += `\n**AÇÕES:**\n[⚡ ESQUIVA (DES) ⚡](${urlPrefix}${linkDodgeHash})`;
-                  msg += `\n[🛡️ BLOQUEIO (CON) 🛡️](${urlPrefix}${linkBlockHash})`;
-                  msg += `\n[💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
+                  msg += `\n**AÇÕES:**\n# [⚡ ESQUIVA (DES) ⚡](${urlPrefix}${linkDodgeHash})`;
+                  msg += `\n# [🛡️ BLOQUEIO (CON) 🛡️](${urlPrefix}${linkBlockHash})`;
+                  msg += `\n# [💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
                 } else {
                   msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
                 }
