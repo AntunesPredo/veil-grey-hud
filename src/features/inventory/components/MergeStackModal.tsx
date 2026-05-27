@@ -20,7 +20,7 @@ export function MergeStackModal({
   const mergeInventoryItems = useCharacterStore(
     (state) => state.mergeInventoryItems,
   );
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const compatibleItems = useMemo(() => {
     if (!targetItem) return [];
@@ -34,7 +34,7 @@ export function MergeStackModal({
 
   if (!targetItem || compatibleItems.length === 0) return null;
 
-  const handleToggle = (id: number) => {
+  const handleToggle = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );

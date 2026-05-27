@@ -4,7 +4,6 @@ import { useVitalsStore } from "../../features/vitals/useVitalsStore";
 import { Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { useCharacterStore } from "../../features/character/store";
-import { ItemNodeWrapper } from "../../features/inventory/components/ItemNodeWrapper";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import type {
@@ -13,6 +12,7 @@ import type {
   InstantAction,
   Note,
 } from "../../shared/types/veil-grey";
+import { ItemNodeV2 } from "../../features/inventory/components/ItemNodeV2";
 
 export function NetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
@@ -145,15 +145,29 @@ export function NetworkQueueManager() {
 
   const handleAccept = () => {
     if (current.type === "ITEM") {
-      const newItem: Item = {
-        ...(current.data as object),
-        id: Date.now() + Math.random(),
-        parentId: null,
-        isCarried: true,
-        isEquipped: false,
-      } as Item;
-      addInventoryItem(newItem);
-      RetroToast.success(`MATÉRIA RECEBIDA: [${newItem.name}]`);
+      const itemData = current.data as Item;
+
+      if (itemData.isSoulBound) {
+        const boundItem: Item = {
+          ...itemData,
+          id: crypto.randomUUID(),
+          parentId: null,
+          isCarried: true,
+          isEquipped: true,
+        };
+        addInventoryItem(boundItem);
+        RetroToast.warning("ITEM VINCULADO À ALMA EQUIPADO AUTOMATICAMENTE.");
+      } else {
+        const newItem: Item = {
+          ...itemData,
+          id: crypto.randomUUID(),
+          parentId: null,
+          isCarried: true,
+          isEquipped: false,
+        };
+        addInventoryItem(newItem);
+        RetroToast.success(`MATÉRIA RECEBIDA: [${newItem.name}]`);
+      }
     } else if (current.type === "XP") {
       const xpData = current.data as { amount: number };
       addXp(xpData.amount);
@@ -220,14 +234,14 @@ export function NetworkQueueManager() {
 
           {current.type === "ITEM" && (
             <div className="flex flex-col items-center gap-2 pointer-events-none mt-4 border border-[var(--theme-accent)]">
-              <ItemNodeWrapper
+              <ItemNodeV2
                 item={current.data as Item}
                 allInventory={[]}
                 onEdit={() => {}}
                 onDelete={() => {}}
-                activeDragId={null}
+                onToggleEquip={() => {}}
                 isEditMode={false}
-                isOverlay
+                isPreview={true}
               />
             </div>
           )}

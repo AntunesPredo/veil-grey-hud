@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useCharacterStore } from "../character/store";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
 import type { CustomEffect, Note } from "../../shared/types/veil-grey";
@@ -9,7 +14,6 @@ import { CustomEffectModal } from "../stats/CustomEffectModal";
 import { ConfirmModal } from "../../shared/ui/Overlays";
 import { EffectsList } from "../../shared/ui/EffectsList";
 import { ExtraNoteBlock } from "./ExtraNoteBlock";
-import { useResizeObserver } from "../../shared/hooks/useResizeObserver";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { TargetSelectionModal } from "../../shared/ui/TargetSelectionModal";
 import { RetroToast } from "../../shared/ui/RetroToast";
@@ -47,6 +51,7 @@ export function NotesManager() {
     (state) => state.removeCustomEffect,
   );
   const updateNoteHeight = useCharacterStore((state) => state.updateNoteHeight);
+  const reorderNotes = useCharacterStore((state) => state.reorderNotes);
   const [noteToTransmit, setNoteToTransmit] = useState<Note | null>(null);
   const sendPayload = useNetworkStore((state) => state.sendPayload);
 
@@ -57,12 +62,10 @@ export function NotesManager() {
     null,
   );
   const [noteToDelete, setNoteToDelete] = useState<{
-    id: number;
+    id: string;
     title: string;
     content: string;
   } | null>(null);
-
-  const mainNoteRef = useResizeObserver("MAIN", updateNoteHeight);
 
   const handleOpenEffectModal = (noteId: number | string | null) => {
     setTargetNoteId(noteId);
@@ -92,6 +95,17 @@ export function NotesManager() {
     RetroToast.success("ARQUIVO DE NOTA TRANSMITIDO.");
   };
 
+  const handleMainMouseUp = (e: React.MouseEvent<HTMLElement>) => {
+    updateNoteHeight("MAIN", e.currentTarget.offsetHeight);
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (over && active.id !== over.id) {
+      reorderNotes(String(active.id), String(over.id));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="border border-[var(--theme-accent)]/30 bg-[var(--theme-background)]/40 flex flex-col shadow-[0_0_10px_rgba(0,0,0,0.5)_inset]">
@@ -113,9 +127,9 @@ export function NotesManager() {
                 className="flex flex-col gap-2"
               >
                 <textarea
-                  ref={mainNoteRef}
                   value={mainNote}
                   onChange={(e) => updateMainNote(e.target.value)}
+                  onMouseUp={handleMainMouseUp}
                   style={{ height: mainNoteHeight || 150, minHeight: 100 }}
                   className="w-full bg-[var(--theme-background)]/80 border border-[var(--theme-accent)]/10 p-2 text-sm text-[var(--theme-accent)] font-mono outline-none resize-y custom-scrollbar"
                 />
@@ -134,7 +148,7 @@ export function NotesManager() {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                ref={mainNoteRef}
+                onMouseUp={handleMainMouseUp}
                 style={{ height: mainNoteHeight || 150, minHeight: 100 }}
                 className="w-full overflow-y-auto resize-y p-2 bg-[var(--theme-background)] border border-transparent custom-scrollbar"
               >
@@ -175,28 +189,39 @@ export function NotesManager() {
           </Button>
         </div>
 
-        <AnimatePresence>
-          {notes.map((note) => (
-            <ExtraNoteBlock
-              key={note.id}
-              note={note}
-              onDelete={() => handleOpenDelete(note)}
-              onEditToggle={() => toggleNoteEditMode(note.id)}
-              onUpdate={(field: "title" | "content", val: string) =>
-                updateNote(note.id, field, val)
-              }
-              onAddEffect={() => handleOpenEffectModal(note.id)}
-              effects={
-                customEffects?.filter(
-                  (e: CustomEffect) => e.link === note.id,
-                ) || []
-              }
-              onRemoveEffect={removeCustomEffect}
-              updateHeight={updateNoteHeight}
-              onSendNote={setNoteToTransmit}
-            />
-          ))}
-        </AnimatePresence>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={notes.map((n) => n.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <AnimatePresence>
+              {notes.map((note) => (
+                <ExtraNoteBlock
+                  key={note.id}
+                  note={note}
+                  onDelete={() => handleOpenDelete(note)}
+                  onEditToggle={() => toggleNoteEditMode(note.id)}
+                  onUpdate={(
+                    field: "title" | "content" | "imageUrl",
+                    val: string,
+                  ) => updateNote(note.id, field, val)}
+                  onAddEffect={() => handleOpenEffectModal(note.id)}
+                  effects={
+                    customEffects?.filter(
+                      (e: CustomEffect) => e.link === note.id,
+                    ) || []
+                  }
+                  onRemoveEffect={removeCustomEffect}
+                  updateHeight={updateNoteHeight}
+                  onSendNote={setNoteToTransmit}
+                />
+              ))}
+            </AnimatePresence>
+          </SortableContext>
+        </DndContext>
       </div>
 
       <TargetSelectionModal

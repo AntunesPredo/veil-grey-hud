@@ -12,7 +12,7 @@ import type {
 
 export const buildFinalItem = (data: ItemFormData): Item => {
   const base = {
-    id: data.id || Date.now(),
+    id: crypto.randomUUID(),
     name: data.name.trim(),
     description: data.description.trim(),
     slots: data.slots,
@@ -23,6 +23,8 @@ export const buildFinalItem = (data: ItemFormData): Item => {
     drawer: data.drawer || null,
     effects: data.effects || [],
     svgId: data.svgId,
+    imageUrl: data.imageUrl,
+    isSoulBound: data.isSoulBound,
   };
 
   switch (data.type) {
@@ -73,7 +75,7 @@ export const buildFinalItem = (data: ItemFormData): Item => {
       return {
         ...base,
         type: "CONTAINER",
-        containerProps: data.containerProps,
+        containerProps: data.hasContainerProps ? data.containerProps : null,
       } as ContainerItem;
     case "EQUIPABLE":
       return {

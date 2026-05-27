@@ -41,7 +41,7 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
 
       const newItem: Item = {
         ...(itemPayload.data as Item),
-        id: Date.now(),
+        id: crypto.randomUUID(),
         isCarried: true,
         parentId: null,
       };

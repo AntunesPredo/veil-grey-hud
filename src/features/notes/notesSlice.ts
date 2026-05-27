@@ -10,11 +10,16 @@ export interface NotesSlice {
 
   updateMainNote: (content: string) => void;
   addNote: () => void;
-  updateNote: (id: number, field: "title" | "content", val: string) => void;
-  deleteNote: (id: number) => void;
-  toggleNoteEditMode: (id: number | "MAIN") => void;
-  updateNoteHeight: (id: number | "MAIN", height: number) => void;
+  updateNote: (
+    id: string,
+    field: "title" | "content" | "imageUrl",
+    val: string,
+  ) => void;
+  deleteNote: (id: string) => void;
+  toggleNoteEditMode: (id: string | "MAIN") => void;
+  updateNoteHeight: (id: string | "MAIN", height: number) => void;
   importExternalNote: (note: Note, effects: CustomEffect[]) => void;
+  reorderNotes: (activeId: string, overId: string) => void;
 }
 
 export const createNotesSlice: StateCreator<
@@ -34,11 +39,12 @@ export const createNotesSlice: StateCreator<
       notes: [
         ...state.notes,
         {
-          id: Date.now(),
+          id: crypto.randomUUID(),
           title: "Nova Nota",
           content: "",
           isEditing: true,
           height: 200,
+          imageUrl: "",
         },
       ],
     })),
@@ -72,7 +78,7 @@ export const createNotesSlice: StateCreator<
   },
   importExternalNote: (note, effects) =>
     set((state) => {
-      const newNoteId = Date.now() + Math.random();
+      const newNoteId = crypto.randomUUID();
       const newNote = { ...note, id: newNoteId, isEditing: false };
       const newEffects = effects.map((e) => ({
         ...e,
@@ -85,4 +91,15 @@ export const createNotesSlice: StateCreator<
         customEffects: [...state.customEffects, ...newEffects],
       };
     }),
+  reorderNotes: (activeId, overId) => {
+    set((state) => {
+      const oldIdx = state.notes.findIndex((n) => n.id === activeId);
+      const newIdx = state.notes.findIndex((n) => n.id === overId);
+      if (oldIdx === -1 || newIdx === -1) return state;
+      const newNotes = [...state.notes];
+      const [moved] = newNotes.splice(oldIdx, 1);
+      newNotes.splice(newIdx, 0, moved);
+      return { notes: newNotes };
+    });
+  },
 });

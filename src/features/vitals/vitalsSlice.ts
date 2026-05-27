@@ -25,7 +25,7 @@ export interface VitalsSlice {
   applyDamage: (
     amount: number,
     mitigateMode: "FULL" | "HALF" | "IGNORE",
-    armorId: number | null,
+    armorId: string | null,
   ) => void;
 
   updateHpTemp: (amount: number) => void;

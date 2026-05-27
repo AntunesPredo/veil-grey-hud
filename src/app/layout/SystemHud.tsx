@@ -5,7 +5,6 @@ import { AttributeDrawer } from "../../features/stats/AttributeDrawer";
 import { SkillDrawer } from "../../features/stats/SkillDrawer";
 import { CrisisOverlay } from "../../features/vitals/CrisisOverlay";
 import { VitalsPanel } from "../../features/vitals/VitalsPanel";
-import { LogisticsPanel } from "../../features/inventory/LogisticsPanel";
 import { BioPanel } from "../../features/notes/BioPanel";
 import { RollResolverModal } from "../../features/stats/RollResolverModal";
 import { VitalsResolutionModal } from "../../features/vitals/VitalsResolutionModal";
@@ -16,6 +15,7 @@ import { QuickRestModal } from "../../features/vitals/QuickRestModal";
 import { FullRestModal } from "../../features/vitals/FullRestModal";
 import { NetworkQueueManager } from "./NetworkQueueManager";
 import { useTelemetrySync } from "../../features/character/useTelemetrySync";
+import { LogisticsPanelV2 } from "../../features/inventory/LogisticsPanelV2";
 
 export function SystemHud() {
   useTelemetrySync();
@@ -68,9 +68,9 @@ export function SystemHud() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
             {activeTab === "front" && <VitalsPanel />}
-            {activeTab === "inventory" && <LogisticsPanel />}
+            {activeTab === "inventory" && <LogisticsPanelV2 />}
             {activeTab === "bio" && <BioPanel />}
           </div>
         </div>

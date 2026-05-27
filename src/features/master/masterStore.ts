@@ -26,12 +26,12 @@ interface MasterStore {
   reorderFolders: (oldIndex: number, newIndex: number) => void;
   removeFolder: (id: string) => void;
   addGlobalItem: (item: MasterItem) => void;
-  reorderGlobalItems: (activeId: number, overId: number) => void;
+  reorderGlobalItems: (activeId: string, overId: string) => void;
   reorderGlobalEffects: (activeId: number, overId: number) => void;
-  removeGlobalItem: (id: number) => void;
+  removeGlobalItem: (id: string) => void;
   addGlobalEffect: (effect: MasterEffect) => void;
   removeGlobalEffect: (id: number) => void;
-  moveItemToFolder: (itemId: number, folderId: string | null) => void;
+  moveItemToFolder: (itemId: string, folderId: string | null) => void;
   moveEffectToFolder: (effectId: number, folderId: string | null) => void;
   importArsenal: (data: Partial<MasterStore>) => void;
 }

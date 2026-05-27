@@ -11,6 +11,7 @@ import {
   type InventorySlice,
 } from "../inventory/inventorySlice";
 import { createNotesSlice, type NotesSlice } from "../notes/notesSlice";
+import { migrateCharacterToV2 } from "../../shared/utils/migration";
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
@@ -68,6 +69,13 @@ export const useCharacterStore = create<CharacterStore>()(
     },
     {
       name: "vg_character_data",
+      version: 1,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version < 1) {
+          return migrateCharacterToV2(persistedState);
+        }
+        return persistedState;
+      },
       onRehydrateStorage: () => {
         return (state, error) => {
           if (!error && state) {

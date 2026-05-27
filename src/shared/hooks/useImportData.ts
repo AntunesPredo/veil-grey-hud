@@ -1,6 +1,7 @@
 import { useCharacterStore } from "../../features/character/store";
 import { RetroToast } from "../ui/RetroToast";
 import CryptoJS from "crypto-js";
+import { migrateCharacterToV2 } from "../utils/migration";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -36,9 +37,11 @@ export const useImportData = ({
         const parsed = JSON.parse(decryptedStr);
 
         if (parsed.vg_version !== APP_VERSION)
-          throw new Error("Versão incompativel.");
+          throw new Error("Versão incompatível.");
 
-        const characterData = parsed.data;
+        const characterData = migrateCharacterToV2(parsed.data);
+
+        importCharacterData(characterData);
 
         importCharacterData(characterData);
         RetroToast.success("SISTEMA RESTAURADO COM SUCESSO.");

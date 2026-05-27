@@ -141,7 +141,7 @@ export interface CombatProps {
 }
 
 export interface BaseItem {
-  id: number;
+  id: string;
   name: string;
   description: string;
   svgId: string;
@@ -149,10 +149,12 @@ export interface BaseItem {
   slots: number;
   isCarried: boolean;
   isEquipped: boolean;
-  parentId: number | null;
+  parentId: string | null;
   drawer: string | null;
   effects: CustomEffect[];
   type: ItemType;
+  imageUrl?: string;
+  isSoulBound?: boolean;
 }
 
 export interface MaterialItem extends BaseItem {
@@ -229,11 +231,12 @@ export type Item =
   | EquipableItem;
 
 export interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   isEditing: boolean;
   height: number;
+  imageUrl?: string;
 }
 
 export interface SnapshotStats {

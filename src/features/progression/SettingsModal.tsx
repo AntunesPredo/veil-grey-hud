@@ -46,6 +46,7 @@ export function SettingsModal({
   const wipeModal = useDisclosure();
   const errorModal = useDisclosure();
   const [confirmModalMessage, setConfirmModalMessage] = useState("");
+  const [nameValue, setNameValue] = useState(name);
 
   const isDev =
     import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -129,9 +130,14 @@ export function SettingsModal({
     reader.readAsText(file);
   };
 
+  const handleOnClose = () => {
+    if (name !== nameValue) updateProgression({ name: nameValue });
+    onClose();
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="CONFIGURAÇÕES">
+      <Modal isOpen={isOpen} onClose={handleOnClose} title="CONFIGURAÇÕES">
         <div className="flex flex-col gap-4">
           <div className="flex items-start gap-4 p-3 bg-[var(--theme-background)] group border-l-4 border-l-[var(--theme-accent)]">
             <svg
@@ -149,8 +155,8 @@ export function SettingsModal({
                 IDENTIFICADOR:
               </span>
               <Input
-                value={name}
-                onChange={(e) => updateProgression({ name: e.target.value })}
+                defaultValue={nameValue}
+                onChange={(e) => setNameValue(e.target.value ?? "NO-NAME")}
                 className="w-full text-sm font-bold text-[var(--theme-accent)] bg-[var(--theme-background)]/50"
                 placeholder="Identificador de Unidade"
               />

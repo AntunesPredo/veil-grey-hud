@@ -23,7 +23,7 @@ import { Step2Identity } from "./Step2Identity";
 import { getAllowedModes } from "../../shared/utils/effectUtils";
 
 export interface ItemFormData {
-  id: number | null;
+  id: string | null;
   name: string;
   description: string;
   slots: number;
@@ -39,11 +39,12 @@ export interface ItemFormData {
   bonusDamage: number;
   combatProps: CombatProps;
   perItemSlotReduction: number;
+  hasContainerProps: boolean;
   containerProps: {
     slotCapacity: number;
     slotReduction: number;
     drawers: string[];
-  };
+  } | null;
   skillId: Skill | null;
   effects: CustomEffect[];
   singleUse: boolean;
@@ -57,6 +58,8 @@ export interface ItemFormData {
   };
   hasInstantActions: boolean;
   instantActions: InstantAction[];
+  imageUrl: string;
+  isSoulBound: boolean;
 }
 
 const defaultFormData: ItemFormData = {
@@ -74,7 +77,8 @@ const defaultFormData: ItemFormData = {
   condition: 100,
   commsType: "",
   perItemSlotReduction: 0,
-  containerProps: { slotCapacity: 5, slotReduction: 5, drawers: [] },
+  hasContainerProps: false,
+  containerProps: null,
   skillId: null,
   effects: [],
   singleUse: true,
@@ -93,6 +97,8 @@ const defaultFormData: ItemFormData = {
     scalingAttr: null,
     scalingTier: "NONE",
   },
+  imageUrl: "",
+  isSoulBound: false,
 };
 
 interface ItemModalProps {
@@ -125,17 +131,20 @@ export function ItemModal({
   const { getCategoryIcons } = useCustomSvgIcons();
 
   const [prevIsOpen, setPrevIsOpen] = useState(false);
-  if (isOpen && !prevIsOpen) {
-    setPrevIsOpen(true);
-    if (itemToEdit) {
-      setFormData({ ...defaultFormData, ...itemToEdit } as ItemFormData);
-      setStep(2);
-    } else {
-      setFormData(defaultFormData);
-      setStep(1);
+  const [prevItem, setPrevItem] = useState<Item | null>(null);
+
+  if (isOpen !== prevIsOpen || itemToEdit !== prevItem) {
+    setPrevIsOpen(isOpen);
+    setPrevItem(itemToEdit);
+
+    if (isOpen) {
+      setFormData(
+        itemToEdit
+          ? ({ ...defaultFormData, ...itemToEdit } as ItemFormData)
+          : defaultFormData,
+      );
+      setStep(itemToEdit ? 2 : 1);
     }
-  } else if (!isOpen && prevIsOpen) {
-    setPrevIsOpen(false);
   }
 
   const handleError = (msg: string) => {
@@ -243,7 +252,7 @@ export function ItemModal({
 
         if (initialUses > 0) {
           const ammo: ConsumableItem = {
-            id: Date.now() + 1,
+            id: crypto.randomUUID(),
             name: `Carga (${finalItem.name})`,
             description: "Carga gerada automaticamente.",
             slots: 0,
@@ -289,7 +298,15 @@ export function ItemModal({
       }
 
       if (itemToEdit) {
+        const keysToSkip = [
+          "id",
+          "isCarried",
+          "isEquipped",
+          "parentId",
+          "drawer",
+        ];
         Object.keys(finalItem).forEach((key) => {
+          if (keysToSkip.includes(key)) return;
           updateInventoryItem(
             itemToEdit.id,
             key as keyof Item,

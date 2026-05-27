@@ -49,8 +49,12 @@ export function HashGeneratorModal({
   const [actVal, setActVal] = useState<number>(0);
   const [actDesc, setActDesc] = useState("");
   const [xpVal, setXpVal] = useState<number>(0);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [selectedEffects, setSelectedEffects] = useState<number[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Array<string | number>>(
+    [],
+  );
+  const [selectedEffects, setSelectedEffects] = useState<
+    Array<string | number>
+  >([]);
 
   const [testTargetId, setTestTargetId] = useState<string>("");
   const [testDc, setTestDc] = useState<number>(0);

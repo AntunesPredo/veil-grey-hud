@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 export function useResizeObserver(
-  id: number | "MAIN",
-  saveHeightFn: (id: number | "MAIN", height: number) => void,
+  id: string | "MAIN",
+  saveHeightFn: (id: string | "MAIN", height: number) => void,
 ) {
   const ref = useRef<HTMLDivElement & HTMLTextAreaElement>(null);
 

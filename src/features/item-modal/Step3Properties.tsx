@@ -10,6 +10,7 @@ import { ActiveCondition } from "./components/ActiveCondition";
 import { ContainerConfig } from "./components/ContainerConfig";
 import { getAllowedModes } from "../../shared/utils/effectUtils";
 import { CombatConfig } from "./components/CombatConfig";
+import { GlitchImage } from "../../shared/ui/GlitchImage";
 
 interface Step3PropertiesProps {
   formData: ItemFormData;
@@ -177,12 +178,18 @@ export function Step3Properties({
         </div>
       )}
 
-      {(isContainer || isEquipable) && (
-        <ContainerConfig
-          formData={formData}
-          setFormData={setFormData}
-          isEquipable={isEquipable}
+      <div className="bg-[var(--theme-danger)]/10 border border-[var(--theme-danger)]/30 p-3">
+        <Checkbox
+          label="ITEM VINCULADO À ALMA (SOUL-BOUND)"
+          checked={formData.isSoulBound}
+          onChange={() =>
+            setFormData((p) => ({ ...p, isSoulBound: !p.isSoulBound }))
+          }
         />
+      </div>
+
+      {(isContainer || isEquipable) && (
+        <ContainerConfig formData={formData} setFormData={setFormData} />
       )}
 
       {isEquipable && (
@@ -279,6 +286,33 @@ export function Step3Properties({
           }
           className="w-full bg-[var(--theme-background)] border border-[var(--theme-border)] p-2 text-sm text-[var(--theme-text)] font-mono outline-none focus:border-[var(--theme-accent)] transition-colors resize-none custom-scrollbar"
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
+          REFERÊNCIA VISUAL (LINK DE IMAGEM)
+        </span>
+        <Input
+          type="text"
+          placeholder="https://exemplo.com/item.png"
+          value={formData.imageUrl || ""}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              imageUrl: e.target.value,
+            }))
+          }
+          className="text-xs font-mono py-2"
+        />
+        {formData.imageUrl && (
+          <div className="mt-2 w-24 h-24 border border-[var(--theme-border)] bg-black self-start">
+            <GlitchImage
+              src={formData.imageUrl}
+              alt="preview"
+              className="w-full h-full object-cover grayscale opacity-70"
+            />
+          </div>
+        )}
       </div>
 
       {isConsumable && (

@@ -91,7 +91,7 @@ export function TargetSelectionModal({
             disabled={selected.length === 0}
             className="flex-1"
           >
-            ENGAJAR
+            CONFIRMAR
           </Button>
         </div>
       </div>

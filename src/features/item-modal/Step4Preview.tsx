@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { ItemNodeWrapper } from "../inventory/components/ItemNodeWrapper";
 import type { ItemFormData } from "./ItemModal";
 import { buildFinalItem } from "./buildFinalItem";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
@@ -9,6 +8,7 @@ import { Button } from "../../shared/ui/Form";
 import { getAllowedModes } from "../../shared/utils/effectUtils";
 import type { CustomEffect, InstantAction } from "../../shared/types/veil-grey";
 import { InstantActionModal } from "../stats/InstantActionModal";
+import { ItemNodeV2 } from "../inventory/components/ItemNodeV2";
 
 interface Step4PreviewProps {
   formData: ItemFormData;
@@ -64,14 +64,14 @@ export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
 
       <div className="w-full pointer-events-none p-4 bg-[var(--theme-background)]/40 border border-dashed border-[var(--theme-border)] flex justify-center">
         <div className="w-full max-w-[340px]">
-          <ItemNodeWrapper
+          <ItemNodeV2
             item={mockItem}
             allInventory={[]}
             onEdit={() => {}}
             onDelete={() => {}}
-            activeDragId={null}
+            onToggleEquip={() => {}}
             isEditMode={false}
-            isOverlay={true}
+            isPreview={true}
           />
         </div>
       </div>

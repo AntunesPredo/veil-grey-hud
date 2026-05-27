@@ -112,7 +112,7 @@ export function MasterArsenalTab() {
     const { active, over } = e;
     if (!over) return;
 
-    const activeId = Number(active.id);
+    const activeId = String(active.id);
     const overId = String(over.id);
     const activeType = active.data.current?.type;
     const overType = over.data.current?.type;
@@ -138,9 +138,11 @@ export function MasterArsenalTab() {
           }
         }
         if (activeType === "EFFECT") {
-          const effect = store.globalEffects.find((e) => e.id === activeId);
+          const effect = store.globalEffects.find(
+            (e) => e.id === Number(activeId),
+          );
           if (effect && effect.folderId !== folderId) {
-            store.moveEffectToFolder(activeId, folderId);
+            store.moveEffectToFolder(Number(activeId), folderId);
           }
         }
       }
@@ -172,7 +174,7 @@ export function MasterArsenalTab() {
     const overType = over.data.current?.type;
 
     if (activeType === "ITEM" && overType === "ITEM" && active.id !== over.id) {
-      store.reorderGlobalItems(Number(active.id), Number(over.id));
+      store.reorderGlobalItems(active.id as string, over.id as string);
     }
     if (
       activeType === "EFFECT" &&

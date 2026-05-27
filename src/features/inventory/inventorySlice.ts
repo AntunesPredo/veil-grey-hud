@@ -11,44 +11,48 @@ import type {
   KitItem,
   RechargeableItem,
 } from "../../shared/types/veil-grey";
+import { RetroToast } from "../../shared/ui/RetroToast";
 
 export interface InventorySlice {
   inventory: Item[];
 
   addInventoryItem: (item: Item) => void;
   updateInventoryItem: (
-    id: number,
+    id: string,
     field: keyof EquipableItem | keyof Item,
     val: Item[keyof Item] | EquipableItem[keyof EquipableItem],
   ) => void;
-  deleteInventoryItem: (id: number) => void;
-  reorderInventoryItem: (activeId: number, overId: number) => void;
+  deleteInventoryItem: (id: string) => void;
+  reorderInventoryItem: (activeId: string, overId: string) => void;
   moveInventoryItem: (
-    itemId: number,
-    targetContainerId: number | null,
+    itemId: string,
+    targetContainerId: string | null,
     drawerName?: string | null,
   ) => { success: boolean; message: string };
-  toggleEquipItem: (id: number) => void;
+  toggleEquipItem: (id: string) => void;
   splitInventoryItem: (
-    id: number,
+    id: string,
     mode: "SINGLE" | "TOTAL",
     divisor: number,
   ) => void;
-  mergeInventoryItems: (targetId: number, sourceIds: number[]) => void;
+  mergeInventoryItems: (targetId: string, sourceIds: string[]) => void;
   manageDrawer: (
-    containerId: number,
+    containerId: string,
     action: "CREATE" | "RENAME" | "DELETE",
     oldName?: string,
     newName?: string,
   ) => void;
-
-  consumeItem: (id: number) => {
+  consumeItem: (id: string | number) => {
     success: boolean;
     message: string;
     rollData?: { skillId: string | null; loss: number; bonusDamage?: number };
   };
-  consumeRechargeable: (id: number) => void;
-  repairActiveItem: (id: number, multiplier: number) => { recovered: number };
+  consumeRechargeable: (id: string) => void;
+  repairActiveItem: (id: string, multiplier: number) => { recovered: number };
+  damageItem: (
+    id: string,
+    amount: number,
+  ) => { success: boolean; message: string };
 }
 
 export const createInventorySlice: StateCreator<
@@ -115,6 +119,11 @@ export const createInventorySlice: StateCreator<
       const itemToEquip = state.inventory.find((i) => i.id === id);
       if (!itemToEquip) return state;
 
+      if (itemToEquip?.isSoulBound && itemToEquip.isEquipped) {
+        RetroToast.error("ESTE ITEM ESTÁ VINCULADO À VOCÊ.");
+        return state;
+      }
+
       const isEquipping = !itemToEquip.isEquipped;
       const isArmor = "armorProps" in itemToEquip && !!itemToEquip.armorProps;
 
@@ -149,6 +158,14 @@ export const createInventorySlice: StateCreator<
   moveInventoryItem: (itemId, targetId, drawerName = null) => {
     const state = get();
     const item = state.inventory.find((i) => i.id === itemId);
+    if (item?.isSoulBound && item.isEquipped && targetId === null) {
+      return {
+        success: false,
+        message: "ITEM VINCULADO NÃO PODE SER ARMAZENADO.",
+      };
+    }
+
+    console.log({ item, state, itemId });
     if (!item) return { success: false, message: "ITEM NÃO ENCONTRADO." };
 
     if (targetId !== null) {
@@ -223,7 +240,7 @@ export const createInventorySlice: StateCreator<
 
           const newItem = {
             ...item,
-            id: Date.now() + Math.random(),
+            id: crypto.randomUUID(),
             quantity: unitsToMove,
             parentId: targetId,
             drawer: drawerName,
@@ -251,7 +268,7 @@ export const createInventorySlice: StateCreator<
 
       let depth = 1;
       let curr = container;
-      const visitedIds = new Set<number>();
+      const visitedIds = new Set<string | number>();
 
       while (curr.parentId !== null) {
         if (visitedIds.has(curr.id)) {
@@ -317,7 +334,7 @@ export const createInventorySlice: StateCreator<
         remainingQty -= divisor;
         newItems.push({
           ...item,
-          id: Date.now() + Math.random(),
+          id: crypto.randomUUID(),
           quantity: divisor,
         } as Item);
       } else if (mode === "TOTAL") {
@@ -330,7 +347,7 @@ export const createInventorySlice: StateCreator<
         for (let i = 1; i < divisor; i++) {
           newItems.push({
             ...item,
-            id: Date.now() + i,
+            id: crypto.randomUUID(),
             quantity: sizePerStack,
           } as Item);
         }
@@ -344,7 +361,7 @@ export const createInventorySlice: StateCreator<
     });
   },
 
-  mergeInventoryItems: (targetId: number, sourceIds: number[]) => {
+  mergeInventoryItems: (targetId: string, sourceIds: Array<string>) => {
     set((state) => {
       const targetIndex = state.inventory.findIndex((i) => i.id === targetId);
       if (targetIndex === -1) return state;
@@ -402,7 +419,7 @@ export const createInventorySlice: StateCreator<
 
           const remainderItem = {
             ...target,
-            id: Date.now() + Math.random(),
+            id: crypto.randomUUID(),
             quantity: 1,
             uses: remainderUses,
             description: newDesc.trim(),
@@ -539,7 +556,7 @@ export const createInventorySlice: StateCreator<
           if (currentQty > 1) {
             const newItem = {
               ...targetItem,
-              id: Date.now() + Math.random(),
+              id: crypto.randomUUID(),
               quantity: 1,
               uses: currentUses - 1,
             };
@@ -722,5 +739,30 @@ export const createInventorySlice: StateCreator<
     });
 
     return { recovered };
+  },
+  damageItem: (id, amount) => {
+    let success = false;
+    let message = "ITEM NÃO SUPORTA DEGRADAÇÃO MANUAL.";
+
+    set((state) => {
+      const newInventory = state.inventory.map((i) => {
+        if (i.id === id) {
+          if (i.type === "EQUIPABLE" && i.armorProps) {
+            const newPe = Math.max(0, i.armorProps.pe - amount);
+            success = true;
+            message = "BLINDAGEM DANIFICADA.";
+            return { ...i, armorProps: { ...i.armorProps, pe: newPe } };
+          } else if (i.type === "ACTIVE") {
+            const newUses = Math.max(0, i.uses - amount);
+            success = true;
+            message = "EQUIPAMENTO DEGRADADO.";
+            return { ...i, uses: newUses };
+          }
+        }
+        return i;
+      });
+      return { inventory: newInventory };
+    });
+    return { success, message };
   },
 });

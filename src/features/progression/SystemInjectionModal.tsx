@@ -87,7 +87,7 @@ export function SystemInjectionModal({
       payloads.forEach((payload) => {
         if (!payload.id || !payload.type) {
           RetroToast.error(
-            `Payload ignorado por falta de assinatura: ${payload.id ?? "ID Desconecido"}`,
+            `Payload ignorado por falta de assinatura: ${payload.id ?? "ID Desconhecido"}`,
           );
           msg += `\n- [IGNORADO] Payload com assinatura inválida.`;
           return;
@@ -112,7 +112,7 @@ export function SystemInjectionModal({
           case "ITEM": {
             const newItem: EquipableItem = {
               ...(payload.data as EquipableItem),
-              id: Date.now() + Math.random(),
+              id: crypto.randomUUID(),
               parentId: null,
               isCarried: true,
             };
