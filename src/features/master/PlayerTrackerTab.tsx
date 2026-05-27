@@ -1,21 +1,10 @@
-import { useEffect } from "react";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { PlayerCard } from "./components/PlayerCard";
+import { Button } from "../../shared/ui/Form";
 
 export function PlayerTrackerTab() {
   const onlinePlayers = useNetworkStore((state) => state.onlinePlayers);
   const telemetryData = useNetworkStore((state) => state.telemetryData);
-  const telemetryHashes = useNetworkStore((state) => state.telemetryHashes);
-  const broadcastMasterPing = useNetworkStore(
-    (state) => state.broadcastMasterPing,
-  );
-
-  useEffect(() => {
-    const pingInterval = setInterval(() => {
-      broadcastMasterPing(telemetryHashes);
-    }, 10000);
-    return () => clearInterval(pingInterval);
-  }, [broadcastMasterPing, telemetryHashes]);
 
   const knownPlayers = Array.from(
     new Set([...onlinePlayers, ...Object.keys(telemetryData)]),
@@ -30,6 +19,21 @@ export function PlayerTrackerTab() {
         <span className="text-[10px] font-mono text-[var(--theme-text)]/50">
           REGISTROS NA BASE: {knownPlayers.length}
         </span>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => useNetworkStore.getState().forceSyncAll()}
+          >
+            FORÇAR SYNC GERAL
+          </Button>
+          <Button
+            size="sm"
+            variant="warning"
+            onClick={() => useNetworkStore.getState().clearOfflineTelemetry()}
+          >
+            LIMPAR OFFLINES
+          </Button>
+        </div>
       </div>
 
       {knownPlayers.length === 0 ? (

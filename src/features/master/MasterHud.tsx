@@ -4,9 +4,12 @@ import { Button } from "../../shared/ui/Form";
 import { HashGeneratorModal } from "../progression/HashGeneratorModal";
 import { PlayerTrackerTab } from "./PlayerTrackerTab";
 import { MasterArsenalTab } from "./MasterArsenalTab";
+import { MasterNpcTab } from "./MasterNpcTab";
 
 export function MasterHud() {
-  const [activeTab, setActiveTab] = useState<"TRACKER" | "ARSENAL">("TRACKER");
+  const [activeTab, setActiveTab] = useState<
+    "TRACKER" | "ARSENAL" | "PERSONAS"
+  >("TRACKER");
   const setPowerState = useSystemStore((state) => state.setPowerState);
   const [isHashModalOpen, setHashModalOpen] = useState(false);
 
@@ -55,11 +58,19 @@ export function MasterHud() {
         >
           ARSENAL GLOBAL
         </Button>
+        <Button
+          variant={activeTab === "PERSONAS" ? "danger" : "primary"}
+          className="flex-1"
+          onClick={() => setActiveTab("PERSONAS")}
+        >
+          PERSONAS
+        </Button>
       </div>
 
       <div className="flex-1 overflow-hidden border-2 border-[var(--theme-border)] bg-[#030303] shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] p-4 flex flex-col">
         {activeTab === "TRACKER" && <PlayerTrackerTab />}
         {activeTab === "ARSENAL" && <MasterArsenalTab />}
+        {activeTab === "PERSONAS" && <MasterNpcTab />}
       </div>
 
       <HashGeneratorModal

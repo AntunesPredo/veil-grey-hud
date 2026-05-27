@@ -2,11 +2,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CustomEffect, Item } from "../../shared/types/veil-grey";
 import { arrayMove } from "@dnd-kit/sortable";
+import type { CharacterStore } from "../character/store";
 
 export type MasterFolder = {
   id: string;
   name: string;
   type: "ITEM" | "EFFECT";
+};
+
+export type MasterNpc = Partial<CharacterStore> & {
+  id: string;
+  name: string;
+  isEnemy: boolean;
+  isActive: boolean;
 };
 
 export type MasterItem = Item & {
@@ -21,7 +29,14 @@ interface MasterStore {
   folders: MasterFolder[];
   globalItems: MasterItem[];
   globalEffects: MasterEffect[];
+  npcs: MasterNpc[];
+  masterBackup: Partial<CharacterStore> | null;
 
+  setMasterBackup: (data: Partial<CharacterStore> | null) => void;
+  saveNpc: (npc: MasterNpc) => void;
+  deleteNpc: (id: string) => void;
+  toggleNpcActive: (id: string) => void;
+  updateNpcData: (id: string, data: Partial<MasterNpc>) => void;
   addFolder: (folder: MasterFolder) => void;
   reorderFolders: (oldIndex: number, newIndex: number) => void;
   removeFolder: (id: string) => void;
@@ -42,7 +57,23 @@ export const useMasterStore = create<MasterStore>()(
       folders: [],
       globalItems: [],
       globalEffects: [],
+      npcs: [],
+      masterBackup: null,
 
+      setMasterBackup: (data) => set({ masterBackup: data }),
+      saveNpc: (npc) => set((s) => ({ npcs: [...s.npcs, npc] })),
+      deleteNpc: (id) =>
+        set((s) => ({ npcs: s.npcs.filter((n) => n.id !== id) })),
+      toggleNpcActive: (id) =>
+        set((s) => ({
+          npcs: s.npcs.map((n) =>
+            n.id === id ? { ...n, isActive: !n.isActive } : n,
+          ),
+        })),
+      updateNpcData: (id, data) =>
+        set((s) => ({
+          npcs: s.npcs.map((n) => (n.id === id ? { ...n, ...data } : n)),
+        })),
       addFolder: (folder) => set((s) => ({ folders: [...s.folders, folder] })),
       reorderFolders: (oldIndex, newIndex) =>
         set((s) => ({
@@ -103,6 +134,6 @@ export const useMasterStore = create<MasterStore>()(
         })),
       importArsenal: (data) => set((s) => ({ ...s, ...data })),
     }),
-    { name: "vg_master_arsenal" },
+    { name: "vg_master_data" },
   ),
 );

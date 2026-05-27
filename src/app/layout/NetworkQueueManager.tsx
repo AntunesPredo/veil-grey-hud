@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { useVitalsStore } from "../../features/vitals/useVitalsStore";
-import { Modal } from "../../shared/ui/Overlays";
-import { Button } from "../../shared/ui/Form";
 import { useCharacterStore } from "../../features/character/store";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { RetroToast } from "../../shared/ui/RetroToast";
@@ -12,11 +10,19 @@ import type {
   InstantAction,
   Note,
 } from "../../shared/types/veil-grey";
+import { Modal } from "../../shared/ui/Overlays";
+import { Button } from "../../shared/ui/Form";
 import { ItemNodeV2 } from "../../features/inventory/components/ItemNodeV2";
 
 export function NetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
-  const popQueue = useNetworkStore((state) => state.popQueue);
+  const removeQueueItem = useNetworkStore((state) => state.removeQueueItem);
+  const activeName = useCharacterStore((s) => s.isPossessing || s.name);
+
+  const activeQueue = queue.filter(
+    (q) => q.targetName === activeName || q.targetName === "ALL",
+  );
+
   const importExternalNote = useCharacterStore(
     (state) => state.importExternalNote,
   );
@@ -37,12 +43,12 @@ export function NetworkQueueManager() {
   const processingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (queue.length === 0) {
+    if (activeQueue.length === 0) {
       if (processingIdRef.current) processingIdRef.current = null;
       return;
     }
 
-    const current = queue[0];
+    const current = activeQueue[0];
     const anyVitalsModalOpen =
       vitals.isOpen ||
       vitals.isDefenseOpen ||
@@ -53,7 +59,7 @@ export function NetworkQueueManager() {
       const data = current.data as { id: number };
       removeCustomEffect(data.id);
       RetroToast.warning("O MESTRE REMOVEU UM EFEITO.");
-      popQueue();
+      removeQueueItem(current.id);
       if (processingIdRef.current === current.id)
         processingIdRef.current = null;
       return;
@@ -78,7 +84,7 @@ export function NetworkQueueManager() {
           ].includes(act.target);
 
         if (!isDirectAction && !anyVitalsModalOpen) {
-          popQueue();
+          removeQueueItem(current.id);
           processingIdRef.current = null;
         }
       }
@@ -119,10 +125,10 @@ export function NetworkQueueManager() {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue, vitals]);
+  }, [activeQueue, vitals]);
 
-  if (queue.length === 0) return null;
-  const current = queue[0];
+  if (activeQueue.length === 0) return null;
+  const current = activeQueue[0];
 
   if (["COMBAT_DEFENSE", "REMOVE_EFFECT"].includes(current.type)) return null;
 
@@ -210,12 +216,12 @@ export function NetworkQueueManager() {
       importExternalNote(payloadData.note, payloadData.effects);
       RetroToast.success(`NOTA INCORPORADA: [${payloadData.note.title}]`);
     }
-    popQueue();
+    removeQueueItem(current.id);
     processingIdRef.current = null;
   };
 
   const handleReject = () => {
-    popQueue();
+    removeQueueItem(current.id);
     processingIdRef.current = null;
   };
 
@@ -223,7 +229,7 @@ export function NetworkQueueManager() {
     <Modal
       isOpen={true}
       onClose={() => {}}
-      title={`TRANSMISSÃO RECEBIDA [${queue.length} RESTANTES]`}
+      title={`TRANSMISSÃO RECEBIDA [${activeQueue.length} RESTANTES]`}
       maxWidth="max-w-md"
     >
       <div className="flex flex-col gap-4 text-center">

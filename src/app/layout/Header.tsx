@@ -7,10 +7,15 @@ import { ConfirmModal } from "../../shared/ui/Overlays";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
 import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
+import { useMasterStore } from "../../features/master/masterStore";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { LevelUpFlowModal } from "../../features/progression/LevelUpFlowModal";
 import { SystemInjectionModal } from "../../features/progression/SystemInjectionModal";
 import { useUIStore } from "../../shared/store/useUIStore";
+import { RetroToast } from "../../shared/ui/RetroToast";
+
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 export function Header() {
   const name = useCharacterStore((state) => state.name);
@@ -24,6 +29,7 @@ export function Header() {
   const confirmDistribution = useCharacterStore(
     (state) => state.confirmDistribution,
   );
+  const isPossessing = useCharacterStore((state) => state.isPossessing);
 
   const pendingInjection = useUIStore((state) => state.pendingInjection);
 
@@ -118,6 +124,28 @@ export function Header() {
                     {role?.title || "NÃO ATRIBUÍDA"}
                   </span>
                 </span>
+                {isDev && isPossessing && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="mt-2 animate-pulse border-dashed w-full md:w-auto text-[8px]"
+                    onClick={() => {
+                      const backup = useMasterStore.getState().masterBackup;
+                      if (backup) {
+                        useCharacterStore.getState().importCharacterData({
+                          ...backup,
+                          isPossessing: null,
+                        });
+                        useMasterStore.getState().setMasterBackup(null);
+                        RetroToast.success(
+                          "CONTROLE DEVOLVIDO. RETORNANDO AO MAINFRAME.",
+                        );
+                      }
+                    }}
+                  >
+                    [ SAIR DA POSSESSÃO ]
+                  </Button>
+                )}
               </div>
             </div>
 

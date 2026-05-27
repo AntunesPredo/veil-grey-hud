@@ -12,7 +12,7 @@ import type {
 
 export const buildFinalItem = (data: ItemFormData): Item => {
   const base = {
-    id: crypto.randomUUID(),
+    id: data.id ?? crypto.randomUUID(),
     name: data.name.trim(),
     description: data.description.trim(),
     slots: data.slots,

@@ -22,6 +22,7 @@ export interface InventorySlice {
     field: keyof EquipableItem | keyof Item,
     val: Item[keyof Item] | EquipableItem[keyof EquipableItem],
   ) => void;
+  overwriteInventoryItem: (item: Item) => void;
   deleteInventoryItem: (id: string) => void;
   reorderInventoryItem: (activeId: string, overId: string) => void;
   moveInventoryItem: (
@@ -91,6 +92,12 @@ export const createInventorySlice: StateCreator<
       }
       return { inventory: newInventory };
     });
+  },
+
+  overwriteInventoryItem: (item) => {
+    set((state) => ({
+      inventory: state.inventory.map((i) => (i.id === item.id ? item : i)),
+    }));
   },
 
   deleteInventoryItem: (id) => {
@@ -165,7 +172,6 @@ export const createInventorySlice: StateCreator<
       };
     }
 
-    console.log({ item, state, itemId });
     if (!item) return { success: false, message: "ITEM NÃO ENCONTRADO." };
 
     if (targetId !== null) {

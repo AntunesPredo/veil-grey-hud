@@ -17,6 +17,7 @@ export interface ProgressionSlice {
   creationStatus: CreationStatus;
   sandboxMode: boolean;
   isMasterMode: boolean;
+  isPossessing: string | null;
   freePoints: { attributes: number; skills: number; specializations: number };
   role: Role | null;
   settings: { lockPoints: boolean; showRollDetails: boolean };
@@ -53,6 +54,7 @@ export const createProgressionSlice: StateCreator<
   creationStatus: "NOT_STARTED",
   sandboxMode: false,
   isMasterMode: false,
+  isPossessing: null,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
   role: null,
   settings: { lockPoints: true, showRollDetails: true },

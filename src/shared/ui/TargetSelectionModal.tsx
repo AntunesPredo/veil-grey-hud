@@ -19,10 +19,19 @@ export function TargetSelectionModal({
   title = "SELECIONAR ALVOS",
   allowAll = false,
 }: TargetSelectionModalProps) {
-  const onlinePlayers = useNetworkStore((state) => state.onlinePlayers);
   const [selected, setSelected] = useState<string[]>([]);
+
+  const onlinePlayers = useNetworkStore((state) => state.onlinePlayers);
+  const telemetryData = useNetworkStore((state) => state.telemetryData);
   const name = useCharacterStore((state) => state.name);
-  const filteredPlayers = onlinePlayers.filter((player) => player !== name);
+
+  const allPossibleTargets = Array.from(
+    new Set([...onlinePlayers, ...Object.keys(telemetryData)]),
+  );
+
+  const filteredPlayers = allPossibleTargets.filter(
+    (player) => player !== name && player !== "MESTRE" && player !== "SANDBOX",
+  );
 
   if (!isOpen) return null;
 

@@ -3,6 +3,20 @@ import { persist } from "zustand/middleware";
 import { createClient, RealtimeChannel } from "@supabase/supabase-js";
 import { useCharacterStore } from "../../features/character/store";
 import { RetroToast } from "../ui/RetroToast";
+import type {
+  Attribute,
+  CreationStatus,
+  CrisisState,
+  CustomEffect,
+  Disadvantage,
+  EnergyState,
+  Item,
+  Note,
+  Skill,
+  SustenanceState,
+} from "../types/veil-grey";
+import { useMasterStore } from "../../features/master/masterStore";
+import type { VitalsSlice } from "../../features/vitals/vitalsSlice";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
@@ -12,45 +26,115 @@ export interface QueuedPayload {
   id: string;
   type: string;
   attackerName: string;
+  targetName: string;
   data: unknown;
+}
+
+export interface PlayerTelemetry {
+  core?: {
+    attributes: Record<Attribute, number>;
+    secondaryAttributes: {
+      agility: number;
+      mass: number;
+      mental_health: number;
+      perception: number;
+    };
+    skills: Record<Skill, number>;
+    evilness: number;
+    name: string;
+    level: number;
+    xp: { current: number; max: number; usedXpLogs: string[] };
+    creationStatus: CreationStatus;
+    freePoints: { attributes: number; skills: number; specializations: number };
+    disadvantages: Disadvantage[];
+  };
+  vitals?: {
+    hp: VitalsSlice["hp"] & {
+      max: number;
+    };
+    insanity: { current: number; max: number; volatile: boolean };
+    energy: { current: number; max: number; state: EnergyState };
+    sustenance: { current: number; max: number; state: SustenanceState };
+    crisis: { state: CrisisState; fails: number; ignore: boolean };
+  };
+  inventory?: Item[];
+  effects?: CustomEffect[];
+  customEffectIds?: number[];
+  timestamp: number;
+  notes?: {
+    notes: Note[];
+    mainNote: string;
+  };
 }
 
 interface NetworkState {
   onlinePlayers: string[];
-  masterPingTimestamp: number;
-  masterKnownHashes: Record<string, string>;
-  telemetryData: Record<string, unknown>;
-  telemetryHashes: Record<string, string>;
+  telemetryData: Record<string, Partial<PlayerTelemetry>>;
+  telemetryTimestamps: Record<string, Record<string, number>>;
   channel: RealtimeChannel | null;
   telemetryChannel: RealtimeChannel | null;
   queue: QueuedPayload[];
 
   connect: (playerName: string) => void;
+  disconnect: () => void;
   sendPayload: (target: string, type: string, data: unknown) => void;
-  broadcastTelemetry: (playerName: string, hash: string, data: unknown) => void;
-  broadcastMasterPing: (knownHashes: Record<string, string>) => void;
+
   broadcastPowerOff: (playerName: string) => void;
   removeTelemetry: (playerName: string) => void;
+
+  broadcastPartialTelemetry: (
+    playerName: string,
+    domain: keyof PlayerTelemetry,
+    data: unknown,
+  ) => void;
+  clearOfflineTelemetry: () => void;
+  kickPlayer: (playerName: string) => void;
+  forceSyncAll: () => void;
+  forceSyncPlayer: (playerName: string) => void;
   pushToQueue: (payload: QueuedPayload) => void;
-  popQueue: () => void;
-  disconnect: () => void;
+  removeQueueItem: (id: string) => void;
 }
+
+const safeBroadcast = (
+  channel: RealtimeChannel | null,
+  event: string,
+  payload: unknown,
+) => {
+  if (!channel) return;
+  const msg = { type: "broadcast" as const, event, payload };
+  const size = JSON.stringify(msg).length;
+
+  const extendedChannel = channel as RealtimeChannel & {
+    httpSend?: (msg: unknown) => Promise<unknown>;
+  };
+
+  if (size > 150000 && typeof extendedChannel.httpSend === "function") {
+    extendedChannel.httpSend(msg).catch(console.error);
+  } else {
+    channel.send(msg).catch((e: Error) => {
+      if (
+        (e.message?.includes("httpSend") || e.message?.includes("REST")) &&
+        typeof extendedChannel.httpSend === "function"
+      ) {
+        extendedChannel.httpSend(msg).catch(console.error);
+      }
+    });
+  }
+};
 
 export const useNetworkStore = create<NetworkState>()(
   persist(
     (set, get) => ({
       onlinePlayers: [],
-      masterPingTimestamp: 0,
-      masterKnownHashes: {},
       telemetryData: {},
-      telemetryHashes: {},
+      telemetryTimestamps: {},
       channel: null,
       telemetryChannel: null,
       queue: [],
 
-      pushToQueue: (payload) =>
-        set((state) => ({ queue: [...state.queue, payload] })),
-      popQueue: () => set((state) => ({ queue: state.queue.slice(1) })),
+      pushToQueue: (p) => set((s) => ({ queue: [...s.queue, p] })),
+      removeQueueItem: (id) =>
+        set((s) => ({ queue: s.queue.filter((q) => q.id !== id) })),
 
       connect: (playerName) => {
         if (get().channel) return;
@@ -61,18 +145,48 @@ export const useNetworkStore = create<NetworkState>()(
 
         channel
           .on("presence", { event: "sync" }, () => {
-            const state = channel.presenceState();
-            set({ onlinePlayers: Object.keys(state) });
+            set({ onlinePlayers: Object.keys(channel.presenceState()) });
           })
           .on("broadcast", { event: "system-inject" }, ({ payload }) => {
-            if (payload.target === playerName || payload.target === "ALL") {
+            const { name, isMasterMode, isPossessing } =
+              useCharacterStore.getState();
+            const isLocalNpc = useMasterStore
+              .getState()
+              .npcs.some((n) => n.name === payload.target && n.isActive);
+
+            if (
+              payload.target === "MESTRE" &&
+              payload.type === "SAVE_DELIVERY" &&
+              isMasterMode
+            ) {
+              const dataUri =
+                "data:text/plain;charset=utf-8," +
+                encodeURIComponent(payload.data as string);
+              const link = document.createElement("a");
+              link.href = dataUri;
+              link.download = `VG_DELIVERY_SAVE_${payload.attackerName}.json`;
+              link.click();
+              RetroToast.success(
+                `FICHA DE [${payload.attackerName}] RECEBIDA E BAIXADA.`,
+              );
+              return;
+            }
+
+            if (
+              payload.target === name ||
+              payload.target === "ALL" ||
+              (isMasterMode && isLocalNpc)
+            ) {
               get().pushToQueue({
                 id: crypto.randomUUID(),
                 type: payload.type,
                 attackerName: payload.attackerName || "MESTRE",
+                targetName: payload.target,
                 data: payload.data,
               });
-              RetroToast.info(`PACOTE ENFILEIRADO: [${payload.type}]`);
+              if (payload.target === name || payload.target === isPossessing) {
+                RetroToast.info(`PACOTE ENFILEIRADO: [${payload.type}]`);
+              }
             }
           })
           .subscribe(async (status) => {
@@ -84,30 +198,86 @@ export const useNetworkStore = create<NetworkState>()(
         const telemetryChannel = supabase.channel("vg-telemetry");
 
         telemetryChannel
-          .on("broadcast", { event: "SYNC_STATS" }, ({ payload }) => {
+          .on("broadcast", { event: "SYNC_PARTIAL" }, ({ payload }) => {
+            const { name, domain, data, timestamp } = payload;
+            const currentTimestamp =
+              get().telemetryTimestamps[name]?.[domain] || 0;
+
+            if (timestamp < currentTimestamp) return;
+
             set((state) => ({
               telemetryData: {
                 ...state.telemetryData,
-                [payload.name]: payload.data,
+                [name]: {
+                  ...(state.telemetryData[name] || {}),
+                  [domain]: data,
+                },
               },
-              telemetryHashes: {
-                ...state.telemetryHashes,
-                [payload.name]: payload.hash,
+              telemetryTimestamps: {
+                ...state.telemetryTimestamps,
+                [name]: {
+                  ...(state.telemetryTimestamps[name] || {}),
+                  [domain]: timestamp,
+                },
               },
             }));
           })
-          .on("broadcast", { event: "POWER_OFF" }, ({ payload }) => {
-            get().removeTelemetry(payload.name);
-          })
-          .on("broadcast", { event: "MASTER_PING" }, ({ payload }) => {
-            set({
-              masterPingTimestamp: Date.now(),
-              masterKnownHashes: payload.hashes || {},
-            });
+          .on("broadcast", { event: "MASTER_COMMAND" }, ({ payload }) => {
+            if (payload.target === playerName || payload.target === "ALL") {
+              if (payload.command === "FORCE_SYNC") {
+                window.dispatchEvent(new CustomEvent("vg-force-sync"));
+              }
+              if (payload.command === "KICK") {
+                get().disconnect();
+                window.location.reload();
+              }
+              if (payload.command === "FULL_OVERRIDE") {
+                useCharacterStore.getState().importCharacterData(payload.data);
+                RetroToast.warning("O MESTRE ASSUMIU O CONTROLE (OVERRIDE).");
+              }
+              if (payload.command === "FORCE_UPDATE_ITEM") {
+                useCharacterStore
+                  .getState()
+                  .overwriteInventoryItem(payload.data);
+              }
+              if (payload.command === "FORCE_DELETE_ITEM") {
+                useCharacterStore
+                  .getState()
+                  .deleteInventoryItem(payload.data.id);
+              }
+              if (payload.command === "EXPORT_REQUEST") {
+                const {
+                  resetCharacterData,
+                  importCharacterData,
+                  isOutdatedSave,
+                  ...dataToSave
+                } = useCharacterStore.getState();
+                const noSave = [
+                  resetCharacterData,
+                  importCharacterData,
+                  isOutdatedSave,
+                ];
+                delete noSave[0];
+                delete noSave[1];
+                delete noSave[2];
+
+                const savePayload = {
+                  vg_version: import.meta.env.VITE_APP_VERSION || "1.0.0",
+                  timestamp: new Date().toISOString(),
+                  data: dataToSave,
+                };
+                import("crypto-js").then((CryptoJS) => {
+                  const encrypted = CryptoJS.default.AES.encrypt(
+                    JSON.stringify(savePayload),
+                    import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key",
+                  ).toString();
+                  get().sendPayload("MESTRE", "SAVE_DELIVERY", encrypted);
+                });
+              }
+            }
           })
           .subscribe();
 
-        RetroToast.success(`TELEMETRY.ONLINE | CONNECTED AS: [${playerName}]`);
         set({ channel, telemetryChannel });
       },
 
@@ -117,9 +287,7 @@ export const useNetworkStore = create<NetworkState>()(
           channel.untrack();
           channel.unsubscribe();
         }
-        if (telemetryChannel) {
-          telemetryChannel.unsubscribe();
-        }
+        if (telemetryChannel) telemetryChannel.unsubscribe();
         set({ channel: null, telemetryChannel: null, onlinePlayers: [] });
       },
 
@@ -130,6 +298,7 @@ export const useNetworkStore = create<NetworkState>()(
             id: crypto.randomUUID(),
             type,
             attackerName: senderName,
+            targetName: senderName,
             data,
           });
           RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
@@ -137,61 +306,98 @@ export const useNetworkStore = create<NetworkState>()(
         }
         const { channel } = get();
         if (channel) {
-          channel.send({
-            type: "broadcast",
-            event: "system-inject",
-            payload: { target, type, attackerName: senderName, data },
+          safeBroadcast(channel, "system-inject", {
+            target,
+            type,
+            attackerName: senderName,
+            data,
           });
         }
       },
 
-      broadcastTelemetry: (playerName, hash, data) => {
+      broadcastPartialTelemetry: (playerName, domain, data) => {
         const { telemetryChannel } = get();
+        const timestamp = Date.now();
         if (telemetryChannel) {
-          telemetryChannel.send({
-            type: "broadcast",
-            event: "SYNC_STATS",
-            payload: { name: playerName, hash, data },
+          safeBroadcast(telemetryChannel, "SYNC_PARTIAL", {
+            name: playerName,
+            domain,
+            data,
+            timestamp,
           });
         }
+        set((state) => ({
+          telemetryData: {
+            ...state.telemetryData,
+            [playerName]: {
+              ...(state.telemetryData[playerName] || {}),
+              [domain]: data,
+            },
+          },
+        }));
       },
 
-      broadcastMasterPing: (knownHashes) => {
-        const { telemetryChannel } = get();
-        if (telemetryChannel) {
-          telemetryChannel.send({
-            type: "broadcast",
-            event: "MASTER_PING",
-            payload: { hashes: knownHashes },
+      clearOfflineTelemetry: () =>
+        set((state) => {
+          const online = state.onlinePlayers;
+          const newData = { ...state.telemetryData };
+          Object.keys(newData).forEach((key) => {
+            const isLocalNpc = useMasterStore
+              .getState()
+              .npcs.some((n) => n.name === key && n.isActive);
+            if (!online.includes(key) && !isLocalNpc) delete newData[key];
           });
-        }
+          return { telemetryData: newData };
+        }),
+
+      kickPlayer: (playerName) => {
+        const { telemetryChannel } = get();
+        if (telemetryChannel)
+          safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
+            target: playerName,
+            command: "KICK",
+          });
+        set((s) => {
+          const newData = { ...s.telemetryData };
+          delete newData[playerName];
+          return { telemetryData: newData };
+        });
+      },
+
+      forceSyncAll: () => {
+        const { telemetryChannel } = get();
+        if (telemetryChannel)
+          safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
+            target: "ALL",
+            command: "FORCE_SYNC",
+          });
+      },
+
+      forceSyncPlayer: (playerName) => {
+        const { telemetryChannel } = get();
+        if (telemetryChannel)
+          safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
+            target: playerName,
+            command: "FORCE_SYNC",
+          });
       },
 
       removeTelemetry: (playerName) =>
         set((state) => {
           const newData = { ...state.telemetryData };
-          const newHashes = { ...state.telemetryHashes };
           delete newData[playerName];
-          delete newHashes[playerName];
-          return { telemetryData: newData, telemetryHashes: newHashes };
+          return { telemetryData: newData };
         }),
+
       broadcastPowerOff: (playerName) => {
         const { telemetryChannel } = get();
-        if (telemetryChannel) {
-          telemetryChannel.send({
-            type: "broadcast",
-            event: "POWER_OFF",
-            payload: { name: playerName },
-          });
-        }
+        if (telemetryChannel)
+          safeBroadcast(telemetryChannel, "POWER_OFF", { name: playerName });
       },
     }),
     {
       name: "vg_network_cache",
-      partialize: (state) => ({
-        telemetryData: state.telemetryData,
-        telemetryHashes: state.telemetryHashes,
-      }),
+      partialize: () => ({}),
     },
   ),
 );
