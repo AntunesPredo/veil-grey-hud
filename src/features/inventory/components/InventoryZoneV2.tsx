@@ -113,14 +113,14 @@ export function InventoryZoneV2({
       layout
       initial={false}
       animate={{
-        flex: isCollapsedZone ? 0.2 : 1,
+        flex: isCollapsedZone ? 0.1 : 1,
+        minWidth: isCollapsedZone ? "25px" : "0px",
       }}
       transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
       onClick={isCollapsedZone ? onExpandZone : undefined}
       ref={setNodeRef}
-      className={`flex flex-col min-h-0 relative border-2 overflow-hidden ${
-        isCollapsedZone ? "cursor-pointer group" : ""
-      } ${dropFeedbackClass} ${isInnerDrawer && !isCollapsedZone ? "border-l-4" : ""}`}
+      className={`flex flex-col min-h-0 relative border-2 overflow-hidden ${isCollapsedZone ? "cursor-pointer group" : ""
+        } ${dropFeedbackClass} ${isInnerDrawer && !isCollapsedZone ? "border-none" : ""}`}
     >
       {isCollapsedZone && (
         <div
@@ -140,7 +140,7 @@ export function InventoryZoneV2({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="z-10 flex flex-col items-center gap-2 mt-4 py-6 w-full h-full"
+            className="z-10 flex flex-col items-center gap-2 mt-4 w-full h-full"
           >
             <span className="text-[12px] text-[var(--theme-accent)] font-bold animate-pulse mb-4">
               ▼
@@ -161,10 +161,10 @@ export function InventoryZoneV2({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col w-full h-full min-w-[280px]"
+            className="flex flex-col w-full h-full min-w-[250px]"
           >
             {(title || headerExtra) && (
-              <div className="bg-[var(--theme-background)]/90 p-2 border-b-2 border-[var(--theme-border)] flex justify-between items-center z-10 shrink-0 shadow-sm">
+              <div className="bg-[var(--theme-background)]/90 p-1 border-b-2 border-[var(--theme-border)] flex justify-between items-center z-10 shrink-0 shadow-sm">
                 {title && (
                   <span className="text-[10px] md:text-xs font-bold text-[var(--theme-accent)] tracking-widest uppercase">
                     {title}
@@ -173,7 +173,7 @@ export function InventoryZoneV2({
                 {headerExtra}
               </div>
             )}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col gap-2 relative">
+            <div className="flex-1 overflow-y-auto p-1 custom-scrollbar flex flex-col gap-2 relative">
               <SortableContext
                 items={items.map((i) => i.id)}
                 strategy={verticalListSortingStrategy}

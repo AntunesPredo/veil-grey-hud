@@ -8,6 +8,7 @@ export function migrateCharacterToV2(state: any): any {
     migrated.inventory = migrated.inventory.map((item: any) => ({
       ...item,
       id: String(item.id),
+      price: item.price ?? 1000,
       parentId:
         item.parentId !== null && item.parentId !== undefined
           ? String(item.parentId)
@@ -51,6 +52,7 @@ export function migrateMasterToV2(state: any): any {
     migrated.globalItems = migrated.globalItems.map((item: any) => ({
       ...item,
       id: String(item.id),
+      price: item.price ?? 1000,
       parentId:
         item.parentId !== null && item.parentId !== undefined
           ? String(item.parentId)
@@ -74,6 +76,26 @@ export function migrateMasterToV2(state: any): any {
       ...folder,
       id: String(folder.id),
     }));
+  }
+
+  if (Array.isArray(migrated.npcs)) {
+    migrated.npcs = migrated.npcs.map((npc: any) => {
+      if (Array.isArray(npc.inventory)) {
+        return {
+          ...npc,
+          inventory: npc.inventory.map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            price: item.price ?? 1000,
+            parentId:
+              item.parentId !== null && item.parentId !== undefined
+                ? String(item.parentId)
+                : null,
+          })),
+        };
+      }
+      return npc;
+    });
   }
 
   return migrated;

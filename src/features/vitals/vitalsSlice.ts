@@ -4,6 +4,8 @@ import type { CrisisState, InstantAction } from "../../shared/types/veil-grey";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { buildSustenanceStages } from "../../shared/utils/mathUtils";
 import { calculateInventoryLoad } from "../../shared/utils/inventoryUtils";
+import { useVitalsStore } from "./useVitalsStore";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 
 export interface VitalsSlice {
   hp: {
@@ -119,16 +121,29 @@ export const createVitalsSlice: StateCreator<
   crisis: { state: null, fails: 0, ignore: false },
 
   applyHealing: (amount) =>
-    set((state) => ({
+    set((state) => {
+      const safeAmount = Math.abs(sanitizeNumber(amount, 0));
+      const playerName = state.name || "DESCONHECIDO";
+      
+      const embed: DiscordEmbed = {
+        title: "[+] RECUPERAÇÃO VITAL [+]",
+        color: 3066993,
+        description: `**UNIDADE OPERACIONAL:** ${playerName}\n**CÚPULA RESTAURADA:** ${safeAmount} HP`,
+        footer: { text: "SYS.MNLT // BIO_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", playerName, "", [embed]);
+
+      return {
       hp: {
         ...state.hp,
         current: Math.min(
           state.hp.baseMax + state.hp.maxBonus,
-          sanitizeNumber(state.hp.current, 65) +
-            +Math.abs(sanitizeNumber(amount, 0)),
+          sanitizeNumber(state.hp.current, 65) + safeAmount,
         ),
       },
-    })),
+    };
+  }),
 
   addMaxHpBonus: (amount) =>
     set((state) => ({
@@ -183,6 +198,18 @@ export const createVitalsSlice: StateCreator<
       let crisis = s.crisis;
       if (newCurrent === 0) {
         crisis = { state: "DEATH", fails: 0, ignore: false };
+      }
+
+      if (mitigateMode === "IGNORE") {
+        const playerName = s.name || "DESCONHECIDO";
+        const embed: DiscordEmbed = {
+          title: "[!] DANO RECEBIDO [!]",
+          color: 15158332,
+          description: `**UNIDADE OPERACIONAL:** ${playerName}\n**IMPACTO DIRETO:** ${finalDamage} HP`,
+          footer: { text: "SYS.MNLT // BIO_TRACKER" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("PLAYER", playerName, "", [embed]);
       }
 
       return { hp: { ...s.hp, temp: newTemp, current: newCurrent }, crisis };
@@ -266,9 +293,18 @@ export const createVitalsSlice: StateCreator<
         state.applyHealing(safeActVal);
         break;
 
-      case "HP_DRAIN":
-        state.applyDamage(safeActVal, "IGNORE", null);
+      case "HP_DRAIN": {
+        const equippedArmor = state.inventory.find(
+          (i) => i.isEquipped && "armorProps" in i && !!i.armorProps
+        );
+        
+        if (equippedArmor) {
+          useVitalsStore.getState().openModal("DAMAGE", String(safeActVal), true);
+        } else {
+          state.applyDamage(safeActVal, "IGNORE", null);
+        }
         break;
+      }
 
       case "HP_TEMP":
         state.updateHpTemp(state.hp.temp + safeActVal);

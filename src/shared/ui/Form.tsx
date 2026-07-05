@@ -14,21 +14,35 @@ export function Checkbox({
   checked,
   onChange,
   disabled = false,
+  fluid = false,
+  colorClass = "text-[var(--theme-accent)]",
 }: {
   label: string;
   checked: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
+  fluid?: boolean;
+  colorClass?: string;
 }) {
   return (
     <label
-      className={`flex items-center gap-3 cursor-pointer hover:bg-[var(--theme-accent)]/5 p-1 transition-colors font-mono text-[10px] text-[var(--theme-accent)] font-bold tracking-widest uppercase ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`flex items-center cursor-pointer transition-colors font-mono font-bold tracking-widest uppercase ${disabled ? "opacity-50 cursor-not-allowed" : ""
+        } ${fluid
+          ? "w-full h-full justify-center gap-4 text-xs"
+          : "gap-3 hover:bg-current/10 p-1 text-[10px]"
+        } ${colorClass}`}
     >
       <div
-        className={`w-3.5 h-3.5 flex items-center justify-center border-2 border-[var(--theme-accent)] rotate-45 transition-all duration-300 ${checked ? "bg-[var(--theme-accent)] shadow-[0_0_8px_var(--theme-accent)]" : "bg-black"}`}
+        className={`flex items-center justify-center border-2 border-current rotate-45 transition-all duration-300 ${checked
+            ? "bg-current shadow-[0_0_12px_currentColor] scale-110"
+            : "bg-black"
+          } ${fluid ? "w-4 h-4" : "w-3.5 h-3.5"}`}
       >
         {checked && (
-          <div className="w-1.5 h-1.5 bg-[var(--theme-background)]" />
+          <div
+            className={`bg-[var(--theme-background)] ${fluid ? "w-2 h-2" : "w-1.5 h-1.5"
+              }`}
+          />
         )}
       </div>
       <input
@@ -38,7 +52,9 @@ export function Checkbox({
         className="hidden"
         disabled={disabled}
       />
-      {label}
+      <span className={checked && fluid ? "drop-shadow-[0_0_8px_currentColor]" : ""}>
+        {label}
+      </span>
     </label>
   );
 }
@@ -143,6 +159,152 @@ export function NumberStepper({
           />
         </svg>
       </Button>
+    </div>
+  );
+}
+
+export interface MultiNumberStepperProps {
+  value: number;
+  max?: number;
+  onChange: (amount: number) => void;
+  label?: string;
+}
+
+export function MultiNumberStepper({
+  value,
+  max,
+  onChange,
+  label = "HP",
+}: MultiNumberStepperProps) {
+  return (
+    <div className="flex items-stretch shrink-0">
+      <Button
+        variant="danger"
+        size="sm"
+        className="h-8 flex items-center justify-center border-r-0 px-1 text-[10px] min-w-[28px]"
+        onClick={() => onChange(-10)}
+      >
+        -10
+      </Button>
+      <Button
+        variant="danger"
+        size="sm"
+        className="h-8 flex items-center justify-center border-r-0 px-1 text-[10px] min-w-[28px] border-l border-l-[var(--theme-danger)]"
+        onClick={() => onChange(-5)}
+      >
+        -5
+      </Button>
+      <Button
+        variant="danger"
+        size="sm"
+        className="h-8 flex items-center justify-center border-r-0 px-1 text-[10px] min-w-[28px] border-l border-l-[var(--theme-danger)]"
+        onClick={() => onChange(-1)}
+      >
+        -1
+      </Button>
+
+      <div className="px-3 flex flex-col items-center justify-center bg-black border-y-2 border-[var(--theme-accent)]">
+        <span className="text-[12px] font-black text-[var(--theme-accent)] font-mono leading-none uppercase tracking-widest">
+          {label}: {value}{max !== undefined ? `/${max}` : ""}
+        </span>
+      </div>
+
+      <Button
+        variant="success"
+        size="sm"
+        className="h-8 flex items-center justify-center border-l-0 px-1 text-[10px] min-w-[28px]"
+        onClick={() => onChange(1)}
+      >
+        +1
+      </Button>
+      <Button
+        variant="success"
+        size="sm"
+        className="h-8 flex items-center justify-center border-l-0 px-1 text-[10px] min-w-[28px] border-r border-r-[var(--theme-success)]"
+        onClick={() => onChange(5)}
+      >
+        +5
+      </Button>
+      <Button
+        variant="success"
+        size="sm"
+        className="h-8 flex items-center justify-center border-l-0 px-1 text-[10px] min-w-[28px] border-r-2 border-r-[var(--theme-success)]"
+        onClick={() => onChange(10)}
+      >
+        +10
+      </Button>
+    </div>
+  );
+}
+
+export interface SliderProps {
+  min: number;
+  max: number;
+  step?: number;
+  value: number;
+  onChange: (val: number) => void;
+  labelMap?: Record<number, string>;
+  title?: string;
+}
+
+export function Slider({
+  min,
+  max,
+  step = 1,
+  value,
+  onChange,
+  labelMap,
+  title,
+}: SliderProps) {
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className="flex flex-col w-full gap-4 my-2">
+      {title && (
+        <span className="text-[10px] font-bold tracking-widest text-[var(--theme-accent)] uppercase">
+          {title}
+        </span>
+      )}
+      
+      <div className="relative w-full h-8 flex items-center group">
+        {/* Track Background */}
+        <div className="absolute w-full h-1 bg-black border border-[var(--theme-accent)]/30 top-1/2 -translate-y-1/2" />
+        
+        {/* Track Fill */}
+        <div 
+          className="absolute h-1 bg-[var(--theme-accent)] top-1/2 -translate-y-1/2 shadow-[0_0_8px_var(--theme-accent)] transition-all duration-300" 
+          style={{ width: `${percentage}%` }}
+        />
+
+        {/* Input element placed over */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="absolute w-full h-full opacity-0 cursor-pointer z-10"
+        />
+
+        {/* Thumb Indicator */}
+        <div 
+          className="absolute w-4 h-4 bg-black border-2 border-[var(--theme-accent)] rotate-45 top-1/2 -translate-y-1/2 shadow-[0_0_10px_var(--theme-accent)] transition-all duration-300 pointer-events-none group-hover:scale-125 group-hover:bg-[var(--theme-accent)]"
+          style={{ left: `calc(${percentage}% - 8px)` }}
+        />
+      </div>
+
+      <div className="flex justify-between mt-1">
+        <span className="text-[9px] font-mono font-bold text-[var(--theme-accent)]/70">
+          {labelMap ? labelMap[min] : min}
+        </span>
+        <span className="text-[11px] font-mono font-black text-[var(--theme-accent)] uppercase px-2 bg-[var(--theme-accent)]/10 border border-[var(--theme-accent)]">
+          {labelMap && labelMap[value] ? labelMap[value] : value}
+        </span>
+        <span className="text-[9px] font-mono font-bold text-[var(--theme-accent)]/70">
+          {labelMap ? labelMap[max] : max}
+        </span>
+      </div>
     </div>
   );
 }

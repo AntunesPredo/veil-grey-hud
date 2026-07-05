@@ -79,17 +79,15 @@ export function ExtraNoteBlock({
     <div
       ref={setSortableRef}
       style={style}
-      className={`relative mt-2 transition-all ${
-        isDragging ? "opacity-40 z-50" : "opacity-100"
-      }`}
+      className={`relative mt-2 transition-all ${isDragging ? "opacity-40 z-50" : "opacity-100"
+        }`}
     >
       <div
         ref={setDropRef}
-        className={`relative border-2 transition-colors ${
-          isOver
-            ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/10"
-            : "border-transparent"
-        }`}
+        className={`relative border-2 transition-colors ${isOver
+          ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/10"
+          : "border-transparent"
+          }`}
       >
         <motion.div
           layout={!isDragging}
@@ -136,7 +134,7 @@ export function ExtraNoteBlock({
             </div>
           </div>
 
-          <div className="p-2">
+          <div>
             <AnimatePresence mode="wait">
               {note.isEditing ? (
                 <motion.div

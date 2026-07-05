@@ -13,7 +13,7 @@ import type {
 } from "../../shared/types/veil-grey";
 import type { InjectPayload } from "../../shared/utils/hashIntegration";
 import { useUIStore } from "../../shared/store/useUIStore";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { HashGeneratorModal } from "./HashGeneratorModal";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
@@ -181,7 +181,14 @@ export function SystemInjectionModal({
       });
 
       if (successCount > 0) {
-        dispatchDiscordLog("PLAYER", name, msg);
+        const embed: DiscordEmbed = {
+          title: "[*] INJEÇÃO DE SISTEMA [*]",
+          color: 10181046, // purple
+          description: msg,
+          footer: { text: "SYS.MNLT // SYSTEM_INJECTION" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("PLAYER", name, "", [embed]);
         setHashInput("");
         handleClose();
       }

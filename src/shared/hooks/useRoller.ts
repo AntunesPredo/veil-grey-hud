@@ -3,7 +3,7 @@ import { useRollStore } from "../../features/stats/useRollStore";
 import { useActiveModifiers } from "./useActiveModifiers";
 import { executeRawRoll } from "../utils/diceEngine";
 import { RetroToast } from "../ui/RetroToast";
-import { dispatchDiscordLog } from "../utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../utils/discordWebhook";
 import type { CustomEffect } from "../types/veil-grey";
 
 export function useRoller() {
@@ -65,35 +65,20 @@ function executeDirectRoll(
     return;
   }
 
-  let toastMsg = `[${title}] = ${result.total}`;
-  let logMsg = `**ROLAGEM:** ${title}\n\`\`\`\n${result.log}\n\`\`\``;
-
-  if (result.isCriticalSuccess) {
-    toastMsg = `CRÍTICO! ${toastMsg}`;
-    logMsg += `\n[ SUCESSO CRÍTICO ]`;
-  } else if (result.isCriticalFail) {
-    toastMsg = `FALHA CRÍTICA! ${toastMsg}`;
-    logMsg += `\n[ FALHA CRÍTICA ]`;
-  } else if (dc !== undefined) {
-    if (result.total >= dc) {
-      toastMsg += ` (SUCESSO VS DC ${dc})`;
-      logMsg += `\n[ SUCESSO VS DC ${dc} ]`;
-    } else {
-      toastMsg += ` (FALHA VS DC ${dc})`;
-      logMsg += `\n[ FALHA VS DC ${dc} ]`;
-    }
+  let resultColorStr = 3066993; // default success/neutral
+  if (result.isCriticalFail || (dc !== undefined && result.total < dc)) {
+    resultColorStr = 15158332; // failure
+  } else if (result.isCriticalSuccess) {
+    resultColorStr = 16753920; // critical
   }
 
-  if (result.isCriticalFail) {
-    RetroToast.error(toastMsg);
-  } else if (
-    result.isCriticalSuccess ||
-    (dc !== undefined && result.total >= dc)
-  ) {
-    RetroToast.success(toastMsg);
-  } else {
-    RetroToast.info(toastMsg);
-  }
+  const embed: DiscordEmbed = {
+    title: `[?] RESOLUÇÃO: ${title} [?]`,
+    color: resultColorStr,
+    description: `**UNIDADE OPERACIONAL:** ${characterName}\n**EXPRESSÃO:** ${baseExpression}\n**TOTAL:** ${result.total}\n\`\`\`\n${result.log}\n\`\`\` ${result.isCriticalSuccess ? `\n# [ SUCESSO CRÍTICO ]` : ""}`,
+    footer: { text: "SYS.MNLT // ROLL_TRACKER" },
+    timestamp: new Date().toISOString(),
+  };
 
-  dispatchDiscordLog("PLAYER", characterName, logMsg);
+  dispatchDiscordLog("PLAYER", characterName, "", [embed]);
 }

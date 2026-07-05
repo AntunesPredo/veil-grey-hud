@@ -53,10 +53,18 @@ interface VitalsStore {
 
   isQuickRestOpen: boolean;
   isFullRestOpen: boolean;
+  fullRestMasterConfig: {
+    difficulty: number;
+    temperature: number;
+    comfort: number;
+  } | null;
   openQuickRest: () => void;
   closeQuickRest: () => void;
   openFullRest: () => void;
   closeFullRest: () => void;
+  setFullRestMasterConfig: (
+    config: { difficulty: number; temperature: number; comfort: number } | null
+  ) => void;
 }
 
 export const useVitalsStore = create<VitalsStore>((set) => ({
@@ -111,8 +119,10 @@ export const useVitalsStore = create<VitalsStore>((set) => ({
 
   isQuickRestOpen: false,
   isFullRestOpen: false,
+  fullRestMasterConfig: null,
   openQuickRest: () => set({ isQuickRestOpen: true }),
   closeQuickRest: () => set({ isQuickRestOpen: false }),
   openFullRest: () => set({ isFullRestOpen: true }),
-  closeFullRest: () => set({ isFullRestOpen: false }),
+  closeFullRest: () => set({ isFullRestOpen: false, fullRestMasterConfig: null }),
+  setFullRestMasterConfig: (config) => set({ fullRestMasterConfig: config }),
 }));

@@ -1,7 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
+import { useEventsStore } from "../../features/events/store/useEventsStore";
+import type { GameEvent } from "../../shared/types/events";
 import { useVitalsStore } from "../../features/vitals/useVitalsStore";
-import { useCharacterStore } from "../../features/character/store";
+import {
+  useCharacterStore,
+  type CharacterStore,
+} from "../../features/character/store";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import type {
@@ -13,14 +18,19 @@ import type {
 import { Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { ItemNodeV2 } from "../../features/inventory/components/ItemNodeV2";
+import { WalletSelectorDnd } from "../../shared/ui/WalletSelectorDnd";
 
 export function NetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
   const removeQueueItem = useNetworkStore((state) => state.removeQueueItem);
   const activeName = useCharacterStore((s) => s.isPossessing || s.name);
+  const baseName = useCharacterStore((s) => s.name);
 
   const activeQueue = queue.filter(
-    (q) => q.targetName === activeName || q.targetName === "ALL",
+    (q) =>
+      q.targetName === activeName ||
+      q.targetName === baseName ||
+      q.targetName === "ALL",
   );
 
   const importExternalNote = useCharacterStore(
@@ -36,11 +46,14 @@ export function NetworkQueueManager() {
     processDirectAction,
     attributes,
     skills,
+    inventory,
+    updateInventoryItem,
   } = useCharacterStore();
 
   const { initiateRoll } = useRoller();
 
   const processingIdRef = useRef<string | null>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState<string>("");
 
   useEffect(() => {
     if (activeQueue.length === 0) {
@@ -59,6 +72,43 @@ export function NetworkQueueManager() {
       const data = current.data as { id: number };
       removeCustomEffect(data.id);
       RetroToast.warning("O MESTRE REMOVEU UM EFEITO.");
+      removeQueueItem(current.id);
+      if (processingIdRef.current === current.id)
+        processingIdRef.current = null;
+      return;
+    }
+
+    if (current.type === "REST_RESPONSE") {
+      const config = current.data as { difficulty: number; temperature: number; comfort: number };
+      vitals.setFullRestMasterConfig(config);
+      RetroToast.success("O MESTRE AVALIOU SEU AMBIENTE DE DESCANSO.");
+      removeQueueItem(current.id);
+      if (processingIdRef.current === current.id)
+        processingIdRef.current = null;
+      return;
+    }
+
+    if (current.type === "EVENT_SYNC") {
+      const data = current.data as { action: "UPSERT" | "DELETE"; event?: GameEvent; eventId?: string };
+      const { addEvent, updateEvent, removeEvent, activeEvents } = useEventsStore.getState();
+      
+      if (data.action === "DELETE" && data.eventId) {
+        removeEvent(data.eventId);
+        RetroToast.warning("EVENTO CANCELADO PELO MESTRE.");
+      } else if (data.action === "UPSERT" && data.event) {
+        // Ignora se for o mestre recebendo o proprio echo (já tem salvo no useMasterEventsStore)
+        if (data.event.targets.includes(activeName) || data.event.targets.length === 0 || data.event.targets.includes("ALL") || activeName === "MASTER") {
+           const existing = activeEvents.find(e => e.id === data.event!.id);
+           if (existing) {
+             updateEvent(existing.id, data.event);
+             RetroToast.success(`EVENTO ATUALIZADO: [${data.event.title}]`);
+           } else {
+             addEvent(data.event);
+             RetroToast.success(`NOVO EVENTO: [${data.event.title}]`);
+           }
+        }
+      }
+      
       removeQueueItem(current.id);
       if (processingIdRef.current === current.id)
         processingIdRef.current = null;
@@ -130,7 +180,7 @@ export function NetworkQueueManager() {
   if (activeQueue.length === 0) return null;
   const current = activeQueue[0];
 
-  if (["COMBAT_DEFENSE", "REMOVE_EFFECT"].includes(current.type)) return null;
+  if (["COMBAT_DEFENSE", "REMOVE_EFFECT", "REST_RESPONSE", "EVENT_SYNC"].includes(current.type)) return null;
 
   if (current.type === "ACTION") {
     const act = current.data as {
@@ -215,12 +265,68 @@ export function NetworkQueueManager() {
       };
       importExternalNote(payloadData.note, payloadData.effects);
       RetroToast.success(`NOTA INCORPORADA: [${payloadData.note.title}]`);
+    } else if (current.type === "FULL_OVERRIDE") {
+      useCharacterStore
+        .getState()
+        .importCharacterData(current.data as Partial<CharacterStore>);
+      RetroToast.success("FICHA SINCRONIZADA COM O MAINFRAME.");
+      useNetworkStore.getState().sendPayload("MESTRE", "OVERRIDE_ACCEPTED", {
+        playerName: activeName,
+      });
+    } else if (current.type === "REST_RESPONSE") {
+      const config = current.data as { difficulty: number; temperature: number; comfort: number };
+      vitals.setFullRestMasterConfig(config);
+      RetroToast.success("O MESTRE AVALIOU SEU AMBIENTE DE DESCANSO.");
+    } else if (current.type === "FUNDS") {
+      const fundsData = current.data as { amount: number; currency: string };
+      if (!selectedWalletId) {
+        RetroToast.error("SELECIONE UMA CARTEIRA PARA RECEBER OS FUNDOS.");
+        return;
+      }
+      const targetWallet = inventory.find((i) => i.id === selectedWalletId);
+      if (!targetWallet || !targetWallet.wallet) {
+        RetroToast.error("CARTEIRA INVÁLIDA.");
+        return;
+      }
+      
+      const isUnlimited = targetWallet.wallet.max === null;
+      const spaceLeft = isUnlimited ? Infinity : targetWallet.wallet.max! - targetWallet.wallet.value;
+      if (spaceLeft < fundsData.amount) {
+        RetroToast.error("CAPACIDADE INSUFICIENTE NESTA CARTEIRA.");
+        return;
+      }
+
+      updateInventoryItem(selectedWalletId, "wallet", {
+        ...targetWallet.wallet,
+        value: targetWallet.wallet.value + fundsData.amount,
+      });
+      RetroToast.success(`FUNDOS RECEBIDOS: +${fundsData.amount} ${fundsData.currency}`);
+    } else if (current.type === "DEBT") {
+      const debtData = current.data as { amount: number; currency: string };
+      if (!selectedWalletId) {
+        RetroToast.error("SELECIONE UMA CARTEIRA PARA PAGAR A DÍVIDA.");
+        return;
+      }
+      const targetWallet = inventory.find((i) => i.id === selectedWalletId);
+      if (!targetWallet || !targetWallet.wallet) {
+        RetroToast.error("CARTEIRA INVÁLIDA.");
+        return;
+      }
+
+      updateInventoryItem(selectedWalletId, "wallet", {
+        ...targetWallet.wallet,
+        value: targetWallet.wallet.value - debtData.amount,
+      });
+      RetroToast.warning(`DÍVIDA PAGA: -${debtData.amount} ${debtData.currency}`);
     }
+
+    setSelectedWalletId("");
     removeQueueItem(current.id);
     processingIdRef.current = null;
   };
 
   const handleReject = () => {
+    setSelectedWalletId("");
     removeQueueItem(current.id);
     processingIdRef.current = null;
   };
@@ -313,16 +419,77 @@ export function NetworkQueueManager() {
               )}
             </div>
           )}
+
+          {current.type === "FULL_OVERRIDE" && (
+            <div className="flex flex-col gap-2 my-4 border border-[var(--theme-warning)] p-3 bg-[var(--theme-warning)]/10 text-left">
+              <span className="text-[10px] text-[var(--theme-warning)] font-bold tracking-widest border-b border-[var(--theme-warning)]/30 pb-1 uppercase">
+                OVERRIDE DE SISTEMA
+              </span>
+              <span className="text-sm font-bold uppercase text-[var(--theme-warning)]">
+                Atualizações estruturais enviadas pelo Mestre.
+              </span>
+              <span className="text-xs font-mono text-[var(--theme-text)]/70 italic">
+                Aceitar este pacote aplicará imediatamente as edições feitas na
+                sua ficha remotamente.
+              </span>
+            </div>
+
+          )}
+
+          {current.type === "FUNDS" && (
+            <div className="flex flex-col gap-2 my-4 border border-emerald-500 p-3 bg-emerald-900/10 text-left">
+              <span className="text-[10px] text-emerald-400 font-bold tracking-widest border-b border-emerald-500/30 pb-1 uppercase">
+                TRANSFERÊNCIA DE FUNDOS
+              </span>
+              <span className="text-xl font-bold uppercase text-emerald-400 font-mono text-center my-2">
+                +{(current.data as { amount: number }).amount}{" "}
+                {(current.data as { currency: string }).currency}
+              </span>
+              <span className="text-xs font-mono text-emerald-400/70 text-center mb-2">
+                Selecione a carteira de destino arrastando-a para a zona acima:
+              </span>
+              <WalletSelectorDnd
+                inventory={inventory}
+                currency={(current.data as { currency: string }).currency}
+                selectedWalletId={selectedWalletId}
+                onSelect={(id) => setSelectedWalletId(id)}
+                onUnselect={() => setSelectedWalletId("")}
+              />
+            </div>
+          )}
+          {current.type === "DEBT" && (
+            <div className="flex flex-col gap-2 my-4 border border-red-500 p-3 bg-red-900/10 text-left">
+              <span className="text-[10px] text-red-400 font-bold tracking-widest border-b border-red-500/30 pb-1 uppercase">
+                COBRANÇA DE DÍVIDA
+              </span>
+              <span className="text-xl font-bold uppercase text-red-400 font-mono text-center my-2">
+                -{(current.data as { amount: number }).amount}{" "}
+                {(current.data as { currency: string }).currency}
+              </span>
+              <span className="text-xs font-mono text-red-400/70 text-center mb-2">
+                Selecione a carteira para efetuar o pagamento arrastando-a para a zona acima:
+              </span>
+              <WalletSelectorDnd
+                inventory={inventory}
+                currency={(current.data as { currency: string }).currency}
+                selectedWalletId={selectedWalletId}
+                onSelect={(id) => setSelectedWalletId(id)}
+                onUnselect={() => setSelectedWalletId("")}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-2">
-          <Button
-            variant="danger"
-            onClick={handleReject}
-            className="flex-1 border-dashed"
-          >
-            DESCARTAR
-          </Button>
+          {current.type !== "FULL_OVERRIDE" && current.type !== "DEBT" && (
+            <Button
+              variant="danger"
+              onClick={handleReject}
+              className="flex-1 border-dashed"
+            >
+              DESCARTAR
+            </Button>
+          )}
           <Button
             variant="primary"
             onClick={handleAccept}

@@ -6,7 +6,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
 export function InsanityTransactionModal() {
@@ -71,12 +71,16 @@ export function InsanityTransactionModal() {
 
     updateInsanity(newTotal);
 
-    let logMsg = isAdding
-      ? `**CORRUPÇÃO MENTAL:** [${name}] sofreu +${rolledAmount} Ponto(s) de Loucura.`
-      : `**RECENTRALIZAÇÃO:** [${name}] aliviou -${rolledAmount} Ponto(s) de Loucura.`;
+    const embed: DiscordEmbed = {
+      title: isAdding ? "[!] CORRUPÇÃO MENTAL [!]" : "[+] RECENTRALIZAÇÃO [+]",
+      color: isAdding ? 15158332 : 3066993,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**VARIAÇÃO:** ${isAdding ? "+" : "-"}${rolledAmount} Pts.`,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
 
     if (crisisTriggered) {
-      logMsg += `\n**ALERTA: [${name}] atingiu o limite da sanidade e entrou em COLAPSO!**`;
+      embed.description += `\n**ALERTA: UNIDADE ATINGIU O LIMITE DA SANIDADE E ENTROU EM COLAPSO!**`;
       RetroToast.error(`COLAPSO DETECTADO! LIMITE DE LOUCURA ATINGIDO.`);
     } else {
       RetroToast[isAdding ? "error" : "success"](
@@ -86,7 +90,7 @@ export function InsanityTransactionModal() {
       );
     }
 
-    dispatchDiscordLog("PLAYER", name, logMsg);
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     handleClose();
   };
 

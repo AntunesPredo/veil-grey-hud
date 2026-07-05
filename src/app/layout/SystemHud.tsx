@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "./Header";
+import { useEventsStore } from "../../features/events/store/useEventsStore";
+import { EventsTab } from "../../features/events/EventsTab";
 import { useUIStore } from "../../shared/store/useUIStore";
 import { AttributeDrawer } from "../../features/stats/AttributeDrawer";
 import { SkillDrawer } from "../../features/stats/SkillDrawer";
@@ -15,17 +17,25 @@ import { QuickRestModal } from "../../features/vitals/QuickRestModal";
 import { FullRestModal } from "../../features/vitals/FullRestModal";
 import { NetworkQueueManager } from "./NetworkQueueManager";
 import { useTelemetrySync } from "../../features/character/useTelemetrySync";
+import { usePossessionSync } from "../../features/character/usePossessionSync";
 import { LogisticsPanelV2 } from "../../features/inventory/LogisticsPanelV2";
 
 export function SystemHud() {
   useTelemetrySync();
+  usePossessionSync();
 
   const tabs = [
     { key: "front", label: "MAINFRAME" },
     { key: "inventory", label: "LOGÍSTICA" },
     { key: "bio", label: "BIO & NOTAS" },
   ];
-  const [activeTab, setActiveTab] = useState<"front" | "inventory" | "bio">(
+  
+  const activeEvents = useEventsStore((state) => state.activeEvents);
+  if (activeEvents.length > 0) {
+    tabs.push({ key: "events", label: "EVENTOS" });
+  }
+
+  const [activeTab, setActiveTab] = useState<"front" | "inventory" | "bio" | "events">(
     "front",
   );
 
@@ -68,10 +78,11 @@ export function SystemHud() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
+          <div className="flex-1 overflow-y-auto p-2 custom-scrollbar min-h-0">
             {activeTab === "front" && <VitalsPanel />}
             {activeTab === "inventory" && <LogisticsPanelV2 />}
             {activeTab === "bio" && <BioPanel />}
+            {activeTab === "events" && <EventsTab />}
           </div>
         </div>
 

@@ -60,6 +60,13 @@ export interface ItemFormData {
   instantActions: InstantAction[];
   imageUrl: string;
   isSoulBound: boolean;
+  price: number;
+  hasWallet: boolean;
+  walletProps: {
+    type: "CC" | "FCC";
+    max: number | null;
+    value: number;
+  };
 }
 
 const defaultFormData: ItemFormData = {
@@ -99,6 +106,13 @@ const defaultFormData: ItemFormData = {
   },
   imageUrl: "",
   isSoulBound: false,
+  price: 1000,
+  hasWallet: false,
+  walletProps: {
+    type: "CC",
+    max: null,
+    value: 0,
+  },
 };
 
 interface ItemModalProps {
@@ -138,12 +152,21 @@ export function ItemModal({
     setPrevItem(itemToEdit);
 
     if (isOpen) {
+      const base = JSON.parse(JSON.stringify(defaultFormData));
       setFormData(
         itemToEdit
-          ? ({ ...defaultFormData, ...itemToEdit } as ItemFormData)
-          : defaultFormData,
+          ? ({ 
+              ...base, 
+              ...itemToEdit,
+              hasWallet: !!itemToEdit.wallet,
+              walletProps: itemToEdit.wallet || base.walletProps
+            } as ItemFormData)
+          : base,
       );
       setStep(itemToEdit ? 2 : 1);
+    } else {
+      setFormData(JSON.parse(JSON.stringify(defaultFormData)));
+      setStep(1);
     }
   }
 
@@ -271,6 +294,7 @@ export function ItemModal({
             drawer: null,
             effects: [],
             instantActions: [],
+            price: 1000,
           };
           nestedItemsToGenerate.push(ammo);
         }
@@ -345,10 +369,11 @@ export function ItemModal({
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <Step1Method
-                  key="step1"
+                  key={`step1-${isOpen}`}
                   onNext={handleNext}
                   onClose={onClose}
                   onError={handleError}
+                  onSaveOverride={onSaveOverride}
                 />
               )}
               {step === 2 && (

@@ -12,6 +12,7 @@ import type {
   RechargeableItem,
 } from "../../shared/types/veil-grey";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 
 export interface InventorySlice {
   inventory: Item[];
@@ -133,6 +134,16 @@ export const createInventorySlice: StateCreator<
 
       const isEquipping = !itemToEquip.isEquipped;
       const isArmor = "armorProps" in itemToEquip && !!itemToEquip.armorProps;
+
+      const playerName = get().name || "DESCONHECIDO";
+      const embed: DiscordEmbed = {
+        title: isEquipping ? "[>>>] EQUIPAMENTO ATIVADO [<<<]" : "[<<<] EQUIPAMENTO DESATIVADO [>>>]",
+        color: isEquipping ? 3066993 : 15158332,
+        description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ITEM:** ${itemToEquip.name}\n**TIPO:** ${itemToEquip.type}`,
+        footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", playerName, "", [embed]);
 
       return {
         inventory: state.inventory.map((i) => {
@@ -321,6 +332,18 @@ export const createInventorySlice: StateCreator<
       ),
     }));
 
+    const playerName = state.name || "DESCONHECIDO";
+    const targetName = targetId ? (state.inventory.find(i => i.id === targetId)?.name || "GAVETA") : "RAIZ DO INVENTÁRIO";
+    
+    const embed: DiscordEmbed = {
+      title: "[<->] TRANSFERÊNCIA LOGÍSTICA [<->]",
+      color: 3447003,
+      description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ITEM:** ${item.name}\n**DESTINO:** ${targetName}`,
+      footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", playerName, "", [embed]);
+
     return { success: true, message: "TRANSFERÊNCIA CONCLUÍDA." };
   },
 
@@ -362,6 +385,16 @@ export const createInventorySlice: StateCreator<
       const newInventory = [...state.inventory];
       newInventory[itemIndex] = { ...item, quantity: remainingQty };
       newInventory.splice(itemIndex + 1, 0, ...newItems);
+
+      const playerName = get().name || "DESCONHECIDO";
+      const embed: DiscordEmbed = {
+        title: "[/] DIVISÃO DE MATERIAL [/]",
+        color: 3447003,
+        description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ITEM:** ${item.name}\n**MODO:** ${mode === "SINGLE" ? "Destacar Uma Unidade" : "Dividir Totalmente"} (${divisor})`,
+        footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("INVENTORY", playerName, "", [embed]);
 
       return { inventory: newInventory };
     });
@@ -447,12 +480,32 @@ export const createInventorySlice: StateCreator<
           };
         }
 
+        const playerName = get().name || "DESCONHECIDO";
+        const embed: DiscordEmbed = {
+          title: "[+] FUSÃO DE MATERIAIS [+]",
+          color: 3447003,
+          description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ALVO DA FUSÃO:** ${target.name}\n**USOS COMBINADOS:** ${totalUsesPool} / ${maxUses}`,
+          footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("INVENTORY", playerName, "", [embed]);
+
         return { inventory: nextInventory };
       } else {
         let extraQty = 0;
         validSources.forEach((src) => {
           extraQty += src.quantity;
         });
+
+        const playerName = get().name || "DESCONHECIDO";
+        const embed: DiscordEmbed = {
+          title: "[+] FUSÃO DE MATERIAIS [+]",
+          color: 3447003,
+          description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ALVO DA FUSÃO:** ${target.name}\n**QUANTIDADE EXTRA:** +${extraQty}`,
+          footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("INVENTORY", playerName, "", [embed]);
 
         return {
           inventory: state.inventory
@@ -684,8 +737,35 @@ export const createInventorySlice: StateCreator<
         newInventory = newInventory.map((i) =>
           i.id === activeItem.id ? { ...i, uses: newUses } : i,
         );
+        if (newUses <= 0) {
+          const playerName = get().name || "DESCONHECIDO";
+          const embed: DiscordEmbed = {
+            title: "[!] ITEM QUEBRADO/ESGOTADO [!]",
+            color: 15158332,
+            description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ITEM DEGRADADO:** ${activeItem.name}`,
+            footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+            timestamp: new Date().toISOString(),
+          };
+          dispatchDiscordLog("INVENTORY", playerName, "", [embed]);
+        }
       } else {
         newInventory = deductCharge(item as ItemWithUses, newInventory);
+        
+        const afterQty = newInventory.find(i => i.id === item.id)?.quantity || 0;
+        const afterUses = newInventory.find(i => i.id === item.id && "uses" in i) ? (newInventory.find(i => i.id === item.id) as ItemWithUses).uses : 0;
+        
+        if (afterQty === 0 && afterUses <= 0) {
+          const playerName = get().name || "DESCONHECIDO";
+          const embed: DiscordEmbed = {
+            title: "[!] RECURSO ESGOTADO [!]",
+            color: 15158332,
+            description: `**UNIDADE OPERACIONAL:** ${playerName}\n**ITEM ESGOTADO:** ${item.name}`,
+            footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+            timestamp: new Date().toISOString(),
+          };
+          dispatchDiscordLog("INVENTORY", playerName, "", [embed]);
+        }
+        
         result = { success: true, message: "OK" };
       }
 

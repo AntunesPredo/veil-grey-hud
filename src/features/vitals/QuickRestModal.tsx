@@ -5,7 +5,7 @@ import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { Modal } from "../../shared/ui/Overlays";
 import { Button, NumberStepper } from "../../shared/ui/Form";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 
 export function QuickRestModal() {
   const { isQuickRestOpen, closeQuickRest } = useVitalsStore();
@@ -55,8 +55,14 @@ export function QuickRestModal() {
     updateSustenance(safeSustenance - amount);
     updateEnergy(actualEnergy + amount);
 
-    const logMsg = `**DESCANSO RÁPIDO:** [${name}] converteu ${amount} de Alimentação em Energia.\nEnergia atual: ${actualEnergy + amount}/${maxEnergy}.`;
-    dispatchDiscordLog("PLAYER", name, logMsg);
+    const embed: DiscordEmbed = {
+      title: "[~] DESCANSO RÁPIDO [~]",
+      color: 3447003,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**CONVERSÃO DE METABOLISMO:** ${amount} NUTRIÇÃO -> ENERGIA\n**ENERGIA RESULTANTE:** ${actualEnergy + amount}/${maxEnergy}`,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     RetroToast.success(`+${amount} ENERGIA RESTAURADA.`);
 
     handleClose();

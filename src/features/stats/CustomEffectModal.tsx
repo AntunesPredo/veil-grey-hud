@@ -21,6 +21,7 @@ interface CustomEffectModalProps {
   onClose: () => void;
   link?: number | string | null;
   allowedModes?: EffectMode[];
+  initialEffect?: CustomEffect | null;
   onSave?: (effect: CustomEffect) => void;
 }
 
@@ -29,6 +30,7 @@ export function CustomEffectModal({
   onClose,
   link = null,
   allowedModes = ["FIXED", "OPTIONAL", "TEMP", "BONUS"],
+  initialEffect = null,
   onSave,
 }: CustomEffectModalProps) {
   const addCustomEffect = useCharacterStore((state) => state.addCustomEffect);
@@ -40,11 +42,40 @@ export function CustomEffectModal({
   const [error, setError] = useState("");
 
   const [prevOpen, setPrevOpen] = useState(false);
-  if (isOpen && !prevOpen) {
-    setPrevOpen(true);
-    setMode(allowedModes.length === 1 ? allowedModes[0] : "");
-  } else if (!isOpen && prevOpen) {
-    setPrevOpen(false);
+  const [prevEffect, setPrevEffect] = useState<CustomEffect | null>(null);
+
+  if (isOpen !== prevOpen || initialEffect !== prevEffect) {
+    setPrevOpen(isOpen);
+    setPrevEffect(initialEffect);
+    if (isOpen) {
+      if (initialEffect) {
+        setDesc(initialEffect.description);
+        setVal(initialEffect.val);
+        setTarget(initialEffect.target);
+        setMode(initialEffect.mode);
+        
+        const trg = initialEffect.target;
+        let cat = "";
+        const allAtt = Object.keys(VG_CONFIG.att_groups).flatMap((k) => Object.keys(VG_CONFIG.att_groups[k as keyof typeof VG_CONFIG.att_groups].atributes));
+        const allSkills = Object.keys(VG_CONFIG.skill_groups).flatMap((k) => Object.keys(VG_CONFIG.skill_groups[k as keyof typeof VG_CONFIG.skill_groups].skills));
+        
+        if (allAtt.includes(trg)) cat = "attr_prim";
+        else if (Object.keys(VG_CONFIG.att_secondary).includes(trg)) cat = "attr_sec";
+        else if (allSkills.includes(trg)) cat = "skill";
+        else if (GLOBAL_ATTR_TARGETS.some(t => t.value === trg)) cat = "glob_attr";
+        else if (GLOBAL_SKILL_TARGETS.some(t => t.value === trg)) cat = "glob_skill";
+        else if (VITALS_TARGETS.some(t => t.value === trg)) cat = "vitals";
+        else if (PROGRESSION_TARGETS.some(t => t.value === trg)) cat = "progression";
+        
+        setCategory(cat);
+      } else {
+        setDesc("");
+        setVal(0);
+        setCategory("");
+        setTarget("");
+        setMode(allowedModes.length === 1 ? allowedModes[0] : "");
+      }
+    }
   }
 
   const handleInject = () => {
@@ -53,8 +84,8 @@ export function CustomEffectModal({
       return;
     }
     const newEffect: CustomEffect = {
-      id: Date.now() + Math.random(),
-      link,
+      id: initialEffect ? initialEffect.id : Date.now() + Math.random(),
+      link: initialEffect ? initialEffect.link : link,
       target: target as CustomEffectTarget,
       val,
       mode: mode as EffectMode,

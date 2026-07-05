@@ -1,0 +1,120 @@
+import type { Attribute, CustomEffect, SecondaryAttribute, Skill } from "./veil-grey";
+
+export type EventStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+export type CurrencyType = "CC" | "FCC";
+
+export type EventType =
+  | "TEST"
+  | "MARKET"
+  | "MERCHANT"
+  | "JOB"
+  | "DEBT"
+  | "P2P_TRANSFER";
+
+export interface EventBase {
+  id: string;
+  roomId: string;
+  type: EventType;
+  title: string;
+  description: string;
+  coverImage?: string;
+  status: EventStatus;
+  createdAt: number;
+  targets: string[]; // Character IDs
+}
+
+export interface TestEvent extends EventBase {
+  type: "TEST";
+  payload: {
+    targetAttribute?: Attribute | SecondaryAttribute;
+    targetSkill?: Skill;
+    difficulty?: number | null; // se null, teste livre
+    onSuccess?: CustomEffect[];
+    onFailure?: CustomEffect[];
+  };
+}
+
+export interface MarketItem {
+  itemId: string;
+  basePrice: number;
+  finalPrice: number; // Preço com flutuação + rng
+  stockLimit: number | null; // null = ilimitado
+  playerLimit: number | null; // null = ilimitado
+}
+
+export interface MarketEvent extends EventBase {
+  type: "MARKET";
+  payload: {
+    items: MarketItem[];
+    currency: CurrencyType;
+  };
+}
+
+export interface MerchantEvent extends EventBase {
+  type: "MERCHANT";
+  payload: {
+    merchantName: string;
+    merchantImage?: string;
+    currency: CurrencyType;
+    devaluationMargin: number; // 0 a 100
+    wearImpact: number; // 0 a 100
+    isOnline: boolean;
+  };
+}
+
+export interface JobEvent extends EventBase {
+  type: "JOB";
+  payload: {
+    employerName: string;
+    currency: CurrencyType;
+    salary: number;
+    limboTransactions: Record<string, boolean>; // characterId -> is pending ack
+  };
+}
+
+export interface DebtEvent extends EventBase {
+  type: "DEBT";
+  payload: {
+    currency: CurrencyType;
+    totalAmount: number;
+    remainingAmount: number;
+    debtType: "INDIVIDUAL" | "JOINT";
+    debts: Record<string, number>; // characterId -> amount owed
+    isFixed: boolean; // true = completes when fully paid, false = persistent
+  };
+}
+
+export interface P2PTransferEvent extends EventBase {
+  type: "P2P_TRANSFER";
+  payload: {
+    currency: CurrencyType;
+    hostId: string; // Character ID, NPC ou "MASTER"
+    pool: number;
+    participants: Record<
+      string,
+      {
+        walletId: string;
+        availableBalance: number;
+        contribution: number;
+        approved: boolean;
+      }
+    >;
+  };
+}
+
+export type GameEvent =
+  | TestEvent
+  | MarketEvent
+  | MerchantEvent
+  | JobEvent
+  | DebtEvent
+  | P2PTransferEvent;
+
+export interface EventLogEntry {
+  id: string;
+  eventId: string;
+  timestamp: number;
+  message: string;
+  characterId: string;
+}

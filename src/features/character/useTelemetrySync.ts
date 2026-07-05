@@ -3,7 +3,6 @@ import { useCharacterStore } from "./store";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import type { PlayerTelemetry } from "../../shared/store/useNetworkStore";
-import { useMasterStore } from "../master/masterStore";
 
 export function useTelemetrySync() {
   const store = useCharacterStore();
@@ -22,6 +21,9 @@ export function useTelemetrySync() {
     maxSustenance,
     sustenanceState,
     secondaryAttributes,
+    actionPoints,
+    reactions,
+    movement,
   } = useCharacterStats();
 
   const {
@@ -43,30 +45,37 @@ export function useTelemetrySync() {
     customEffects,
     notes,
     mainNote,
+    mainNoteHeight,
     isMasterMode,
     isPossessing,
+    role,
   } = store;
 
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const syncDomain = useCallback(
     (domain: keyof PlayerTelemetry, data: unknown, delay = 500) => {
-      if (!isConnected || !name || isMasterMode) return;
+      if (!isConnected || !name || isMasterMode || isPossessing) return;
       if (timers.current[domain]) clearTimeout(timers.current[domain]);
 
       timers.current[domain] = setTimeout(() => {
         broadcastPartial(name, domain, data);
       }, delay);
     },
-    [isConnected, name, isMasterMode, broadcastPartial],
+    [isConnected, name, isMasterMode, isPossessing, broadcastPartial],
   );
 
   const syncAllNow = useCallback(() => {
-    if (!isConnected || !name || isMasterMode) return;
+    if (!isConnected || !name || isMasterMode || isPossessing) return;
 
     broadcastPartial(name, "core", {
       attributes,
-      secondaryAttributes,
+      secondaryAttributes: {
+        ...secondaryAttributes,
+        actionPoints,
+        reactions,
+        movement,
+      },
       skills,
       evilness,
       name,
@@ -75,6 +84,7 @@ export function useTelemetrySync() {
       creationStatus,
       freePoints,
       disadvantages,
+      role,
     });
 
     broadcastPartial(name, "vitals", {
@@ -100,11 +110,12 @@ export function useTelemetrySync() {
         .map((e) => e.id),
     );
 
-    broadcastPartial(name, "notes", { notes, mainNote });
+    broadcastPartial(name, "notes", { notes, mainNote, mainNoteHeight });
   }, [
     isConnected,
     name,
     isMasterMode,
+    isPossessing,
     broadcastPartial,
     attributes,
     secondaryAttributes,
@@ -115,6 +126,7 @@ export function useTelemetrySync() {
     creationStatus,
     freePoints,
     disadvantages,
+    role,
     hp,
     maxHp,
     insanity,
@@ -130,69 +142,19 @@ export function useTelemetrySync() {
     customEffects,
     notes,
     mainNote,
+    mainNoteHeight,
+    actionPoints,
+    reactions,
+    movement,
   ]);
-
-  useEffect(() => {
-    if (isPossessing) {
-      const timer = setTimeout(() => {
-        const {
-          resetCharacterData,
-          importCharacterData,
-          isOutdatedSave,
-          ...syncData
-        } = store;
-        const noSave = [
-          resetCharacterData,
-          importCharacterData,
-          isOutdatedSave,
-        ];
-        delete noSave[0];
-        delete noSave[1];
-        delete noSave[2];
-
-        const masterStore = useMasterStore.getState();
-        const localNpc = masterStore.npcs.find((n) => n.name === isPossessing);
-
-        if (localNpc) {
-          masterStore.updateNpcData(localNpc.id, syncData);
-        } else {
-          const channel = useNetworkStore.getState().telemetryChannel;
-          if (channel) {
-            const msg = {
-              type: "broadcast" as
-                | "broadcast"
-                | "presence"
-                | "postgres_changes",
-              event: "MASTER_COMMAND",
-              payload: {
-                target: isPossessing,
-                command: "FULL_OVERRIDE",
-                data: syncData,
-              },
-            };
-            if (typeof channel.httpSend === "function") {
-              channel.httpSend(msg.event, msg.payload).catch(console.error);
-            } else {
-              channel.send(msg);
-            }
-          }
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [store, isPossessing]);
 
   useEffect(() => {
     syncDomain(
       "vitals",
       {
         hp: {
-          current: hp.current,
+          ...hp,
           max: maxHp,
-          temp: hp.temp,
-          isInjured: hp.isInjured,
-          isVeryInjured: hp.isVeryInjured,
-          autoApplyInjury: hp.autoApplyInjury,
         },
         insanity: { ...insanity, max: maxInsanity },
         energy: { ...energy, max: maxEnergy, state: energyState },
@@ -240,7 +202,12 @@ export function useTelemetrySync() {
       "core",
       {
         attributes: attributes,
-        secondaryAttributes,
+        secondaryAttributes: {
+          ...secondaryAttributes,
+          actionPoints,
+          reactions,
+          movement,
+        },
         skills: skills,
         evilness: evilness,
         name: name,
@@ -249,6 +216,7 @@ export function useTelemetrySync() {
         creationStatus: creationStatus,
         freePoints: freePoints,
         disadvantages: disadvantages,
+        role: role,
       },
       1000,
     );
@@ -262,7 +230,11 @@ export function useTelemetrySync() {
     creationStatus,
     freePoints,
     disadvantages,
+    role,
     secondaryAttributes,
+    actionPoints,
+    reactions,
+    movement,
     syncDomain,
   ]);
 
@@ -272,10 +244,11 @@ export function useTelemetrySync() {
       {
         notes: notes,
         mainNote: mainNote,
+        mainNoteHeight: mainNoteHeight,
       },
       2000,
     );
-  }, [notes, mainNote, syncDomain]);
+  }, [notes, mainNote, mainNoteHeight, syncDomain]);
 
   useEffect(() => {
     const handleForceSync = () => syncAllNow();

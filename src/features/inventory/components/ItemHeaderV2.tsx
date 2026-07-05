@@ -103,9 +103,9 @@ export function ItemHeaderV2({
   return (
     <div
       onClick={onToggle}
-      className={`flex flex-col md:flex-row bg-[var(--theme-background)] border-2 ${borderClass} hover:border-[var(--theme-accent)] transition-all cursor-pointer touch-none select-none group relative`}
+      className={`flex flex-col md:flex-row bg-[var(--theme-background)] border-2 ${borderClass} hover:border-[var(--theme-accent)] transition-all cursor-pointer select-none group relative overflow-hidden`}
     >
-      <div className="flex flex-1 min-w-0">
+      <div className="flex flex-row flex-1 min-w-0">
         <div
           {...listeners}
           {...attributes}
@@ -183,14 +183,14 @@ export function ItemHeaderV2({
 
       {hasActions && (
         <div
-          className="flex md:flex-col shrink-0 md:w-32 bg-[var(--theme-background)]/80"
+          className="flex flex-row md:flex-col shrink-0 md:w-32 bg-[var(--theme-background)]/80 border-t-2 md:border-t-0 md:border-l-2 border-[var(--theme-border)]"
           onClick={(e) => e.stopPropagation()}
         >
           {isEquippableType && canEquip && (
             <Button
               size="sm"
               variant={item.isEquipped && isEditMode ? "success" : "primary"}
-              className={`flex-1 border-none border-r-2 md:border-r-0 md:border-b-2 border-[var(--theme-border)] rounded-none text-[9px] md:text-[10px] md:py-2.5 px-1 leading-tight flex items-center justify-center gap-1 ${!isEditMode ? "opacity-40 grayscale hover:text-[var(--theme-accent)]" : ""}`}
+              className={`flex-1 border-none border-r-2 md:border-r-0 md:border-b-2 border-[var(--theme-border)] rounded-none text-[9px] md:text-[10px] py-4 md:py-2.5 px-1 leading-tight flex items-center justify-center gap-1 ${!isEditMode ? "opacity-40 grayscale hover:text-[var(--theme-accent)]" : ""}`}
               onClick={handleEquipClick}
             >
               {!isEditMode && (
@@ -213,7 +213,7 @@ export function ItemHeaderV2({
             <Button
               size="sm"
               variant="warning"
-              className="flex-1 border-none rounded-none text-[9px] md:text-[10px] md:py-2.5 px-1 break-words leading-tight bg-[var(--theme-warning)]/10 hover:bg-[var(--theme-warning)] hover:text-black"
+              className="flex-1 border-none rounded-none text-[9px] md:text-[10px] py-4 md:py-2.5 px-1 break-words leading-tight bg-[var(--theme-warning)]/10 hover:bg-[var(--theme-warning)] hover:text-black"
               onClick={onUse}
               disabled={disableUse}
             >
@@ -225,7 +225,7 @@ export function ItemHeaderV2({
             <Button
               size="sm"
               variant="danger"
-              className="flex-1 md:flex-none border-none rounded-none text-[9px] md:text-[10px] md:py-2.5 px-1 break-words leading-tight bg-[var(--theme-danger)]/10 hover:bg-[var(--theme-danger)] hover:text-white"
+              className="flex-1 md:flex-none border-none rounded-none text-[9px] md:text-[10px] py-4 md:py-2.5 px-1 break-words leading-tight bg-[var(--theme-danger)]/10 hover:bg-[var(--theme-danger)] hover:text-white"
               onClick={onUse}
               disabled={disableUse}
             >
@@ -236,14 +236,14 @@ export function ItemHeaderV2({
       )}
       {isEditMode && (
         <div
-          className="flex md:flex-col shrink-0 w-22 bg-[var(--theme-background)]/80 border-t-2 md:border-t-0 md:border-l-2 border-[var(--theme-border)]"
+          className="flex flex-row md:flex-col shrink-0 md:w-22 bg-[var(--theme-background)]/80 border-t-2 md:border-t-0 md:border-l-2 border-[var(--theme-border)]"
           onClick={(e) => e.stopPropagation()}
         >
           {(sandboxMode || isDev) && (
             <Button
               size="sm"
               variant="primary"
-              className="flex-1 md:flex-none border-none md:py-2.5 px-1 break-words leading-tight"
+              className="flex-1 md:flex-none border-none py-4 md:py-2.5 px-1 break-words leading-tight"
               onClick={() => onEdit(item)}
             >
               MOD
@@ -252,7 +252,7 @@ export function ItemHeaderV2({
           <Button
             size="sm"
             variant="danger"
-            className="flex-1 border-none md:py-2.5 px-1 break-words leading-tight"
+            className="flex-1 border-none py-4 md:py-2.5 px-1 break-words leading-tight"
             onClick={() => onDelete(item)}
           >
             DEL

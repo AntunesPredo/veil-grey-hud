@@ -10,6 +10,7 @@ export function ArsenalRow({
   isSelected,
   onToggle,
   onDelete,
+  onView,
 }: {
   id: string;
   type: "ITEM" | "EFFECT";
@@ -17,6 +18,7 @@ export function ArsenalRow({
   isSelected: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onView: () => void;
 }) {
   const {
     attributes,
@@ -72,14 +74,24 @@ export function ArsenalRow({
         )}
       </span>
 
-      <Button
-        size="sm"
-        variant="danger"
-        className="h-5 py-0 px-2 text-[8px] shrink-0"
-        onClick={onDelete}
-      >
-        X
-      </Button>
+      <div className="flex gap-1 shrink-0">
+        <Button
+          size="sm"
+          variant="primary"
+          className="h-5 py-0 px-2 text-[8px]"
+          onClick={onView}
+        >
+          VIEW
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          className="h-5 py-0 px-2 text-[8px]"
+          onClick={onDelete}
+        >
+          X
+        </Button>
+      </div>
     </div>
   );
 }

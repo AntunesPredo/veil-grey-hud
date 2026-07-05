@@ -5,7 +5,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button, Checkbox } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 
 export function RollResolverModal() {
   const {
@@ -32,25 +32,21 @@ export function RollResolverModal() {
     }
 
     let toastMsg = `[${payload.title}] = ${rollResult.total}`;
-    let logMsg = `**Rolling:** ${payload.title}\n\`\`\`\n${rollResult.log}\n\`\`\``;
-
-    if (rollResult.isCriticalSuccess) {
-      toastMsg = `CRÍTICO! ${toastMsg}`;
-      logMsg += `\n## >>[ SUCESSO CRÍTICO ]<<`;
-    } else if (rollResult.isCriticalFail) {
-      toastMsg = `FALHA CRÍTICA! ${toastMsg}`;
-      logMsg += `\n## >>[ FALHA CRÍTICA ]<<`;
-    } else if (payload.dc !== undefined) {
-      if (rollResult.total >= payload.dc) {
-        toastMsg += ` (SUCESSO VS DC ${payload.dc})`;
-        logMsg += `\n## >>[ SUCESSO VS DC ${payload.dc} ]<<`;
-      } else {
-        toastMsg += ` (FALHA VS DC ${payload.dc})`;
-        logMsg += `\n## >>[ FALHA VS DC ${payload.dc} ]<<`;
-      }
+    let resultColorStr = 3066993; // default success/neutral
+    if (rollResult.isCriticalFail || (payload.dc !== undefined && rollResult.total < payload.dc)) {
+      resultColorStr = 15158332; // failure
+    } else if (rollResult.isCriticalSuccess) {
+      resultColorStr = 16753920; // critical
     }
 
-    dispatchDiscordLog("PLAYER", name, logMsg);
+    const embed: DiscordEmbed = {
+      title: `[?] RESOLUÇÃO: ${payload.title} [?]`,
+      color: resultColorStr,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**EXPRESSÃO:** ${payload.baseExpression}\n**TOTAL:** ${rollResult.total}\n\`\`\`\n${rollResult.log}\n\`\`\``,
+      footer: { text: "SYS.MNLT // ROLL_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
 
     if (payload.resolveAsToast) {
       if (rollResult.isCriticalFail) RetroToast.error(toastMsg);

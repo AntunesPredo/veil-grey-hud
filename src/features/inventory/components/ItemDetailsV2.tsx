@@ -82,6 +82,20 @@ export function ItemDetailsV2({
           </div>
         )}
 
+        {item.wallet && (
+          <div className="border-l-2 border-emerald-500 pl-3 mb-2 bg-emerald-900/10 p-2 text-emerald-400 font-mono text-[10px]">
+            <div className="font-bold tracking-widest mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              CARTEIRA DIGITAL
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span>Moeda: {item.wallet.type === "CC" ? "Corp Credit (CC)" : "Fuck Corp Credit (FCC)"}</span>
+              <span>Saldo Atual: {item.wallet.value}</span>
+              <span>Limite: {item.wallet.max === null ? "Ilimitado" : item.wallet.max}</span>
+            </div>
+          </div>
+        )}
+
         {item.description && (
           <div className="border-l-2 border-[var(--theme-accent)] pl-3">
             <Markdown content={item.description} />

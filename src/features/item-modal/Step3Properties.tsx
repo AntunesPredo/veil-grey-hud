@@ -182,10 +182,107 @@ export function Step3Properties({
         <Checkbox
           label="ITEM VINCULADO À ALMA (SOUL-BOUND)"
           checked={formData.isSoulBound}
+          fluid
           onChange={() =>
             setFormData((p) => ({ ...p, isSoulBound: !p.isSoulBound }))
           }
         />
+      </div>
+
+      <div className="flex flex-col gap-1 mt-4">
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          VALOR COMERCIAL (PREÇO BASE)
+        </span>
+        <Input
+          type="number"
+          min="0"
+          value={formData.price}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              price: parseInt(e.target.value) || 0,
+            }))
+          }
+          className="font-mono text-[var(--theme-accent)] border-[var(--theme-accent)]/50"
+        />
+      </div>
+
+      <div className="bg-emerald-900/10 border border-emerald-500/30 p-3 flex flex-col gap-3 mt-4">
+        <Checkbox
+          label="FUNCIONA COMO CARTEIRA"
+          checked={formData.hasWallet}
+          fluid
+          onChange={() =>
+            setFormData((prev) => ({ ...prev, hasWallet: !prev.hasWallet }))
+          }
+        />
+        {formData.hasWallet && (
+          <div className="grid grid-cols-3 gap-4 border-t border-dashed border-emerald-500/30 pt-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">
+                TIPO
+              </span>
+              <select
+                value={formData.walletProps.type}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    walletProps: {
+                      ...prev.walletProps,
+                      type: e.target.value as "CC" | "FCC",
+                    },
+                  }))
+                }
+                className="bg-slate-900 border border-emerald-500/50 p-2 text-emerald-400 font-mono text-sm focus:border-emerald-400 outline-none w-full"
+              >
+                <option value="CC">Corp Credit (CC)</option>
+                <option value="FCC">Fuck Corp Credit (FCC)</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">
+                LIMITE (MÁX)
+              </span>
+              <Input
+                type="number"
+                min="0"
+                value={formData.walletProps.max === null ? "" : formData.walletProps.max}
+                placeholder="Ilimitado"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    walletProps: {
+                      ...prev.walletProps,
+                      max: val === "" ? null : parseInt(val) || 0,
+                    },
+                  }));
+                }}
+                className="text-center font-mono border-emerald-500/50 text-emerald-400 placeholder:text-emerald-900/50"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">
+                SALDO ATUAL
+              </span>
+              <Input
+                type="number"
+                min="0"
+                value={formData.walletProps.value}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    walletProps: {
+                      ...prev.walletProps,
+                      value: parseInt(e.target.value) || 0,
+                    },
+                  }))
+                }
+                className="text-center font-mono border-emerald-500/50 text-emerald-400"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {(isContainer || isEquipable) && (

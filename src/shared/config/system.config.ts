@@ -37,8 +37,8 @@ export const VG_CONFIG = {
     xpMultiplier: 100, // current level * 100
     tiers: [
       { minLevel: 1, maxAttr: 5, maxSkill: 3 },
-      { minLevel: 4, maxAttr: 7, maxSkill: 6 },
-      { minLevel: 9, maxAttr: 10, maxSkill: 8 },
+      { minLevel: 3, maxAttr: 7, maxSkill: 6 },
+      { minLevel: 8, maxAttr: 10, maxSkill: 8 },
     ],
     rewardsPerLevel: {
       1: { attr: 1, skill: 2, spec: 0 },

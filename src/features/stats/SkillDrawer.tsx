@@ -39,6 +39,7 @@ export function SkillDrawer() {
   const { getBonusSum, getSkillMod } = useActiveModifiers();
 
   const effectiveFreePoints = freePoints.skills;
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
 
   const { initiateRoll } = useRoller();
   const { isOpen, isPinned, widthVW } = drawerRight;
@@ -326,16 +327,18 @@ export function SkillDrawer() {
         <span className="font-bold tracking-widest text-[10px] text-[var(--theme-accent)] uppercase">
           MATRIZ DE PERÍCIAS
         </span>
-        <Button
-          size="sm"
-          variant="primary"
-          className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-black" : "hover:text-[var(--theme-accent)]"}`}
-          onClick={() =>
-            setDrawerState("right", { isPinned: !isPinned, isOpen: true })
-          }
-        >
-          [PIN]
-        </Button>
+        {!isMasterMode && (
+          <Button
+            size="sm"
+            variant="primary"
+            className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-black" : "hover:text-[var(--theme-accent)]"}`}
+            onClick={() =>
+              setDrawerState("right", { isPinned: !isPinned, isOpen: true })
+            }
+          >
+            [PIN]
+          </Button>
+        )}
       </div>
 
       {(isDistributing || sandboxMode) && (

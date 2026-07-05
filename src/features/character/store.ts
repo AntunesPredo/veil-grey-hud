@@ -22,6 +22,7 @@ export type CharacterStore = ProgressionSlice &
   NotesSlice & {
     appVersion: string;
     isOutdatedSave: boolean;
+    npcType?: "HUMAN" | "NON_HUMAN";
     setOutdatedSave: (val: boolean) => void;
     resetCharacterData: () => void;
     importCharacterData: (data: Partial<CharacterStore>) => void;
@@ -95,3 +96,81 @@ export const useCharacterStore = create<CharacterStore>()(
     },
   ),
 );
+
+export function extractCharacterData(store: CharacterStore): Partial<CharacterStore> {
+  const {
+    attributes,
+    skills,
+    evilness,
+    name,
+    level,
+    xp,
+    creationStatus,
+    freePoints,
+    disadvantages,
+    hp,
+    insanity,
+    energy,
+    sustenance,
+    crisis,
+    inventory,
+    customEffects,
+    notes,
+    mainNote,
+    mainNoteHeight,
+    role,
+    settings,
+    sandboxMode,
+    isMasterMode,
+    usedInjectIds,
+    lockedSnapshot,
+    isPossessing,
+    npcType,
+  } = store;
+
+  return {
+    attributes,
+    skills,
+    evilness,
+    name,
+    level,
+    xp,
+    creationStatus,
+    freePoints,
+    disadvantages,
+    hp,
+    insanity,
+    energy,
+    sustenance,
+    crisis,
+    inventory,
+    customEffects,
+    notes,
+    mainNote,
+    mainNoteHeight,
+    role,
+    settings,
+    sandboxMode,
+    isMasterMode,
+    usedInjectIds,
+    lockedSnapshot,
+    isPossessing,
+    npcType,
+  };
+}
+
+export function getBlankCharacterData(): Partial<CharacterStore> {
+  const dummySet = () => {};
+  const dummyGet = () => ({} as any);
+  const dummyStore = {} as any;
+  const a: [any, any, any] = [dummySet, dummyGet, dummyStore];
+  
+  const emptyState = {
+    ...createProgressionSlice(...a),
+    ...createStatsSlice(...a),
+    ...createVitalsSlice(...a),
+    ...createInventorySlice(...a),
+    ...createNotesSlice(...a),
+  };
+  return extractCharacterData(emptyState as CharacterStore);
+}

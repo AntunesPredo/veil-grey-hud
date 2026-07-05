@@ -6,7 +6,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
@@ -104,25 +104,27 @@ export function SustenanceTransactionModal() {
 
     updateSustenance(newSustenance);
 
-    let logMsg = !isSub
-      ? `**INGESTÃO CALÓRICA:** [${name}] processou +${effectiveValue} Ponto(s) de Alimentação.`
-      : `**DESGASTE METABÓLICO:** [${name}] perdeu -${effectiveValue} Ponto(s) de Alimentação.`;
-
-    logMsg += logModifiers;
+    const embed: DiscordEmbed = {
+      title: !isSub ? "[+] INGESTÃO CALÓRICA [+]" : "[-] DESGASTE METABÓLICO [-]",
+      color: !isSub ? 3066993 : 15158332,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**VARIAÇÃO:** ${!isSub ? "+" : "-"}${effectiveValue} Pts.${logModifiers}`,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
 
     if (hpDamage > 0) {
       applyDamage(hpDamage, "IGNORE", null);
-      logMsg += `\n> **[FALHA] INANIÇÃO PROFUNDA:** -${hpDamage} PV consumidos da integridade vital.`;
+      embed.description += `\n> **[FALHA] INANIÇÃO PROFUNDA:** -${hpDamage} PV consumidos da integridade vital.`;
       RetroToast.error(`FALHA ESTRUTURAL: INANIÇÃO CAUSOU -${hpDamage} PV.`);
     }
 
     if (tempHpAdded > 0) {
       updateHpTemp(hp.temp + tempHpAdded);
-      logMsg += `\n> **[OVERHEAL] EXCESSO NUTRICIONAL:** +${tempHpAdded} PV Temporários alocados.`;
+      embed.description += `\n> **[OVERHEAL] EXCESSO NUTRICIONAL:** +${tempHpAdded} PV Temporários alocados.`;
       RetroToast.success(`OVERHEAL: +${tempHpAdded} PV TEMP.`);
     }
 
-    dispatchDiscordLog("PLAYER", name, logMsg);
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     handleClose();
   };
 

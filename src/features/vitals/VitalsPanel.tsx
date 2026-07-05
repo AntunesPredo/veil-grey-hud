@@ -42,7 +42,7 @@ function WidgetBlade({
 
 export function VitalsPanel() {
   return (
-    <div className="flex flex-col gap-6 p-4 bg-[var(--theme-background)] border-4 border-double border-[var(--theme-border)] relative">
+    <div className="flex flex-col gap-6 p-2 bg-[var(--theme-background)] border-4 border-double border-[var(--theme-border)] relative">
       <div className="flex justify-center items-center gap-4 mb-2 border-b-2 border-[var(--theme-border)] pb-2">
         <div className="w-3 h-3 bg-[var(--theme-accent)] animate-pulse" />
         <h2 className="font-mono font-black text-[var(--theme-accent)] tracking-[0.3em] uppercase text-xl">

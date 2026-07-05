@@ -6,7 +6,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import type { EquipableItem } from "../../shared/types/veil-grey";
 
 export function VitalsResolutionModal() {
@@ -53,11 +53,14 @@ export function VitalsResolutionModal() {
 
     if (mode === "DAMAGE") {
       if (equippedArmor) {
-        dispatchDiscordLog(
-          "PLAYER",
-          name,
-          `Dano total recebido: ${absoluteTotal}. Aguardando decisão de reduções balísticas.`,
-        );
+        const embed: DiscordEmbed = {
+          title: "[!] REGISTRO DE DANO [!]",
+          color: 15158332,
+          description: `**UNIDADE OPERACIONAL:** ${name}\n**IMPACTO BRUTO DETECTADO:** ${absoluteTotal}\nAguardando decisão de reduções.`,
+          footer: { text: "SYS.MNLT // BIO_TRACKER" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("PLAYER", name, "", [embed]);
         setStep("MITIGATION");
       } else {
         executeFinalTransaction("IGNORE", absoluteTotal);
@@ -76,11 +79,14 @@ export function VitalsResolutionModal() {
 
     if (mode === "HEALING") {
       applyHealing(finalAmount);
-      dispatchDiscordLog(
-        "PLAYER",
-        name,
-        `RECUPERAÇÃO VITAL: +${finalAmount} PV.`,
-      );
+      const embed: DiscordEmbed = {
+        title: "[+] RECUPERAÇÃO VITAL [+]",
+        color: 3066993,
+        description: `**UNIDADE OPERACIONAL:** ${name}\n**RECUPERAÇÃO:** +${finalAmount} PV`,
+        footer: { text: "SYS.MNLT // BIO_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", name, "", [embed]);
       RetroToast.success(`SINAL VITAL RESTAURADO: +${finalAmount}`);
     } else {
       let rdValue = 0;
@@ -92,11 +98,28 @@ export function VitalsResolutionModal() {
 
       const damageToHp = Math.max(0, finalAmount - rdValue);
 
-      const logMsg = `Dano total recebido: ${finalAmount}, redução utilizada: ${mitigation} [${rdValue}], Dano na vida: ${damageToHp}.`;
+      let reductionMsg = "";
+      if (mitigation === "IGNORE") {
+        reductionMsg = "Nenhuma proteção balística foi utilizada.";
+      } else if (mitigation === "HALF") {
+        reductionMsg = "Mitigação parcial aplicada.";
+      } else if (mitigation === "FULL") {
+        reductionMsg = "Proteção balística integral utilizada.";
+      }
+
+      const logMsg = `${reductionMsg}\nDano na vida: ${damageToHp} HP.`;
 
       applyDamage(finalAmount, mitigation, equippedArmor?.id || null);
-      dispatchDiscordLog("PLAYER", name, logMsg);
-      RetroToast.error(`TRAUMA PROCESSADO: -${damageToHp}`);
+
+      const embed: DiscordEmbed = {
+        title: "[!] DANO PROCESSADO [!]",
+        color: 15158332,
+        description: `**UNIDADE OPERACIONAL:** ${name}\n${logMsg}`,
+        footer: { text: "SYS.MNLT // BIO_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", name, "", [embed]);
+      RetroToast.error(`DANO PROCESSADO: -${damageToHp}`);
     }
     handleClose();
   };
@@ -111,7 +134,7 @@ export function VitalsResolutionModal() {
       isOpen={isOpen}
       onClose={handleClose}
       title={
-        mode === "HEALING" ? "PROTOCOLO DE RECUPERAÇÃO" : "REGISTRO DE TRAUMA"
+        mode === "HEALING" ? "PROTOCOLO DE RECUPERAÇÃO" : "REGISTRO DE DANO"
       }
       maxWidth="max-w-3xl"
     >

@@ -22,6 +22,8 @@ interface SystemState {
   setThemeColor: (key: keyof ThemeColors, value: string) => void;
   setSessionActive: (val: boolean) => void;
   setHasSeenPresentation: (val: boolean) => void;
+  enableCrt: boolean;
+  setEnableCrt: (val: boolean) => void;
 }
 
 const defaultTheme: ThemeColors = {
@@ -41,11 +43,13 @@ export const useSystemStore = create<SystemState>()(
       theme: defaultTheme,
       isSessionActive: false,
       hasSeenPresentation: false,
+      enableCrt: true,
       setPowerState: (state) => set({ powerState: state }),
       setThemeColor: (key, value) =>
         set((state) => ({ theme: { ...state.theme, [key]: value } })),
       setSessionActive: (val) => set({ isSessionActive: val }),
       setHasSeenPresentation: (val) => set({ hasSeenPresentation: val }),
+      setEnableCrt: (val) => set({ enableCrt: val }),
     }),
     {
       name: "vg-system-storage",

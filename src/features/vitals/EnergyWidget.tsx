@@ -1,6 +1,6 @@
 import { useCharacterStore } from "../character/store";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useVitalsStore } from "./useVitalsStore";
 
@@ -27,11 +27,14 @@ export function EnergyWidget() {
   const handleSpendEnergy = () => {
     if (actualEnergy > 0) {
       consumeEnergy(1);
-      dispatchDiscordLog(
-        "PLAYER",
-        name,
-        `**DESGASTE FÍSICO:** [${name}] consumiu 1 uso de Energia.\nEnergia restante: ${actualEnergy - 1}/${maxEnergy}.`,
-      );
+      const embed: DiscordEmbed = {
+        title: "[-] DESGASTE FÍSICO [-]",
+        color: 15158332,
+        description: `**UNIDADE OPERACIONAL:** ${name}\n**VARIAÇÃO:** -1 USO DE ENERGIA\n**ENERGIA RESTANTE:** ${actualEnergy - 1}/${maxEnergy}`,
+        footer: { text: "SYS.MNLT // BIO_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", name, "", [embed]);
       RetroToast.warning("1 USO DE ENERGIA CONSUMIDO.");
     } else {
       RetroToast.error("SISTEMA TOTALMENTE EXAUSTO. INCAPAZ DE GASTAR.");

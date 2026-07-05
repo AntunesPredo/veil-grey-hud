@@ -1,62 +1,61 @@
 // src/features/master/MasterNpcTab.tsx
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
+import {
+  DndContext,
+  useDroppable,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  DragOverlay,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useMasterStore, type MasterNpc } from "./masterStore";
-import { useNetworkStore } from "../../shared/store/useNetworkStore";
-import { Button, Checkbox } from "../../shared/ui/Form";
+import { Button, Input } from "../../shared/ui/Form";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import CryptoJS from "crypto-js";
-import { useCharacterStore } from "../character/store";
+import { useCharacterStore, extractCharacterData } from "../character/store";
+import { NpcRegistrationModal } from "./components/NpcRegistrationModal";
+import { NpcNonHumanConfigModal } from "./components/NpcNonHumanConfigModal";
+import { NpcHpModal } from "./components/NpcHpModal";
+import { NpcFolder } from "./components/NpcFolder";
+import { NpcRow } from "./components/NpcRow";
+import { useDisclosure } from "../../shared/hooks/useDisclosure";
+import { ConfirmModal } from "../../shared/ui/Overlays";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 
 export function MasterNpcTab() {
-  const npcs = useMasterStore((state) => state.npcs);
-  const saveNpc = useMasterStore((state) => state.saveNpc);
-  const deleteNpc = useMasterStore((state) => state.deleteNpc);
-  const toggleNpcActive = useMasterStore((state) => state.toggleNpcActive);
-  const updateNpcData = useMasterStore((state) => state.updateNpcData);
-  const broadcastPartial = useNetworkStore(
-    (state) => state.broadcastPartialTelemetry,
-  );
+  const store = useMasterStore();
+
+  const { setNodeRef: rootNpcRef } = useDroppable({ id: "root_NPC" });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editingNpc, setEditingNpc] = useState<string | null>(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const activeNpcs = useMasterStore
-        .getState()
-        .npcs.filter((n) => n.isActive);
-      activeNpcs.forEach((npc) => {
-        broadcastPartial(npc.name, "core", {
-          attributes: npc.attributes,
-          secondaryAttributes: {
-            agility: 0,
-            mass: 0,
-            mental_health: 0,
-            perception: 0,
-          },
-          skills: npc.skills,
-          xp: npc.xp,
-          level: npc.level,
-          name: npc.name,
-          creationStatus: "CLOSED",
-          freePoints: { attributes: 0, skills: 0, specializations: 0 },
-          disadvantages: [],
-        });
-        broadcastPartial(npc.name, "vitals", {
-          hp: npc.hp,
-          energy: npc.energy,
-          insanity: npc.insanity,
-          sustenance: npc.sustenance,
-          crisis: { state: null, fails: 0, ignore: false },
-        });
-        broadcastPartial(npc.name, "inventory", npc.inventory || []);
-        broadcastPartial(npc.name, "effects", npc.customEffects || []);
-      });
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [broadcastPartial]);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
+  const [sandboxNpcId, setSandboxNpcId] = useState<string | null>(null);
+  
+  const [hpModalConfig, setHpModalConfig] = useState<{
+    isOpen: boolean;
+    npcId: string | null;
+    mode: "HEAL" | "DAMAGE";
+  }>({ isOpen: false, npcId: null, mode: "DAMAGE" });
+
+  const [newFolderName, setNewFolderName] = useState("");
+  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({});
+
+  const deleteNpcModal = useDisclosure();
+  const deleteFolderModal = useDisclosure();
+  
+  const [npcToDelete, setNpcToDelete] = useState<MasterNpc | null>(null);
+  const [folderToDelete, setFolderToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const [activeDragItem, setActiveDragItem] = useState<{ type: string; payload: MasterNpc } | null>(null);
+
+  // Telemetry removed for local NPCs to prevent network congestion
 
   const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,9 +74,11 @@ export function MasterNpcTab() {
           name: parsed.data.name || "NPC Desconhecido",
           isEnemy: true,
           isActive: false,
+          type: parsed.data.type || "HUMAN",
+          folderId: null,
         };
 
-        saveNpc(newNpc);
+        store.saveNpc(newNpc);
         RetroToast.success(`NPC [${newNpc.name}] IMPORTADO.`);
       } catch (error) {
         RetroToast.error("Falha ao importar NPC." + (error as Error).message);
@@ -87,146 +88,320 @@ export function MasterNpcTab() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const createEmptyNpc = () => {
-    const blankNpc = useCharacterStore.getState();
-    saveNpc({
-      ...blankNpc,
-      id: crypto.randomUUID(),
-      name: "ENTIDADE DESCONHECIDA",
-      isEnemy: false,
-      isActive: false,
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return;
+    store.addNpcFolder({ id: crypto.randomUUID(), name: newFolderName.toUpperCase(), type: "ITEM" }); // Type isn't strictly used for NPCs but keeping the folder structure
+    setNewFolderName("");
+  };
+
+  const toggleAcc = (id: string) => setOpenAccordions((p) => ({ ...p, [id]: !p[id] }));
+
+  const handleDragStart = (e: DragStartEvent) => {
+    const data = e.active.data.current;
+    if (!data || data.type === "NPC_FOLDER") return;
+    setActiveDragItem({
+      type: data.type,
+      payload: data.payload,
     });
   };
 
-  const toggleEnemy = (id: string, current: boolean) => {
-    updateNpcData(id, { isEnemy: !current });
+  const handleDragOver = (e: DragOverEvent) => {
+    const { active, over } = e;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const activeType = active.data.current?.type;
+
+    if (activeType === "NPC") {
+      let folderId: string | null | undefined = undefined;
+
+      if (overId.startsWith("npcFolder_")) {
+        folderId = overId.replace("npcFolder_", "");
+      } else if (overId === "root_NPC") {
+        folderId = null;
+      } else if (over.data.current?.type === "NPC") {
+        folderId = over.data.current?.payload?.folderId || null;
+      }
+
+      if (folderId !== undefined) {
+        const npc = store.npcs.find((n) => n.id === activeId);
+        if (npc && npc.folderId !== folderId) {
+          store.moveNpcToFolder(activeId, folderId);
+        }
+      }
+    }
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveDragItem(null);
+    const { active, over } = e;
+    if (!over) return;
+
+    if (String(active.id).startsWith("npcFolder_") && String(over.id).startsWith("npcFolder_")) {
+      const oldIndex = store.npcFolders.findIndex((f) => f.id === String(active.id).replace("npcFolder_", ""));
+      const newIndex = store.npcFolders.findIndex((f) => f.id === String(over.id).replace("npcFolder_", ""));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        store.reorderNpcFolders(oldIndex, newIndex);
+      }
+      return;
+    }
+
+    const activeType = active.data.current?.type;
+    const overType = over.data.current?.type;
+
+    if (activeType === "NPC" && overType === "NPC" && active.id !== over.id) {
+      store.reorderNpcs(active.id as string, over.id as string);
+    }
+  };
+
+  const handleAdvancedCreation = (npc: MasterNpc) => {
+    if (npc.type === "NON_HUMAN") {
+      setSandboxNpcId(npc.id);
+    } else {
+      const charStore = useCharacterStore.getState();
+      if (!store.masterBackup) {
+        store.setMasterBackup({ ...charStore });
+      }
+
+      charStore.importCharacterData({
+        ...npc,
+        isPossessing: npc.id,
+        isMasterMode: false,
+      });
+      RetroToast.warning(`POSSUINDO HUMANOIDE: ${npc.name}`);
+    }
+  };
+
+  const handleQuickActions = (npc: MasterNpc) => {
+    const charStore = useCharacterStore.getState();
+    const activeId = store.activeQuickActionNpcId;
+
+    if (activeId === npc.id) return;
+
+    if (activeId) {
+      const prevNpc = store.npcs.find(n => n.id === activeId);
+      if (prevNpc && prevNpc.type === "NON_HUMAN") {
+        store.updateNpcData(prevNpc.id, extractCharacterData(charStore) as any);
+      }
+    }
+
+    if (!store.masterBackup) {
+      store.setMasterBackup({ ...charStore });
+    }
+    charStore.importCharacterData({
+      ...npc,
+      isMasterMode: true,
+      sandboxMode: npc.type === "NON_HUMAN",
+    });
+    store.setActiveQuickActionNpcId(npc.id);
+  };
+
+  const renderNpcList = (folderId: string | null) => {
+    const npcs = store.npcs.filter((n) => n.folderId === folderId);
+
+    return (
+      <SortableContext
+        items={npcs.map((n) => String(n.id))}
+        strategy={verticalListSortingStrategy}
+      >
+        {npcs.map((npc) => (
+          <NpcRow
+            key={npc.id}
+            npc={npc}
+            onToggleActive={() => store.toggleNpcActive(npc.id)}
+            onToggleEnemy={() => store.updateNpcData(npc.id, { isEnemy: !npc.isEnemy })}
+            onAdvancedCreation={() => handleAdvancedCreation(npc)}
+            onQuickActions={() => handleQuickActions(npc)}
+            isQuickActionActive={store.activeQuickActionNpcId === npc.id}
+            onDelete={() => {
+              setNpcToDelete(npc);
+              deleteNpcModal.onOpen();
+            }}
+            onHpChange={(amount) => {
+              const currentHp = npc.hp?.current || 0;
+              const maxHp = npc.hp?.baseMax || 0;
+              let newHp = currentHp + amount;
+              if (newHp > maxHp) newHp = maxHp;
+              if (newHp < 0) newHp = 0;
+              store.updateNpcData(npc.id, { 
+                hp: { ...npc.hp!, current: newHp } 
+              });
+            }}
+          />
+        ))}
+      </SortableContext>
+    );
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="flex justify-between border-b border-[var(--theme-danger)]/50 pb-2">
-        <span className="text-[var(--theme-danger)] font-bold tracking-widest uppercase">
-          ARQUIVOS DE AMEAÇAS / NPCS
+    <div className="flex flex-col gap-4 h-full border-2 border-[var(--theme-border)] bg-[var(--theme-background)]">
+      <div className="flex justify-between items-center border-b-2 border-[var(--theme-border)] px-4 py-3 bg-black/40 shrink-0">
+        <span className="text-sm font-black tracking-[0.2em] uppercase text-[var(--theme-accent)] drop-shadow-[0_0_8px_var(--theme-accent)]">
+          SYS.DB // REGISTRO_DE_PERSONAS
         </span>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={createEmptyNpc}>
-            + NOVO NPC
-          </Button>
-          <Button
-            size="sm"
-            variant="warning"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            IMPORTAR FICHA (.JSON)
-          </Button>
-          <input
-            type="file"
-            accept=".json"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImportJson}
-          />
-        </div>
+        <span className="opacity-70 font-mono tracking-widest text-[10px] text-[var(--theme-text)]">
+          DIR_ROOT
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2">
-        {npcs.map((npc) => (
-          <div
-            key={npc.id}
-            className={`border border-[var(--theme-border)] p-3 flex flex-col gap-2 ${npc.isActive ? "bg-[var(--theme-danger)]/10 border-[var(--theme-danger)]" : "bg-black"}`}
-          >
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`font-bold text-lg ${npc.isEnemy ? "text-[var(--theme-danger)]" : "text-[var(--theme-accent)]"}`}
-                >
-                  {npc.name}
-                </span>
-                <span className="text-[10px] bg-[var(--theme-background)] border px-1">
-                  HP: {npc.hp?.current}/{npc.hp?.baseMax}
-                </span>
-              </div>
-
-              <div className="flex gap-2 items-center">
-                <Checkbox
-                  label="INIMIGO"
-                  checked={npc.isEnemy}
-                  onChange={() => toggleEnemy(npc.id, npc.isEnemy)}
-                />
-                <Button
-                  size="sm"
-                  variant={npc.isActive ? "success" : "primary"}
-                  onClick={() => toggleNpcActive(npc.id)}
-                  className={npc.isActive ? "animate-pulse border-dashed" : ""}
-                >
-                  {npc.isActive ? "[ ONLINE ]" : "[ OFFLINE ]"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="warning"
-                  onClick={() => setEditingNpc(npc.id)}
-                >
-                  EDITAR
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => deleteNpc(npc.id)}
-                >
-                  DEL
-                </Button>
-              </div>
-            </div>
-
-            {npc.isActive && (
-              <div className="flex gap-2 items-center bg-black p-2 border border-dashed border-[var(--theme-danger)]/30 mt-2">
-                <span className="text-[10px] text-[var(--theme-text)]">
-                  QUICK DAMAGE:
-                </span>
-                {[5, 10, 15, 20, 25, 30].map((dmg) => (
-                  <Button
-                    key={dmg}
-                    size="sm"
-                    variant="danger"
-                    className="h-6 text-[10px] px-2 py-0"
-                    onClick={() =>
-                      updateNpcData(npc.id, {
-                        hp: {
-                          ...npc.hp!,
-                          current: Math.max(0, npc.hp!.current - dmg),
-                        },
-                      })
-                    }
-                  >
-                    -{dmg}
-                  </Button>
-                ))}
-              </div>
-            )}
+      <div className="px-4 flex flex-col gap-4 pb-4 overflow-hidden h-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-[var(--theme-border)] pb-4 shrink-0 gap-4">
+          <div className="flex gap-1 flex-1 w-full sm:w-auto">
+            <Input
+              placeholder="SYS.DIR.NAME..."
+              className="h-9 text-[10px] flex-1 uppercase"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+            />
+            <Button
+              size="sm"
+              variant="primary"
+              className="h-9 px-4 text-[10px]"
+              onClick={handleCreateFolder}
+            >
+              [ MKDIR ]
+            </Button>
           </div>
-        ))}
 
-        {npcs.length === 0 && (
-          <span className="text-center text-[var(--theme-text)]/40 text-xs italic mt-10">
-            Nenhum registro de NPC no banco de dados local.
-          </span>
-        )}
-      </div>
-
-      {editingNpc && (
-        <div className="absolute inset-0 bg-black/90 z-50 p-6 flex flex-col gap-4">
-          <span className="text-[var(--theme-warning)] font-bold text-xl">
-            EDITOR DE DADOS DO NPC (EM BREVE)
-          </span>
-          <p className="text-sm">
-            Para alterar HP rápido, use os botões na lista. Um editor completo
-            de ficha para NPCs pode ser injetado aqui reutilizando os
-            componentes do SystemHud, mapeando os inputs para o `updateNpcData`
-            em vez do `useCharacterStore`.
-          </p>
-          <Button onClick={() => setEditingNpc(null)}>FECHAR EDITOR</Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              size="sm" 
+              variant="primary"
+              onClick={() => setIsRegistrationModalOpen(true)}
+              className="flex-1 sm:flex-none"
+            >
+              [ CRIAR ]
+            </Button>
+            <Button
+              size="sm"
+              variant="warning"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 sm:flex-none"
+            >
+              [ IMPORTAR ]
+            </Button>
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImportJson}
+            />
+          </div>
         </div>
-      )}
+
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        collisionDetection={closestCenter}
+      >
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2">
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--theme-accent)] bg-[var(--theme-accent)]/10 p-2 border-2 border-[var(--theme-accent)] inline-block w-fit">
+              SYS.DIR // ROOT
+            </span>
+            <div ref={rootNpcRef} className="border-dashed border-2 border-[var(--theme-border)] p-1 min-h-[50px] flex flex-col gap-1 bg-black/20">
+              {renderNpcList(null)}
+            </div>
+          </div>
+
+          <SortableContext
+            items={store.npcFolders.map((f) => `npcFolder_${f.id}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {store.npcFolders.map((folder) => (
+              <NpcFolder
+                key={folder.id}
+                id={folder.id}
+                name={folder.name}
+                isOpen={!!openAccordions[folder.id]}
+                onToggle={() => toggleAcc(folder.id)}
+                onToggleAllActive={(isActive) => store.toggleFolderNpcsActive(folder.id, isActive)}
+                onDelete={() => {
+                  setFolderToDelete(folder);
+                  deleteFolderModal.onOpen();
+                }}
+              >
+                {renderNpcList(folder.id)}
+              </NpcFolder>
+            ))}
+          </SortableContext>
+        </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeDragItem ? (
+            <div className="flex items-center gap-2 border-2 border-[var(--theme-accent)] bg-black/80 backdrop-blur-sm p-2 shadow-[0_0_15px_var(--theme-accent)] max-w-[300px]">
+              <span className="text-xs font-black uppercase truncate flex-1 leading-tight text-[var(--theme-accent)] tracking-widest">
+                {activeDragItem.payload.name}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      <NpcRegistrationModal 
+        isOpen={isRegistrationModalOpen} 
+        onClose={() => setIsRegistrationModalOpen(false)} 
+      />
+
+      <NpcNonHumanConfigModal
+        isOpen={!!sandboxNpcId}
+        onClose={() => setSandboxNpcId(null)}
+        npcId={sandboxNpcId}
+      />
+
+      <NpcHpModal
+        isOpen={hpModalConfig.isOpen}
+        onClose={() => setHpModalConfig({ ...hpModalConfig, isOpen: false })}
+        npcId={hpModalConfig.npcId}
+        mode={hpModalConfig.mode}
+      />
+
+      <ConfirmModal
+        isOpen={deleteNpcModal.isOpen}
+        onClose={deleteNpcModal.onClose}
+        title="EXCLUIR NPC"
+        isDanger
+        message={
+          <div className="text-left bg-[var(--theme-background)] p-3 border border-[var(--theme-border)] mt-2">
+            <span className="font-bold text-[var(--theme-danger)] block mb-1">
+              [{npcToDelete?.name}]
+            </span>
+            <p className="text-[var(--theme-accent)] text-xs font-mono">
+              Os dados deste NPC serão perdidos para sempre. Deseja prosseguir?
+            </p>
+          </div>
+        }
+        onConfirm={() => {
+          if (npcToDelete) store.deleteNpc(npcToDelete.id);
+          deleteNpcModal.onClose();
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={deleteFolderModal.isOpen}
+        onClose={deleteFolderModal.onClose}
+        title="DESESTRUTURAR DIRETÓRIO"
+        isDanger
+        message={
+          <div className="text-left bg-[var(--theme-background)] p-3 border border-[var(--theme-border)] mt-2 flex flex-col gap-2">
+            <span className="font-bold text-[var(--theme-danger)] block">
+              DIR: {folderToDelete?.name}
+            </span>
+            <span className="text-[var(--theme-accent)] text-xs font-mono">
+              A exclusão desta pasta retornará todos os NPCs contidos nela para o diretório /ROOT.
+            </span>
+          </div>
+        }
+        onConfirm={() => {
+          if (folderToDelete) store.removeNpcFolder(folderToDelete.id);
+          deleteFolderModal.onClose();
+        }}
+      />
+      </div>
     </div>
   );
 }
