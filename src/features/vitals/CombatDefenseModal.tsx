@@ -5,7 +5,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { motion } from "framer-motion";
 
 export function CombatDefenseModal() {
@@ -62,19 +62,26 @@ export function CombatDefenseModal() {
     setDefenseMsg(msg);
     setStep("RESOLVED");
 
-    dispatchDiscordLog(
-      "PLAYER",
-      name,
-      `**TENTATIVA DE DEFESA (${defenseType === "DODGE" ? "ESQUIVA" : "BLOQUEIO"})**\n**Agressor:** ${defenseData.attackerName}\n**Rolagem:** ${defRoll.total} vs Ataque ${defenseData.attackRoll}\n**Resultado:** ${msg} (${dmg} Dano residual)`,
-    );
+    const embed: DiscordEmbed = {
+      title: `[~] REAÇÃO DE COMBATE: ${defenseType === "DODGE" ? "ESQUIVA" : "BLOQUEIO"} [~]`,
+      color: dmg === 0 ? 3066993 : (dmg < defenseData.damage ? 16753920 : 15158332),
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**AGRESSOR:** ${defenseData.attackerName}\n**ROLAGEM:** ${defRoll.total} vs Ataque ${defenseData.attackRoll}\n**RESULTADO:** ${msg}\n**DANO RESIDUAL:** ${dmg}`,
+      footer: { text: "SYS.MNLT // COMBAT_LOG" },
+      timestamp: new Date().toISOString(),
+    };
+
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
   };
 
   const handleTakeDirectDamage = () => {
-    dispatchDiscordLog(
-      "PLAYER",
-      name,
-      `**DEFESA IGNORADA**\n**Agressor:** ${defenseData.attackerName}\n**Resultado:** Recebeu ataque diretamente. (${defenseData.damage} Dano)`,
-    );
+    const embed: DiscordEmbed = {
+      title: "[!] DEFESA IGNORADA [!]",
+      color: 15158332,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**AGRESSOR:** ${defenseData.attackerName}\n**RESULTADO:** Recebeu ataque diretamente.\n**DANO RESIDUAL:** ${defenseData.damage}`,
+      footer: { text: "SYS.MNLT // COMBAT_LOG" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     handleClose();
     openModal("DAMAGE", defenseData.damage.toString(), true);
   };

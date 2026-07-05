@@ -194,7 +194,7 @@ export const ItemNodeV2 = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden bg-[#030303] border-x-2 border-b-2 border-[var(--theme-border)]"
           >
-            <div className="p-3 flex flex-col gap-3">
+            <div className="p-1 flex flex-col gap-3">
               <ItemDetailsV2 item={item} inheritedEffects={inheritedEffects} />
 
               <ItemActionsV2
@@ -278,7 +278,7 @@ export const ItemNodeV2 = ({
                       return (
                         <div
                           key={drawerName as string}
-                          className="flex flex-col pl-1 border-l-2 border-dashed border-[var(--theme-border)]"
+                          className="flex flex-col"
                         >
                           {editingDrawer === drawerName ? (
                             <div className="flex gap-1 w-full p-1 bg-[var(--theme-background)]/40">

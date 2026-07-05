@@ -10,6 +10,7 @@ export function Modal({
   children,
   isDanger = false,
   maxWidth = "max-w-2xl",
+  hideCloseButton = false
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +18,7 @@ export function Modal({
   children: ReactNode;
   isDanger?: boolean;
   maxWidth?: string;
+  hideCloseButton?: boolean;
 }) {
   if (!isOpen) return null;
   const borderClass = isDanger
@@ -35,7 +37,7 @@ export function Modal({
           className={`flex justify-between items-center border-b p-2 text-[var(--theme-accent)] ${headerClass}`}
         >
           <h2 className="font-bold tracking-widest uppercase">{title}</h2>
-          <button
+          {hideCloseButton ? null : <button
             onClick={onClose}
             className="hover:text-[var(--theme-background)] hover:bg-[var(--theme-accent)] font-bold px-2 transition-colors"
           >
@@ -50,7 +52,7 @@ export function Modal({
                 fill="currentColor"
               />
             </svg>
-          </button>
+          </button>}
         </div>
         <div className="p-4 text-[var(--theme-accent)] font-mono text-sm overflow-y-auto custom-scrollbar">
           {children}

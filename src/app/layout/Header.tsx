@@ -7,15 +7,15 @@ import { ConfirmModal } from "../../shared/ui/Overlays";
 import { GlitchImage } from "../../shared/ui/GlitchImage";
 import { SettingsModal } from "../../features/progression/SettingsModal";
 import { useCharacterStore } from "../../features/character/store";
+import { extractCharacterData } from "../../features/character/store";
 import { useMasterStore } from "../../features/master/masterStore";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { LevelUpFlowModal } from "../../features/progression/LevelUpFlowModal";
 import { SystemInjectionModal } from "../../features/progression/SystemInjectionModal";
 import { useUIStore } from "../../shared/store/useUIStore";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { useNetworkStore } from "../../shared/store/useNetworkStore";
 
-const isDev =
-  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 export function Header() {
   const name = useCharacterStore((state) => state.name);
@@ -74,6 +74,122 @@ export function Header() {
     }
   };
 
+  const handleExitPossession = () => {
+    const masterStore = useMasterStore.getState();
+    const charStore = useCharacterStore.getState();
+    const backup = masterStore.masterBackup;
+    const possessedName = charStore.isPossessing;
+
+    if (backup && possessedName) {
+      const npcId = masterStore.npcs.find((n) => n.id === possessedName || n.name === possessedName)?.id;
+      
+      if (npcId) {
+        // Se for um NPC, apenas salva localmente e sai (sem diff de telemetria)
+        masterStore.updateNpcData(npcId, extractCharacterData(charStore) as any);
+        RetroToast.success("POSSESSÃO DO NPC ENCERRADA E DADOS SALVOS.");
+      } else {
+        // Se for um jogador (possessão remota), calcula diff e envia override
+        const telemetry = useNetworkStore.getState().telemetryData[possessedName];
+        const diff: Partial<typeof charStore> = {};
+
+        // Funções de pureza para diff
+        const cleanObj = (obj: unknown) => JSON.parse(JSON.stringify(obj || {}));
+        const isDiff = (a: unknown, b: unknown) =>
+          JSON.stringify(cleanObj(a)) !== JSON.stringify(cleanObj(b));
+
+        if (telemetry) {
+          const telHp = { ...(telemetry.vitals?.hp || {}) } as Record<
+            string,
+            unknown
+          >;
+          delete telHp.max;
+          if (isDiff(charStore.hp, telHp)) diff.hp = charStore.hp;
+
+          const telEnergy = { ...(telemetry.vitals?.energy || {}) } as Record<
+            string,
+            unknown
+          >;
+          delete telEnergy.max;
+          delete telEnergy.state;
+          if (isDiff(charStore.energy, telEnergy)) diff.energy = charStore.energy;
+
+          const telSus = { ...(telemetry.vitals?.sustenance || {}) } as Record<
+            string,
+            unknown
+          >;
+          delete telSus.max;
+          delete telSus.state;
+          if (isDiff(charStore.sustenance, telSus))
+            diff.sustenance = charStore.sustenance;
+
+          const telIns = { ...(telemetry.vitals?.insanity || {}) } as Record<
+            string,
+            unknown
+          >;
+          delete telIns.max;
+          if (isDiff(charStore.insanity, telIns))
+            diff.insanity = charStore.insanity;
+
+          if (isDiff(charStore.crisis, telemetry.vitals?.crisis))
+            diff.crisis = charStore.crisis;
+          if (isDiff(charStore.attributes, telemetry.core?.attributes))
+            diff.attributes = charStore.attributes;
+          if (isDiff(charStore.skills, telemetry.core?.skills))
+            diff.skills = charStore.skills;
+          if (charStore.evilness !== telemetry.core?.evilness)
+            diff.evilness = charStore.evilness;
+          if (isDiff(charStore.freePoints, telemetry.core?.freePoints))
+            diff.freePoints = charStore.freePoints;
+          if (isDiff(charStore.inventory, telemetry.inventory))
+            diff.inventory = charStore.inventory;
+          if (isDiff(charStore.customEffects, telemetry.effects))
+            diff.customEffects = charStore.customEffects;
+          if (isDiff(charStore.role, telemetry.core?.role))
+            diff.role = charStore.role;
+          if (isDiff(charStore.notes, telemetry.notes?.notes))
+            diff.notes = charStore.notes;
+          if (charStore.mainNote !== telemetry.notes?.mainNote)
+            diff.mainNote = charStore.mainNote;
+          if (charStore.mainNoteHeight !== telemetry.notes?.mainNoteHeight)
+            diff.mainNoteHeight = charStore.mainNoteHeight;
+        }
+
+        // Só envia pacote se houver diferenças reais
+        if (Object.keys(diff).length > 0) {
+          masterStore.addPendingOverride(possessedName, diff);
+          const channel = useNetworkStore.getState().telemetryChannel;
+          if (channel) {
+            const msg = {
+              type: "broadcast" as const,
+              event: "MASTER_COMMAND",
+              payload: {
+                target: possessedName,
+                command: "FULL_OVERRIDE",
+                data: diff,
+                attackerName: "MESTRE",
+              },
+            };
+            if (typeof channel.httpSend === "function") {
+              channel.httpSend(msg.event, msg.payload).catch(console.error);
+            } else {
+              channel.send(msg);
+            }
+          }
+          RetroToast.success("CONTROLE DEVOLVIDO E DIFF ENVIADO AO JOGADOR.");
+        } else {
+          RetroToast.info("CONTROLE DEVOLVIDO. NENHUMA MUDANÇA DETECTADA.");
+        }
+      }
+
+      charStore.importCharacterData({
+        ...backup,
+        isPossessing: null,
+        isMasterMode: true,
+      });
+      masterStore.setMasterBackup(null);
+    }
+  };
+
   return (
     <div className="flex flex-col shrink-0 relative z-50">
       <AnimatePresence initial={false}>
@@ -100,11 +216,10 @@ export function Header() {
                   noLoad
                 />
                 <span
-                  className={`text-[8px] px-1.5 py-0.5 border font-bold uppercase tracking-widest ${
-                    isDistributing
+                  className={`text-[8px] px-1.5 py-0.5 border font-bold uppercase tracking-widest ${isDistributing
                       ? "border-[var(--theme-warning)] text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 animate-pulse"
                       : "border-[var(--theme-success)] text-[var(--theme-success)] bg-[var(--theme-success)]/10"
-                  }`}
+                    }`}
                 >
                   SYS: {creationStatus}
                 </span>
@@ -124,24 +239,14 @@ export function Header() {
                     {role?.title || "NÃO ATRIBUÍDA"}
                   </span>
                 </span>
-                {isDev && isPossessing && (
+                {isPossessing && (
                   <Button
                     variant="danger"
                     size="sm"
                     className="mt-2 animate-pulse border-dashed w-full md:w-auto text-[8px]"
-                    onClick={() => {
-                      const backup = useMasterStore.getState().masterBackup;
-                      if (backup) {
-                        useCharacterStore.getState().importCharacterData({
-                          ...backup,
-                          isPossessing: null,
-                        });
-                        useMasterStore.getState().setMasterBackup(null);
-                        RetroToast.success(
-                          "CONTROLE DEVOLVIDO. RETORNANDO AO MAINFRAME.",
-                        );
-                      }
-                    }}
+                    onClick={handleExitPossession}
+                    disabled={creationStatus !== "CLOSED"}
+                    title={creationStatus !== "CLOSED" ? "FINALIZE A DISTRIBUIÇÃO ANTES DE SAIR" : ""}
                   >
                     [ SAIR DA POSSESSÃO ]
                   </Button>
@@ -309,7 +414,17 @@ export function Header() {
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={confirmModal.onClose}
-        onConfirm={confirmDistribution}
+        onConfirm={() => {
+          confirmDistribution();
+          const masterStore = useMasterStore.getState();
+          const charStore = useCharacterStore.getState();
+          if (charStore.isPossessing) {
+            const npcId = masterStore.npcs.find((n) => n.id === charStore.isPossessing || n.name === charStore.isPossessing)?.id;
+            if (npcId) {
+              masterStore.updateNpcData(npcId, extractCharacterData(charStore) as any);
+            }
+          }
+        }}
         title={hasFreePoints ? "PONTOS NÃO ALOCADOS" : "FINALIZAR CRIAÇÃO?"}
         message={
           hasFreePoints

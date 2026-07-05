@@ -28,6 +28,7 @@ export function AttributeDrawer() {
 
   const freeAttrMod = getTargetSum("FREE_ATTR");
   const effectiveFreePoints = freePoints.attributes + freeAttrMod;
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
 
   const { secondaryAttributes } = useCharacterStats();
   const { initiateRoll } = useRoller();
@@ -118,15 +119,17 @@ export function AttributeDrawer() {
         <span className="font-bold tracking-widest text-[10px] text-[var(--theme-accent)]">
           MATRIZ DE ATRIBUTOS
         </span>
-        <Button
-          size="sm"
-          className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-[var(--theme-background)]" : "hover:text-[var(--theme-accent)]"}`}
-          onClick={() =>
-            setDrawerState("left", { isPinned: !isPinned, isOpen: true })
-          }
-        >
-          [PIN]
-        </Button>
+        {!isMasterMode && (
+          <Button
+            size="sm"
+            className={`px-1 py-0 border-none hidden md:block ${isPinned ? "bg-[var(--theme-accent)] text-[var(--theme-background)]" : "hover:text-[var(--theme-accent)]"}`}
+            onClick={() =>
+              setDrawerState("left", { isPinned: !isPinned, isOpen: true })
+            }
+          >
+            [PIN]
+          </Button>
+        )}
       </div>
 
       {(isDistributing || sandboxMode) && (

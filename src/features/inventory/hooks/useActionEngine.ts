@@ -105,14 +105,21 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
     if (item.type === "RECHARGEABLE" || item.type === "KIT") {
       if (currentUses > 0) {
         consumeRechargeable(item.id);
-        let msg = ` **AÇÃO:** [${name}] utilizou **${item.name}**.`;
+        let extraDesc = "";
         if (item.type === "KIT" && item.skillId) {
           const itemSkill = getSkillById(item.skillId);
           const skillVal = skills[item.skillId as keyof typeof skills] || 0;
           const rollRes = executeRawRoll(`1d20+${skillVal}`);
-          msg += `\n **ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
+          extraDesc = `\n**ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
         }
-        dispatchDiscordLog("INVENTORY", name, msg);
+        const embed: DiscordEmbed = {
+          title: "[>] AÇÃO IMEDIATA [>]",
+          color: 3447003,
+          description: `**UNIDADE OPERACIONAL:** ${name}\n**ITEM UTILIZADO:** ${item.name}${extraDesc}`,
+          footer: { text: "SYS.MNLT // INVENTORY_SYNC" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("INVENTORY", name, "", [embed]);
         RetroToast.success(`USADO: ${item.name}`);
       } else {
         RetroToast.error("COMPARTIMENTO VAZIO. RECARREGUE.");
@@ -120,11 +127,14 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
     } else {
       const res = consumeItem(item.id);
       if (res.success) {
-        dispatchDiscordLog(
-          "INVENTORY",
-          name,
-          ` **AÇÃO:** [${name}] usou **${item.name}**.`,
-        );
+        const embed: DiscordEmbed = {
+          title: "[>] AÇÃO IMEDIATA [>]",
+          color: 3447003,
+          description: `**UNIDADE OPERACIONAL:** ${name}\n**ITEM UTILIZADO:** ${item.name}`,
+          footer: { text: "SYS.MNLT // INVENTORY_SYNC" },
+          timestamp: new Date().toISOString(),
+        };
+        dispatchDiscordLog("INVENTORY", name, "", [embed]);
         RetroToast.success(`USADO: ${item.name}`);
       } else {
         RetroToast.error(res.message);

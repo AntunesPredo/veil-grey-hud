@@ -86,7 +86,10 @@ function BioClusterChassis({
   const inventory = useCharacterStore((state) => state.inventory);
 
   const equippedArmor = inventory.find(
-    (i) => i.isEquipped && (i as EquipableItem).armorProps,
+    (i) =>
+      i.isEquipped &&
+      "armorProps" in i &&
+      !!(i as EquipableItem).armorProps,
   ) as EquipableItem | undefined;
 
   const belt = equippedArmor

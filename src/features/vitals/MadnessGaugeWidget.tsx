@@ -5,7 +5,7 @@ import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { Button } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { useCustomSvgIcons } from "../../shared/hooks/useCustomSvgIcons";
 import { useVitalsStore } from "./useVitalsStore";
@@ -38,8 +38,14 @@ export function MadnessGaugeWidget() {
     const result = executeRawRoll(expression, []);
     if (result.error) return RetroToast.error(result.error);
 
-    const logMsg = `**TESTE DE INSANIDADE:** ${result.total}\n\`\`\`\n${result.log}\n\`\`\``;
-    dispatchDiscordLog("PLAYER", name, logMsg);
+    const embed: DiscordEmbed = {
+      title: "[?] TESTE DE INSANIDADE [?]",
+      color: 15158332,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**TESTE:** ${result.total}\n\`\`\`\n${result.log}\n\`\`\``,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     RetroToast.warning(`TESTE DE INSANIDADE: ${result.total}`);
   };
 

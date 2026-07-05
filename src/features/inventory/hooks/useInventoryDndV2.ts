@@ -2,7 +2,8 @@ import { useState } from "react";
 import {
   useSensor,
   useSensors,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   KeyboardSensor,
   pointerWithin,
   type DragStartEvent,
@@ -44,8 +45,11 @@ export function useInventoryDndV2({
   const [activeDragItem, setActiveDragItem] = useState<Item | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { delay: 150, tolerance: 5 },
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 10 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -140,6 +144,10 @@ export function useInventoryDndV2({
         if (!targetIsCarried) {
           updateInventoryItem(activeId, "isEquipped", false);
         }
+      }
+
+      if (targetParentId !== null && activeItem.isEquipped) {
+        updateInventoryItem(activeId, "isEquipped", false);
       }
     }
 

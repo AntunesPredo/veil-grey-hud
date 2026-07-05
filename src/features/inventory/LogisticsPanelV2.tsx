@@ -267,8 +267,8 @@ export function LogisticsPanelV2() {
           onClick={toggleEditMode}
         >
           {isEditMode
-            ? "[EDIT_TRUE] - SAIR DO MODO DE EDIÇÃO"
-            : "[EDIT_FALSE] - INICIAR MODO DE EDIÇÃO"}
+            ? "MODO DE EDIÇÃO - ON"
+            : "MODO DE EDIÇÃO - OFF"}
         </Button>
 
         <AnimatePresence mode="popLayout">

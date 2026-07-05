@@ -5,7 +5,7 @@ import { useCharacterStore } from "../character/store";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import { Button } from "../../shared/ui/Form";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { RetroToast } from "../../shared/ui/RetroToast";
 
@@ -76,21 +76,27 @@ export function CrisisOverlay() {
         .map((i) => (i <= crisis.fails + 1 ? "[X]" : "[ ]"))
         .join(" ");
 
-      dispatchDiscordLog(
-        "PLAYER",
-        name,
-        `**[ ${name || "SUJEITO"} ] FALHOU NO TESTE DE ${typeStr}!**\n**Rolou:** ${result.total} vs DC ${currentDC}\nFalhas acumuladas: ${boxes}`,
-      );
+      const embed: DiscordEmbed = {
+        title: `[!] FALHA: ${typeStr} [!]`,
+        color: 15158332,
+        description: `**UNIDADE OPERACIONAL:** ${name || "SUJEITO"}\n**ROLAGEM:** ${result.total} vs DC ${currentDC}\n**FALHAS ACUMULADAS:** ${boxes}`,
+        footer: { text: "SYS.MNLT // BIO_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("PLAYER", name, "", [embed]);
     }
   };
 
   const handleSuccessClose = () => {
     const typeStr = isDeath ? "RESISTÊNCIA À MORTE" : "COLAPSO MENTAL";
-    dispatchDiscordLog(
-      "PLAYER",
-      name,
-      `**[ ${name || "SUJEITO"} ] SUPEROU A CRISE: ${typeStr}!**\n**Rolou:** ${lastRoll?.total} vs DC ${currentDC}`,
-    );
+    const embed: DiscordEmbed = {
+      title: `[+] CRISE SUPERADA: ${typeStr} [+]`,
+      color: 3066993,
+      description: `**UNIDADE OPERACIONAL:** ${name || "SUJEITO"}\n**ROLAGEM FINAL:** ${lastRoll?.total} vs DC ${currentDC}`,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
 
     updateCrisis({ ignore: true, state: null, fails: 0 });
     setLastRoll(null);
@@ -105,11 +111,14 @@ export function CrisisOverlay() {
   };
 
   const handleConfirmFatal = () => {
-    const msg = isDeath
-      ? ` **[ ${name || "SUJEITO"} ] FALECEU.**\nOs sinais vitais cessaram definitivamente.`
-      : ` **[ ${name || "SUJEITO"} ] SOFREU UM COLAPSO PSICOLÓGICO TOTAL!**\nA mente falhou em todas as resistências e colapsou permanentemente.`;
-
-    dispatchDiscordLog("PLAYER", name, msg);
+    const embed: DiscordEmbed = {
+      title: isDeath ? "[!!!] SINAIS VITAIS CESSADOS [!!!]" : "[!!!] PERDA TOTAL DE SANIDADE [!!!]",
+      color: 15158332,
+      description: `**UNIDADE OPERACIONAL:** ${name || "SUJEITO"}\n**STATUS:** ${isDeath ? "FALECIDO. Os sinais vitais cessaram definitivamente." : "COLAPSO PERMANENTE. A mente falhou em todas as resistências."}`,
+      footer: { text: "SYS.MNLT // BIO_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     updateCrisis({ ignore: true, state: null, fails: 0 });
   };
 

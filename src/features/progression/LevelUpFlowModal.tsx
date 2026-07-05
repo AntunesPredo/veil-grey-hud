@@ -3,7 +3,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { useCharacterStore } from "../character/store";
 import { executeRawRoll } from "../../shared/utils/diceEngine";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 
@@ -46,8 +46,14 @@ export function LevelUpFlowModal({
     setRollLog(result.log);
     addMaxHpBonus(result.total);
 
-    const msg = `**LEVEL UP - EXPANSÃO DE VIDA:**\n[${name}] rolou os dados de evolução.\n**Fórmula:** 1d10 + 10 + CON(${con})\n**Resultado:** +${result.total} PV máximos!`;
-    dispatchDiscordLog("PLAYER", name, msg);
+    const embed: DiscordEmbed = {
+      title: "[^] EVOLUÇÃO CELULAR: HP [^]",
+      color: 3066993,
+      description: `**UNIDADE OPERACIONAL:** ${name}\n**FÓRMULA:** 1d10 + 10 + CON(${con})\n**AUMENTO VITAL REGISTRADO:** +${result.total} PV máximos!`,
+      footer: { text: "SYS.MNLT // PROGRESSION_TRACKER" },
+      timestamp: new Date().toISOString(),
+    };
+    dispatchDiscordLog("PLAYER", name, "", [embed]);
     RetroToast.success(`+${result.total} PV MÁXIMOS!`);
 
     setStep("DONE");

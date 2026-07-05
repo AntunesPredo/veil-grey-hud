@@ -115,7 +115,7 @@ export function NotesManager() {
             {isMainNoteEditing ? "[ SALVAR ]" : "[ EDITAR ]"}
           </Button>
         </div>
-        <div className="p-4 relative">
+        <div className="relative">
           <AnimatePresence mode="wait">
             {isMainNoteEditing ? (
               <motion.div

@@ -12,15 +12,15 @@ import type {
   EnergyState,
   Item,
   Note,
+  Role,
   Skill,
   SustenanceState,
 } from "../types/veil-grey";
-import { useMasterStore } from "../../features/master/masterStore";
 import type { VitalsSlice } from "../../features/vitals/vitalsSlice";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface QueuedPayload {
   id: string;
@@ -38,6 +38,9 @@ export interface PlayerTelemetry {
       mass: number;
       mental_health: number;
       perception: number;
+      actionPoints: number;
+      reactions: number;
+      movement: number;
     };
     skills: Record<Skill, number>;
     evilness: number;
@@ -47,6 +50,7 @@ export interface PlayerTelemetry {
     creationStatus: CreationStatus;
     freePoints: { attributes: number; skills: number; specializations: number };
     disadvantages: Disadvantage[];
+    role?: Role | null;
   };
   vitals?: {
     hp: VitalsSlice["hp"] & {
@@ -64,6 +68,7 @@ export interface PlayerTelemetry {
   notes?: {
     notes: Note[];
     mainNote: string;
+    mainNoteHeight?: number;
   };
 }
 
@@ -74,7 +79,12 @@ interface NetworkState {
   channel: RealtimeChannel | null;
   telemetryChannel: RealtimeChannel | null;
   queue: QueuedPayload[];
+  localNpcNames: string[];
+  globalNpcs: { name: string; isEnemy: boolean }[];
 
+  setLocalNpcNames: (names: string[]) => void;
+  setGlobalNpcs: (npcs: { name: string; isEnemy: boolean }[]) => void;
+  syncNpcs: (npcs: { name: string; isEnemy: boolean }[]) => void;
   connect: (playerName: string) => void;
   disconnect: () => void;
   sendPayload: (target: string, type: string, data: unknown) => void;
@@ -131,6 +141,23 @@ export const useNetworkStore = create<NetworkState>()(
       channel: null,
       telemetryChannel: null,
       queue: [],
+      localNpcNames: [],
+      globalNpcs: [],
+
+      setLocalNpcNames: (names) => set({ localNpcNames: names }),
+      setGlobalNpcs: (npcs) => set({ globalNpcs: npcs }),
+      
+      syncNpcs: (npcs) => {
+        const { telemetryChannel } = get();
+        if (telemetryChannel) {
+          safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
+            command: "SYNC_NPCS",
+            attackerName: "MESTRE",
+            target: "ALL",
+            data: npcs,
+          });
+        }
+      },
 
       pushToQueue: (p) => set((s) => ({ queue: [...s.queue, p] })),
       removeQueueItem: (id) =>
@@ -150,32 +177,21 @@ export const useNetworkStore = create<NetworkState>()(
           .on("broadcast", { event: "system-inject" }, ({ payload }) => {
             const { name, isMasterMode, isPossessing } =
               useCharacterStore.getState();
-            const isLocalNpc = useMasterStore
-              .getState()
-              .npcs.some((n) => n.name === payload.target && n.isActive);
+            const isLocalNpc = get().localNpcNames.includes(payload.target);
 
-            if (
-              payload.target === "MESTRE" &&
-              payload.type === "SAVE_DELIVERY" &&
-              isMasterMode
-            ) {
-              const dataUri =
-                "data:text/plain;charset=utf-8," +
-                encodeURIComponent(payload.data as string);
-              const link = document.createElement("a");
-              link.href = dataUri;
-              link.download = `VG_DELIVERY_SAVE_${payload.attackerName}.json`;
-              link.click();
-              RetroToast.success(
-                `FICHA DE [${payload.attackerName}] RECEBIDA E BAIXADA.`,
-              );
-              return;
+            // Authority Validation for Master commands
+            if (payload.type === "FULL_OVERRIDE") {
+              if (payload.attackerName !== "MESTRE" && payload.attackerName !== "MAINFRAME (MESTRE)") {
+                return;
+              }
             }
+
+
 
             if (
               payload.target === name ||
               payload.target === "ALL" ||
-              (isMasterMode && isLocalNpc)
+              (isMasterMode && (payload.target === "MESTRE" || isLocalNpc))
             ) {
               get().pushToQueue({
                 id: crypto.randomUUID(),
@@ -223,6 +239,7 @@ export const useNetworkStore = create<NetworkState>()(
             }));
           })
           .on("broadcast", { event: "MASTER_COMMAND" }, ({ payload }) => {
+            if (payload.attackerName !== "MESTRE") return;
             if (payload.target === playerName || payload.target === "ALL") {
               if (payload.command === "FORCE_SYNC") {
                 window.dispatchEvent(new CustomEvent("vg-force-sync"));
@@ -231,9 +248,18 @@ export const useNetworkStore = create<NetworkState>()(
                 get().disconnect();
                 window.location.reload();
               }
+              if (payload.command === "SYNC_NPCS") {
+                get().setGlobalNpcs(payload.data as { name: string; isEnemy: boolean }[]);
+              }
               if (payload.command === "FULL_OVERRIDE") {
-                useCharacterStore.getState().importCharacterData(payload.data);
-                RetroToast.warning("O MESTRE ASSUMIU O CONTROLE (OVERRIDE).");
+                get().pushToQueue({
+                  id: crypto.randomUUID(),
+                  type: "FULL_OVERRIDE",
+                  attackerName: "MAINFRAME (MESTRE)",
+                  targetName: payload.target,
+                  data: payload.data,
+                });
+                RetroToast.info("PACOTE DE ATUALIZAÇÃO DO MESTRE RECEBIDO.");
               }
               if (payload.command === "FORCE_UPDATE_ITEM") {
                 useCharacterStore
@@ -293,6 +319,8 @@ export const useNetworkStore = create<NetworkState>()(
 
       sendPayload: (target, type, data) => {
         const senderName = useCharacterStore.getState().name;
+        const isMasterMode = useCharacterStore.getState().isMasterMode;
+        
         if (target === "SELF") {
           get().pushToQueue({
             id: crypto.randomUUID(),
@@ -304,6 +332,18 @@ export const useNetworkStore = create<NetworkState>()(
           RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
           return;
         }
+
+        if (isMasterMode && get().localNpcNames.includes(target)) {
+          get().pushToQueue({
+            id: crypto.randomUUID(),
+            type,
+            attackerName: senderName,
+            targetName: target,
+            data,
+          });
+          return;
+        }
+
         const { channel } = get();
         if (channel) {
           safeBroadcast(channel, "system-inject", {
@@ -342,9 +382,7 @@ export const useNetworkStore = create<NetworkState>()(
           const online = state.onlinePlayers;
           const newData = { ...state.telemetryData };
           Object.keys(newData).forEach((key) => {
-            const isLocalNpc = useMasterStore
-              .getState()
-              .npcs.some((n) => n.name === key && n.isActive);
+            const isLocalNpc = get().localNpcNames.includes(key);
             if (!online.includes(key) && !isLocalNpc) delete newData[key];
           });
           return { telemetryData: newData };
@@ -356,6 +394,7 @@ export const useNetworkStore = create<NetworkState>()(
           safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
             target: playerName,
             command: "KICK",
+            attackerName: "MESTRE",
           });
         set((s) => {
           const newData = { ...s.telemetryData };
@@ -370,6 +409,7 @@ export const useNetworkStore = create<NetworkState>()(
           safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
             target: "ALL",
             command: "FORCE_SYNC",
+            attackerName: "MESTRE",
           });
       },
 
@@ -379,6 +419,7 @@ export const useNetworkStore = create<NetworkState>()(
           safeBroadcast(telemetryChannel, "MASTER_COMMAND", {
             target: playerName,
             command: "FORCE_SYNC",
+            attackerName: "MESTRE",
           });
       },
 

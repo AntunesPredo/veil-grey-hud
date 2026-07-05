@@ -25,6 +25,8 @@ export const buildFinalItem = (data: ItemFormData): Item => {
     svgId: data.svgId,
     imageUrl: data.imageUrl,
     isSoulBound: data.isSoulBound,
+    price: data.price,
+    wallet: data.hasWallet ? data.walletProps : undefined,
   };
 
   switch (data.type) {

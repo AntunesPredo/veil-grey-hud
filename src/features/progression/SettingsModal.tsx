@@ -21,6 +21,8 @@ export function SettingsModal({
   onClose: () => void;
 }) {
   const setPowerState = useSystemStore((state) => state.setPowerState);
+  const enableCrt = useSystemStore((state) => state.enableCrt);
+  const setEnableCrt = useSystemStore((state) => state.setEnableCrt);
   const settings = useCharacterStore((state) => state.settings);
   const sandboxMode = useCharacterStore((state) => state.sandboxMode);
   const name = useCharacterStore((state) => state.name);
@@ -191,6 +193,11 @@ export function SettingsModal({
                   }
                 />
               )}
+              <Checkbox
+                label="ATIVAR EFEITO CRT (FLICKER)"
+                checked={enableCrt}
+                onChange={() => setEnableCrt(!enableCrt)}
+              />
             </div>
           </div>
 

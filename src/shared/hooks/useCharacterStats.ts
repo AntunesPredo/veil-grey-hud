@@ -19,6 +19,7 @@ export function useCharacterStats() {
   const energy = useCharacterStore((state) => state.energy);
   const insanity = useCharacterStore((state) => state.insanity);
   const customEffects = useCharacterStore((state) => state.customEffects);
+  const sandboxMode = useCharacterStore((state) => state.sandboxMode);
 
   return useMemo(() => {
     const rules = VG_CONFIG.rules;
@@ -84,11 +85,17 @@ export function useCharacterStats() {
     const maxSustenance =
       rules.baseSustenance + secondaryAttributes.mass + susMod;
 
-    const { currentLoad, maxLoad, isOverweight } = calculateInventoryLoad(
-      inventory,
-      attributes.strength,
-      attributes.constitution,
-    );
+    const { currentLoad, maxLoad, isOverweight } = sandboxMode
+      ? {
+          currentLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).currentLoad,
+          maxLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).maxLoad,
+          isOverweight: false
+        }
+      : calculateInventoryLoad(
+          inventory,
+          attributes.strength,
+          attributes.constitution,
+        );
 
     const actualHp = Math.min(safeHpCurrent, maxHp);
     const hpPorc = maxHp === 0 ? 0 : (actualHp / maxHp) * 100;
@@ -102,14 +109,16 @@ export function useCharacterStats() {
 
     let sustenanceState: SustenanceState = "FULL";
     const sustanceStages = buildSustenanceStages(maxSustenance);
-    if (safeSustenance <= sustanceStages[0] - 1) sustenanceState = "STARVING";
-    else if (safeSustenance <= sustanceStages[0] - 1 + sustanceStages[1])
-      sustenanceState = "HUNGRY";
-    else if (
-      safeSustenance <=
-      sustanceStages[0] - 1 + sustanceStages[1] + sustanceStages[2]
-    )
-      sustenanceState = "SATIATED";
+    if (!sandboxMode) {
+      if (safeSustenance <= sustanceStages[0] - 1) sustenanceState = "STARVING";
+      else if (safeSustenance <= sustanceStages[0] - 1 + sustanceStages[1])
+        sustenanceState = "HUNGRY";
+      else if (
+        safeSustenance <=
+        sustanceStages[0] - 1 + sustanceStages[1] + sustanceStages[2]
+      )
+        sustenanceState = "SATIATED";
+    }
 
     let insanityState: InsanityState = "STABLE";
     const insStages = buildInsanityStages(maxInsanity, insanity.volatile);
@@ -138,19 +147,27 @@ export function useCharacterStats() {
     const actualEnergy = Math.min(rawEnergyCurrent, energyCap);
 
     let energyState: EnergyState = "RESTED";
-    if (actualEnergy <= slotsPerStage) energyState = "EXHAUSTED";
-    else if (actualEnergy <= slotsPerStage * 2) energyState = "TIRED";
+    if (!sandboxMode) {
+      if (actualEnergy <= slotsPerStage) energyState = "EXHAUSTED";
+      else if (actualEnergy <= slotsPerStage * 2) energyState = "TIRED";
+    }
 
     const systemEffects: CustomEffect[] = [];
-    let effectIdCounter = 9000;
 
     const addSysEffect = (
       target: CustomEffectTarget,
       val: number,
       desc: string,
     ) => {
+      let hash = 0;
+      const str = desc + target;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+
       systemEffects.push({
-        id: effectIdCounter++,
+        id: 9000000 + Math.abs(hash),
         link: "SYS",
         mode: "FIXED",
         target,
@@ -177,37 +194,41 @@ export function useCharacterStats() {
       addSysEffect("SKILL_SOCIAL", -2, desc);
     }
 
-    if (insanityState === "UNSTABLE") {
-      const desc = "[MENTE INSTÁVEL]";
-      addSysEffect("instinct", -1, desc);
-      addSysEffect("intelligence", -1, desc);
-      addSysEffect("perception", -2, desc);
-    } else if (insanityState === "INSANE") {
-      const descObj = "[MENTE INSANA]";
-      addSysEffect("instinct", -2, descObj);
-      addSysEffect("intelligence", -2, descObj);
-      addSysEffect("wisdom", -2, descObj);
-      const descGeral = "[MENTE COLAPSANDO]";
-      addSysEffect("ATT_PHYSICAL", -2, descGeral);
-      addSysEffect("SKILL_PHYSICAL", -2, descGeral);
-      addSysEffect("ATT_MENTAL", -2, descGeral);
-      addSysEffect("SKILL_MENTAL", -2, descGeral);
-      addSysEffect("ATT_SOCIAL", -2, descGeral);
-      addSysEffect("SKILL_SOCIAL", -2, descGeral);
-    }
+    const isNonHuman = useCharacterStore.getState().npcType === "NON_HUMAN";
 
-    if (sustenanceState === "FULL") {
-      const desc = "[METABOLISMO PERFEITO]";
-      addSysEffect("ATT_PHYSICAL", 1, desc);
-      addSysEffect("ATT_MENTAL", 1, desc);
-    } else if (sustenanceState === "HUNGRY") {
-      const desc = "[DEFICIÊNCIA CALÓRICA]";
-      addSysEffect("ATT_PHYSICAL", -1, desc);
-      addSysEffect("ATT_MENTAL", -1, desc);
-    } else if (sustenanceState === "STARVING") {
-      const desc = "[INANIÇÃO]";
-      addSysEffect("ATT_PHYSICAL", -2, desc);
-      addSysEffect("ATT_MENTAL", -2, desc);
+    if (!isNonHuman) {
+      if (insanityState === "UNSTABLE") {
+        const desc = "[MENTE INSTÁVEL]";
+        addSysEffect("instinct", -1, desc);
+        addSysEffect("intelligence", -1, desc);
+        addSysEffect("perception", -2, desc);
+      } else if (insanityState === "INSANE") {
+        const descObj = "[MENTE INSANA]";
+        addSysEffect("instinct", -2, descObj);
+        addSysEffect("intelligence", -2, descObj);
+        addSysEffect("wisdom", -2, descObj);
+        const descGeral = "[MENTE COLAPSANDO]";
+        addSysEffect("ATT_PHYSICAL", -2, descGeral);
+        addSysEffect("SKILL_PHYSICAL", -2, descGeral);
+        addSysEffect("ATT_MENTAL", -2, descGeral);
+        addSysEffect("SKILL_MENTAL", -2, descGeral);
+        addSysEffect("ATT_SOCIAL", -2, descGeral);
+        addSysEffect("SKILL_SOCIAL", -2, descGeral);
+      }
+
+      if (sustenanceState === "FULL") {
+        const desc = "[METABOLISMO PERFEITO]";
+        addSysEffect("ATT_PHYSICAL", 1, desc);
+        addSysEffect("ATT_MENTAL", 1, desc);
+      } else if (sustenanceState === "HUNGRY") {
+        const desc = "[DEFICIÊNCIA CALÓRICA]";
+        addSysEffect("ATT_PHYSICAL", -1, desc);
+        addSysEffect("ATT_MENTAL", -1, desc);
+      } else if (sustenanceState === "STARVING") {
+        const desc = "[INANIÇÃO]";
+        addSysEffect("ATT_PHYSICAL", -2, desc);
+        addSysEffect("ATT_MENTAL", -2, desc);
+      }
     }
 
     if (energyState === "TIRED") {
@@ -270,5 +291,5 @@ export function useCharacterStats() {
       availableSustenanceToSpend,
       systemEffects,
     };
-  }, [attributes, inventory, hp, sustenance, energy, insanity, customEffects]);
+  }, [attributes, inventory, hp, sustenance, energy, insanity, customEffects, sandboxMode]);
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNetworkStore } from "../store/useNetworkStore";
+import { useShallow } from "zustand/react/shallow";
 import { Modal } from "./Overlays";
 import { Button } from "./Form";
 import { useCharacterStore } from "../../features/character/store";
@@ -22,11 +23,14 @@ export function TargetSelectionModal({
   const [selected, setSelected] = useState<string[]>([]);
 
   const onlinePlayers = useNetworkStore((state) => state.onlinePlayers);
-  const telemetryData = useNetworkStore((state) => state.telemetryData);
+  const telemetryKeys = useNetworkStore(useShallow((state) => Object.keys(state.telemetryData)));
+  const globalNpcs = useNetworkStore((state) => state.globalNpcs || []);
+  const localNpcNames = useNetworkStore((state) => state.localNpcNames || []);
   const name = useCharacterStore((state) => state.name);
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
 
   const allPossibleTargets = Array.from(
-    new Set([...onlinePlayers, ...Object.keys(telemetryData)]),
+    new Set([...onlinePlayers, ...telemetryKeys, ...globalNpcs.map((n) => n.name), ...localNpcNames]),
   );
 
   const filteredPlayers = allPossibleTargets.filter(
@@ -40,11 +44,16 @@ export function TargetSelectionModal({
       setSelected(selected.includes("ALL") ? [] : ["ALL"]);
       return;
     }
-    setSelected((prev) =>
-      prev.includes(target)
-        ? prev.filter((t) => t !== target)
-        : [...prev.filter((t) => t !== "ALL"), target],
-    );
+    setSelected((prev) => {
+      if (prev.includes(target)) {
+        return prev.filter((t) => t !== target);
+      } else {
+        if (!isMasterMode) {
+          return [target];
+        }
+        return [...prev.filter((t) => t !== "ALL"), target];
+      }
+    });
   };
 
   const handleConfirm = () => {
@@ -66,12 +75,20 @@ export function TargetSelectionModal({
             [ MIM MESMO ]
           </Button>
           <Button
-            variant={selected.includes("ENEMY") ? "success" : "primary"}
-            onClick={() => toggleSelect("ENEMY")}
+            variant={selected.includes("MESTRE") ? "success" : "danger"}
+            onClick={() => toggleSelect("MESTRE")}
+            className="border-dashed"
           >
-            [ INIMIGO (M.D) ]
+            [ MESTRE ]
           </Button>
-          {allowAll && (
+          <Button
+            variant={selected.includes("ENEMY") ? "success" : "danger"}
+            onClick={() => toggleSelect("ENEMY")}
+            className="border-dashed"
+          >
+            [ INIMIGO GENÉRICO ]
+          </Button>
+          {allowAll && isMasterMode && (
             <Button
               variant={selected.includes("ALL") ? "success" : "primary"}
               onClick={() => toggleSelect("ALL")}
@@ -80,15 +97,27 @@ export function TargetSelectionModal({
             </Button>
           )}
           <div className="col-span-full border-t border-[var(--theme-border)] my-2"></div>
-          {filteredPlayers.map((player) => (
-            <Button
-              key={player}
-              variant={selected.includes(player) ? "warning" : "primary"}
-              onClick={() => toggleSelect(player)}
-            >
-              UNIDADE: {player}
-            </Button>
-          ))}
+          {filteredPlayers.map((player) => {
+            const isEnemy = globalNpcs.find((n) => n.name === player)?.isEnemy;
+            const isSelected = selected.includes(player);
+            let btnVariant: "primary" | "warning" | "danger" | "success" = "primary";
+            
+            if (isSelected) {
+              btnVariant = "warning";
+            } else if (isEnemy) {
+              btnVariant = "danger";
+            }
+            
+            return (
+              <Button
+                key={player}
+                variant={btnVariant}
+                onClick={() => toggleSelect(player)}
+              >
+                UNIDADE: {player}
+              </Button>
+            );
+          })}
         </div>
         <div className="flex justify-end gap-2 mt-2">
           <Button variant="danger" onClick={onClose} className="flex-1">

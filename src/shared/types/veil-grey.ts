@@ -155,6 +155,12 @@ export interface BaseItem {
   type: ItemType;
   imageUrl?: string;
   isSoulBound?: boolean;
+  price: number;
+  wallet?: {
+    type: 'CC' | 'FCC';
+    max: number | null;
+    value: number;
+  };
 }
 
 export interface MaterialItem extends BaseItem {

@@ -4,7 +4,7 @@ import { Modal } from "../../../shared/ui/Overlays";
 import { Button, Input } from "../../../shared/ui/Form";
 import { useCharacterStore } from "../../character/store";
 import { RetroToast } from "../../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../../shared/utils/discordWebhook";
 
 interface DamageItemModalProps {
   item: Item | null;
@@ -35,11 +35,14 @@ export function DamageItemModal({
 
     const res = damageItem(item.id as string, damageAmount);
     if (res.success) {
-      dispatchDiscordLog(
-        "INVENTORY",
-        name,
-        ` **ALERTA DE INTEGRIDADE:** O equipamento **${item.name}** sofreu dano estrutural direto.\n**PERDA:** -${damageAmount} de Integridade.`,
-      );
+      const embed: DiscordEmbed = {
+        title: "[!] DANO ESTRUTURAL [!]",
+        color: 15158332,
+        description: `**UNIDADE OPERACIONAL:** ${name}\n**EQUIPAMENTO:** ${item.name}\n**DANO:** -${damageAmount} Integridade`,
+        footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("INVENTORY", name, "", [embed]);
       RetroToast.error(`DANO APLICADO: -${damageAmount} INTEGRIDADE.`);
       onClose();
     } else {

@@ -11,6 +11,7 @@ import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
 import { useUIStore } from "../shared/store/useUIStore";
 import { useNetworkStore } from "../shared/store/useNetworkStore";
 import { MasterHud } from "../features/master/MasterHud";
+import { useMasterStore } from "../features/master/masterStore";
 
 const inDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -81,6 +82,7 @@ const screenVariants: Variants = {
 export default function App() {
   const powerState = useSystemStore((state) => state.powerState);
   const setPowerState = useSystemStore((state) => state.setPowerState);
+  const enableCrt = useSystemStore((state) => state.enableCrt);
   const theme = useSystemStore((state) => state.theme);
   const isSessionActive = useSystemStore((state) => state.isSessionActive);
   const setSessionActive = useSystemStore((state) => state.setSessionActive);
@@ -145,6 +147,20 @@ export default function App() {
     return () => window.removeEventListener("contextmenu", disableContextMenu);
   }, []);
 
+  // Restore Master backup if the page is reloaded during a possession
+  useEffect(() => {
+    const masterStore = useMasterStore.getState();
+    if (masterStore.masterBackup) {
+      useCharacterStore.getState().importCharacterData({
+        ...masterStore.masterBackup,
+        isPossessing: null,
+        isMasterMode: true,
+      });
+      masterStore.setMasterBackup(null);
+      masterStore.setActiveQuickActionNpcId(null);
+    }
+  }, []);
+
   const hasValidSave = !!name && creationStatus !== "NOT_STARTED";
 
   const renderActiveScreen = () => {
@@ -173,7 +189,9 @@ export default function App() {
       id="app-root"
       className="h-screen w-screen overflow-hidden flex items-center justify-center relative bg-black text-[var(--theme-accent)]"
     >
-      <div className="crt-overlay flicker-effect fixed inset-0 z-[9999] pointer-events-none"></div>
+      {enableCrt && (
+        <div className="crt-overlay flicker-effect fixed inset-0 z-[9999] pointer-events-none"></div>
+      )}
 
       <AnimatePresence mode="wait">
         {powerState === "STANDBY" && (

@@ -12,9 +12,10 @@ interface Step1MethodProps {
   onNext: () => void;
   onClose: () => void;
   onError: (msg: string) => void;
+  onSaveOverride?: (item: Item, nestedItems?: Item[]) => void;
 }
 
-export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
+export function Step1Method({ onNext, onClose, onError, onSaveOverride }: Step1MethodProps) {
   const [hash, setHash] = useState("");
   const addInventoryItem = useCharacterStore((state) => state.addInventoryItem);
 
@@ -45,6 +46,13 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
         isCarried: true,
         parentId: null,
       };
+
+      if (onSaveOverride) {
+        onSaveOverride(newItem);
+        RetroToast.success(`[${newItem.name}] INSERIDO NO ARSENAL GLOBAL VIA HASH.`);
+        onClose();
+        return;
+      }
 
       addInventoryItem(newItem);
       RetroToast.success(`[${newItem.name}] SINTETIZADO COM SUCESSO.`);

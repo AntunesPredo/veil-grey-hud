@@ -22,7 +22,7 @@ import { ConfirmModal } from "../../shared/ui/Overlays";
 import { useCharacterStore } from "../character/store";
 import { ItemModal } from "../item-modal/ItemModal";
 import { CustomEffectModal } from "../stats/CustomEffectModal";
-import { useMasterStore } from "./masterStore";
+import { useMasterStore, type MasterItem, type MasterEffect } from "./masterStore";
 import { ArsenalFolder } from "./components/ArsenalFolder";
 import { ArsenalRow } from "./components/ArsenalRow";
 import { ArsenalSearchModal } from "./components/ArsenalSearchModal";
@@ -57,6 +57,8 @@ export function MasterArsenalTab() {
   const searchModal = useDisclosure();
   const preSendModal = useDisclosure();
   const [isItemModalOpen, setItemModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<MasterItem | null>(null);
+  const [effectToEdit, setEffectToEdit] = useState<MasterEffect | null>(null);
   const [isTargetModalOpen, setTargetModalOpen] = useState(false);
 
   const deleteItemModal = useDisclosure();
@@ -204,36 +206,49 @@ export function MasterArsenalTab() {
     RetroToast.success(`${count} MATÉRIAS SINCRONIZADAS DO INVENTÁRIO.`);
   };
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     const data = {
       folders: store.folders,
       globalItems: store.globalItems,
       globalEffects: store.globalEffects,
     };
     const payload = { vg_version: APP_VERSION, data };
-    const encrypted = CryptoJS.AES.encrypt(
-      JSON.stringify(payload),
-      SECRET_KEY,
-    ).toString();
-    const dataStr =
-      "data:text/plain;charset=utf-8," + encodeURIComponent(encrypted);
-    const a = document.createElement("a");
-    a.href = dataStr;
-    a.download = `VG_MASTER_ARSENAL.json`;
-    a.click();
+
+    try {
+      const CryptoJS = (await import("crypto-js")).default;
+      const encrypted = CryptoJS.AES.encrypt(
+        JSON.stringify(payload),
+        SECRET_KEY,
+      ).toString();
+
+      const dataStr =
+        "data:text/plain;charset=utf-8," + encodeURIComponent(encrypted);
+      const a = document.createElement("a");
+      a.href = dataStr;
+      a.download = `VG_MASTER_ARSENAL.json`;
+      a.click();
+      RetroToast.success("ARSENAL EXPORTADO COM SUCESSO.");
+    } catch (error) {
+      RetroToast.error(
+        "FALHA NA CRIPTOGRAFIA DA EXPORTAÇÃO." + (error as Error).message,
+      );
+    }
   };
 
   const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const rawContent = event.target?.result as string;
+        const CryptoJS = (await import("crypto-js")).default;
         const bytes = CryptoJS.AES.decrypt(rawContent, SECRET_KEY);
         const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+
         if (!decryptedStr) throw new Error("Assinatura inválida.");
         const parsed = JSON.parse(decryptedStr);
+
         store.importArsenal(parsed.data);
         RetroToast.success("ARSENAL IMPORTADO COM SUCESSO.");
       } catch (error) {
@@ -287,6 +302,10 @@ export function MasterArsenalTab() {
             data={i}
             isSelected={!!selectedPayloads.find((p) => p.id === i.id)}
             onToggle={() => toggleSelection(i.id, "ITEM", i)}
+            onView={() => {
+              setItemToEdit(i as MasterItem);
+              setItemModalOpen(true);
+            }}
             onDelete={() => {
               setItemToDelete(i);
               deleteItemModal.onOpen();
@@ -301,6 +320,10 @@ export function MasterArsenalTab() {
             data={e}
             isSelected={!!selectedPayloads.find((p) => p.id === e.id)}
             onToggle={() => toggleSelection(e.id, "EFFECT", e)}
+            onView={() => {
+              setEffectToEdit(e as MasterEffect);
+              effectModal.onOpen();
+            }}
             onDelete={() => {
               setEffectToDelete(e);
               deleteEffectModal.onOpen();
@@ -399,7 +422,10 @@ export function MasterArsenalTab() {
                   size="sm"
                   variant="primary"
                   className="px-2 py-0 text-[8px]"
-                  onClick={() => setItemModalOpen(true)}
+                  onClick={() => {
+                    setItemToEdit(null);
+                    setItemModalOpen(true);
+                  }}
                 >
                   + SINTETIZAR
                 </Button>
@@ -465,7 +491,10 @@ export function MasterArsenalTab() {
                 size="sm"
                 variant="danger"
                 className="px-2 py-0 text-[8px]"
-                onClick={effectModal.onOpen}
+                onClick={() => {
+                  setEffectToEdit(null);
+                  effectModal.onOpen();
+                }}
               >
                 + SINTETIZAR
               </Button>
@@ -542,9 +571,14 @@ export function MasterArsenalTab() {
       <ItemModal
         isOpen={isItemModalOpen}
         onClose={() => setItemModalOpen(false)}
-        itemToEdit={null}
+        itemToEdit={itemToEdit}
         onSaveOverride={(newItem, nestedItems) => {
-          store.addGlobalItem({ ...newItem, folderId: null });
+          if (itemToEdit) {
+            store.removeGlobalItem(itemToEdit.id);
+            store.addGlobalItem({ ...newItem, folderId: itemToEdit.folderId });
+          } else {
+            store.addGlobalItem({ ...newItem, folderId: null });
+          }
           if (nestedItems)
             nestedItems.forEach((n) =>
               store.addGlobalItem({ ...n, folderId: null }),
@@ -554,9 +588,15 @@ export function MasterArsenalTab() {
       <CustomEffectModal
         isOpen={effectModal.isOpen}
         onClose={effectModal.onClose}
-        onSave={(effect: CustomEffect) =>
-          store.addGlobalEffect({ ...effect, folderId: null })
-        }
+        initialEffect={effectToEdit}
+        onSave={(effect: CustomEffect) => {
+          if (effectToEdit) {
+            store.removeGlobalEffect(effectToEdit.id);
+            store.addGlobalEffect({ ...effect, folderId: effectToEdit.folderId });
+          } else {
+            store.addGlobalEffect({ ...effect, folderId: null });
+          }
+        }}
       />
       <ArsenalSearchModal
         isOpen={searchModal.isOpen}

@@ -3,7 +3,7 @@ import { Modal } from "../../../shared/ui/Overlays";
 import { Button } from "../../../shared/ui/Form";
 import { useCharacterStore } from "../../character/store";
 import { RetroToast } from "../../../shared/ui/RetroToast";
-import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
+import { dispatchDiscordLog, type DiscordEmbed } from "../../../shared/utils/discordWebhook";
 
 interface RepairActiveModalProps {
   item: Item | null;
@@ -24,11 +24,14 @@ export function RepairActiveModal({
   const handleRepair = (multiplier: number, label: string) => {
     const res = repairActiveItem(item.id, multiplier);
     if (res.recovered > 0) {
-      dispatchDiscordLog(
-        "INVENTORY",
-        name,
-        ` **MANUTENÇÃO:** [${name}] realizou manutenção em **${item.name}**.\n**${label}** \n**RECUPERADO:** +${res.recovered} Integridade.`,
-      );
+      const embed: DiscordEmbed = {
+        title: "[+] MANUTENÇÃO DE EQUIPAMENTO [+]",
+        color: 3066993,
+        description: `**UNIDADE OPERACIONAL:** ${name}\n**ALVO:** ${item.name}\n**TIPO:** ${label}\n**RECUPERADO:** +${res.recovered} Integridade`,
+        footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+        timestamp: new Date().toISOString(),
+      };
+      dispatchDiscordLog("INVENTORY", name, "", [embed]);
       RetroToast.success(`CONSERTO: +${res.recovered} INTEGRIDADE.`);
     } else {
       RetroToast.warning("O ITEM JÁ ESTÁ EM PERFEITO ESTADO.");
