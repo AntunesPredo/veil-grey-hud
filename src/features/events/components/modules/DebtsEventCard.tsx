@@ -39,7 +39,7 @@ export function DebtsEventCard({
         <div className="flex items-center gap-2 mb-2">
           <FiAlertTriangle className="text-red-500 text-2xl" />
           <h4 className="font-bold text-white text-lg">
-            {isJoint ? "DÃ­vida Conjunta" : "DÃ­vida Individual"}
+            {isJoint ? "Dívida Conjunta" : "Dívida Individual"}
           </h4>
         </div>
 
