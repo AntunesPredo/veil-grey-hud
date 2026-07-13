@@ -51,6 +51,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
             </button>
           ))}
         </div>
+        <span className="text-[10px] text-slate-500 font-mono">Tipo de moeda que será cobrada dos jogadores neste mercado.</span>
       </div>
 
       <div className="flex flex-col gap-2 mt-4">
@@ -124,6 +125,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
                   />
                 </div>
               </div>
+              <span className="text-[9px] text-slate-500 font-mono mt-1">Deixe em branco ou 0 para ilimitado. O estoque é compartilhado globalmente, o limite por jogador é individual.</span>
             </div>
           ))
         )}
@@ -131,6 +133,3 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
     </div>
   );
 }
-
-
-

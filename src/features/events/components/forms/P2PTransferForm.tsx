@@ -1,6 +1,7 @@
-import { Input } from "../../../../shared/ui/Form";
+import { useState } from "react";
+import { Input, Button } from "../../../../shared/ui/Form";
 import type { P2PTransferEvent } from "../../../../shared/types/events";
-import { useNetworkStore } from "../../../../shared/store/useNetworkStore";
+import { TargetSelectionModal } from "../../../../shared/ui/TargetSelectionModal";
 
 interface P2PTransferFormProps {
   payload: Partial<P2PTransferEvent["payload"]>;
@@ -8,24 +9,34 @@ interface P2PTransferFormProps {
 }
 
 export function P2PTransferForm({ payload, onChange }: P2PTransferFormProps) {
-  const telemetryData = useNetworkStore((state) => state.telemetryData);
-  const players = Object.keys(telemetryData);
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+
+  const handleSelectHost = (targets: string[]) => {
+    if (targets.length > 0) {
+      onChange({ ...payload, hostId: targets[0] });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-bold text-slate-400">Hospedeiro (Quem recebe a transferência base)</label>
-        <select
-          className="bg-[var(--theme-background)] border-2 border-[var(--theme-accent)]/50 text-[var(--theme-accent)] px-3 py-2 outline-none font-mono"
-          value={payload.hostId || "MASTER"}
-          onChange={(e) => onChange({ ...payload, hostId: e.target.value })}
-        >
-          <option value="MASTER">Mestre (NPC/Mundo)</option>
-          {players.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
+        <label className="text-xs font-bold text-slate-400">HOST (Hospedeiro da Transferência)</label>
+        <Button variant="primary" type="button" onClick={() => setIsTargetModalOpen(true)} className="font-mono">
+          {payload.hostId ? `HOST ATUAL: ${payload.hostId}` : "SELECIONAR HOST"}
+        </Button>
+        <span className="text-[10px] text-slate-500 font-mono">O Host é o jogador ou NPC que receberá o montante final.</span>
       </div>
+      
+      {isTargetModalOpen && (
+        <TargetSelectionModal
+          isOpen={isTargetModalOpen}
+          onClose={() => setIsTargetModalOpen(false)}
+          onSelect={handleSelectHost}
+          title="SELECIONAR HOST ÚNICO"
+          allowAll={false}
+          singleSelect={true}
+        />
+      )}
 
       <div className="flex flex-col gap-1">
         <label className="text-xs font-bold text-slate-400">Moeda</label>
@@ -45,18 +56,19 @@ export function P2PTransferForm({ payload, onChange }: P2PTransferFormProps) {
             </button>
           ))}
         </div>
+        <span className="text-[10px] text-slate-500 font-mono">Tipo de moeda usada na transferência cooperativa.</span>
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-bold text-slate-400">Pool Inicial (Fundos providos pelo Host)</label>
+        <label className="text-xs font-bold text-slate-400">Pool Inicial</label>
         <Input
           type="number"
-          value={payload.pool || ""}
-          onChange={(e) => onChange({ ...payload, pool: parseInt(e.target.value) || 0 })}
+          value={payload.pool ?? ""}
+          onChange={(e) => onChange({ ...payload, pool: parseInt(e.target.value) || 0, initialPool: parseInt(e.target.value) || 0 })}
           placeholder="Ex: 0"
         />
+        <span className="text-[10px] text-slate-500 font-mono">Valor financeiro já existente e provido pelo Host antes das contribuições.</span>
       </div>
     </div>
   );
 }
-

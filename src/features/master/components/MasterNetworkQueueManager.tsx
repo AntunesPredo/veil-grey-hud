@@ -107,6 +107,12 @@ export function MasterNetworkQueueManager() {
       return;
     }
 
+    if (current.type === "EVENT_SYNC") {
+       removeQueueItem(current.id);
+       if (processingIdRef.current === current.id) processingIdRef.current = null;
+       return;
+    }
+
     if (current.type === "SAVE_DELIVERY") {
         processingIdRef.current = current.id;
         const dataUri =
@@ -178,70 +184,194 @@ export function MasterNetworkQueueManager() {
           useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
         }
         
-        if (data.action === "CONTRIBUTE_P2P" && targetEvent.type === "P2P_TRANSFER") {
-          const charId = data.characterId;
-          const amt = data.amount;
-          const walletId = data.walletId;
-          
-          const currentParticipant = targetEvent.payload.participants[charId];
-          const newContribution = (currentParticipant?.contribution || 0) + amt;
-          
-          const newEvent = {
-            ...targetEvent,
-            payload: {
-              ...targetEvent.payload,
-              pool: targetEvent.payload.pool + amt,
-              participants: {
-                ...targetEvent.payload.participants,
-                [charId]: {
-                  walletId: walletId,
-                  availableBalance: currentParticipant?.availableBalance || 0, // Ignored, as it changes locally
-                  contribution: newContribution,
-                  isConfirmed: true
-                }
-              }
-            }
-          };
-          
-          const msg = `Contribuiu com ${amt} ${targetEvent.payload.currency} usando ${data.walletName}.`;
-          mEventsStore.addLog({
-            eventId: newEvent.id,
-            characterId: charId,
-            message: msg
-          });
-          dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
-            title: newEvent.title,
-            description: msg,
-            color: 10181046,
-            author: { name: charId }
-          }]);
-          
-          RetroToast.success(`[P2P] ${charId} contribuiu com ${amt}!`);
-          
-          // Re-broadcast updated event
-          useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
-        }
+        if (targetEvent.type === "P2P_TRANSFER") {
+           let newEvent = { ...targetEvent };
+           let skipSync = false;
 
-        if (data.action === "CLOSE_P2P" && targetEvent.type === "P2P_TRANSFER") {
-          const charId = data.characterId;
-          
-          mEventsStore.removeEvent(targetEvent.id);
-          const msg = `Evento P2P encerrado. O fundo de ${targetEvent.payload.pool} ${targetEvent.payload.currency} foi sacado.`;
-          mEventsStore.addLog({
-            eventId: targetEvent.id,
-            characterId: charId,
-            message: msg
-          });
-          dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
-            title: targetEvent.title,
-            description: msg,
-            color: 10181046,
-            author: { name: charId }
-          }]);
-          
-          RetroToast.warning(`[P2P] ${targetEvent.title} foi ENCERRADO! Fundo sacado.`);
-          
-          useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: targetEvent.id });
+           const resetP2PConfirmations = (payload: any) => {
+              const parts = { ...payload.participants };
+              Object.keys(parts).forEach(k => { parts[k] = { ...parts[k], transferConfirmed: false }; });
+              return { ...payload, hostConfirmed: false, participants: parts };
+           };
+
+           if (data.action === "P2P_HOST_ENTER") {
+              newEvent.payload = { ...newEvent.payload, hostIsPresent: true };
+           }
+           if (data.action === "P2P_HOST_LEAVE") {
+              newEvent.payload = { ...newEvent.payload, hostIsPresent: false };
+           }
+           if (data.action === "P2P_CONFIRM_WALLET") {
+              const charId = data.characterId;
+              const walletId = data.walletId;
+              const balance = data.balance;
+              
+              newEvent.payload = {
+                 ...newEvent.payload,
+                 participants: {
+                    ...newEvent.payload.participants,
+                    [charId]: {
+                       walletId,
+                       initialBalance: balance,
+                       currentBalance: balance,
+                       approved: true,
+                       transferConfirmed: false
+                    }
+                 }
+              };
+           }
+           if (data.action === "P2P_CANCEL_WALLET") {
+              const charId = data.characterId;
+              const newParticipants = { ...newEvent.payload.participants };
+              if (newParticipants[charId]) {
+                 delete newParticipants[charId];
+                 newEvent.payload = resetP2PConfirmations({
+                    ...newEvent.payload,
+                    participants: newParticipants
+                 });
+              }
+           }
+           if (data.action === "P2P_TOGGLE_CONFIRM") {
+              const charId = data.characterId;
+              if (charId === newEvent.payload.hostId) {
+                 newEvent.payload = { ...newEvent.payload, hostConfirmed: !newEvent.payload.hostConfirmed };
+              } else if (newEvent.payload.participants[charId]) {
+                 newEvent.payload = {
+                    ...newEvent.payload,
+                    participants: {
+                       ...newEvent.payload.participants,
+                       [charId]: {
+                          ...newEvent.payload.participants[charId],
+                          transferConfirmed: !newEvent.payload.participants[charId].transferConfirmed
+                       }
+                    }
+                 };
+              }
+           }
+           if (data.action === "P2P_DIVIDE_POOL") {
+              const participantIds = Object.keys(newEvent.payload.participants);
+              if (participantIds.length > 0) {
+                 const splitAmount = Math.floor(newEvent.payload.pool / participantIds.length);
+                 const remainder = newEvent.payload.pool % participantIds.length;
+                 const newParticipants = { ...newEvent.payload.participants };
+                 const newTransactions = [...(newEvent.payload.transactions || [])];
+                 
+                 participantIds.forEach((pid) => {
+                    newParticipants[pid].currentBalance += splitAmount;
+                    newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: splitAmount, timestamp: Date.now() });
+                 });
+                 
+                 newEvent.payload = resetP2PConfirmations({
+                     ...newEvent.payload,
+                     pool: remainder,
+                     participants: newParticipants,
+                     transactions: newTransactions
+                  });
+              }
+           }
+           if (data.action === "P2P_TRANSFER_TO_POOL") {
+              const newParticipants = { ...newEvent.payload.participants };
+              const newTransactions = [...(newEvent.payload.transactions || [])];
+              let addedToPool = 0;
+              Object.keys(newParticipants).forEach(pid => {
+                 const p = newParticipants[pid];
+                 const minBalance = Math.min(0, p.initialBalance);
+                 const maxPull = p.currentBalance - minBalance;
+                 if (maxPull > 0) {
+                    addedToPool += maxPull;
+                    p.currentBalance -= maxPull;
+                    newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: maxPull, timestamp: Date.now() });
+                 }
+              });
+              newEvent.payload = resetP2PConfirmations({
+                  ...newEvent.payload,
+                  pool: newEvent.payload.pool + addedToPool,
+                  participants: newParticipants,
+                  transactions: newTransactions
+               });
+           }
+           if (data.action === "P2P_PULL_FROM_PLAYER") {
+              const pid = data.participantId;
+              const newParticipants = { ...newEvent.payload.participants };
+              const newTransactions = [...(newEvent.payload.transactions || [])];
+              if (newParticipants[pid]) {
+                 const p = newParticipants[pid];
+                 const minBalance = Math.min(0, p.initialBalance);
+                 const maxPull = p.currentBalance - minBalance;
+                 
+                 if (maxPull > 0) {
+                    const pullAmount = data.amount !== undefined ? Math.min(data.amount, maxPull) : maxPull;
+                    if (pullAmount > 0) {
+                       p.currentBalance -= pullAmount;
+                       newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: pullAmount, timestamp: Date.now() });
+
+                       newEvent.payload = resetP2PConfirmations({
+                           ...newEvent.payload,
+                           pool: newEvent.payload.pool + pullAmount,
+                           participants: newParticipants,
+                           transactions: newTransactions
+                        });
+                    }
+                 }
+              }
+           }
+           if (data.action === "P2P_TRANSFER_TO_PLAYER") {
+              const pid = data.participantId;
+              const amount = data.amount;
+              const newParticipants = { ...newEvent.payload.participants };
+              const newTransactions = [...(newEvent.payload.transactions || [])];
+              
+              if (newEvent.payload.pool >= amount && newParticipants[pid]) {
+                 newParticipants[pid].currentBalance += amount;
+                 newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: amount, timestamp: Date.now() });
+                 
+                 newEvent.payload = resetP2PConfirmations({
+                     ...newEvent.payload,
+                     pool: newEvent.payload.pool - amount,
+                     participants: newParticipants,
+                     transactions: newTransactions
+                  });
+              }
+           }
+           if (data.action === "CLOSE_P2P") {
+              const charId = data.characterId;
+              const finalParticipants = newEvent.payload.participants;
+              
+              Object.keys(finalParticipants).forEach(pid => {
+                 const pData = finalParticipants[pid];
+                 const delta = pData.currentBalance - pData.initialBalance;
+                 
+                 useNetworkStore.getState().sendPayload(pid, "P2P_FINAL_SETTLEMENT", {
+                     walletId: pData.walletId,
+                     delta: delta,
+                     finalBalance: pData.currentBalance,
+                     currency: newEvent.payload.currency
+                 });
+              });
+              
+              const activeName = useCharacterStore.getState().name;
+              if (newEvent.payload.pool > 0 && activeName === "MASTER") {
+                 RetroToast.success(`P2P FINALIZADO. Fundo de ${newEvent.payload.pool} ${newEvent.payload.currency} dissipado pelo sistema.`);
+              } else if (newEvent.payload.pool > 0 && activeName !== "MASTER") {
+                 useNetworkStore.getState().sendPayload(charId, "P2P_FINAL_SETTLEMENT", {
+                     walletId: "NEW_WALLET",
+                     delta: newEvent.payload.pool,
+                     finalBalance: newEvent.payload.pool,
+                     currency: newEvent.payload.currency
+                 });
+                 RetroToast.success(`P2P FINALIZADO. O host resgatou o resto da pool.`);
+              }
+
+              newEvent.status = "PENDING";
+              newEvent.payload = resetP2PConfirmations({
+                 ...newEvent.payload,
+                 initialPool: newEvent.payload.pool
+              });
+           }
+
+           if (!skipSync) {
+              mEventsStore.updateEvent(newEvent.id, newEvent);
+              useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+           }
         }
 
         if (data.action === "ACCEPT_JOB" && targetEvent.type === "JOB") {

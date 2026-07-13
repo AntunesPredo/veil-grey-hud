@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createClient, RealtimeChannel } from "@supabase/supabase-js";
 import { useCharacterStore } from "../../features/character/store";
-import { RetroToast } from "../ui/RetroToast";
+import { useMasterStore } from "../../features/master/masterStore";
+
 import type {
   Attribute,
   CreationStatus,
@@ -146,7 +147,7 @@ export const useNetworkStore = create<NetworkState>()(
 
       setLocalNpcNames: (names) => set({ localNpcNames: names }),
       setGlobalNpcs: (npcs) => set({ globalNpcs: npcs }),
-      
+
       syncNpcs: (npcs) => {
         const { telemetryChannel } = get();
         if (telemetryChannel) {
@@ -175,8 +176,8 @@ export const useNetworkStore = create<NetworkState>()(
             set({ onlinePlayers: Object.keys(channel.presenceState()) });
           })
           .on("broadcast", { event: "system-inject" }, ({ payload }) => {
-            const { name, isMasterMode, isPossessing } =
-              useCharacterStore.getState();
+            const name = useCharacterStore.getState().name;
+            const isMasterMode = useCharacterStore.getState().isMasterMode;
             const isLocalNpc = get().localNpcNames.includes(payload.target);
 
             // Authority Validation for Master commands
@@ -187,11 +188,12 @@ export const useNetworkStore = create<NetworkState>()(
             }
 
 
+            const isActualMaster = isMasterMode || !!useMasterStore.getState().masterBackup;
 
             if (
               payload.target === name ||
               payload.target === "ALL" ||
-              (isMasterMode && (payload.target === "MESTRE" || isLocalNpc))
+              (isActualMaster && (payload.target === "MESTRE" || isLocalNpc))
             ) {
               get().pushToQueue({
                 id: crypto.randomUUID(),
@@ -200,9 +202,6 @@ export const useNetworkStore = create<NetworkState>()(
                 targetName: payload.target,
                 data: payload.data,
               });
-              if (payload.target === name || payload.target === isPossessing) {
-                RetroToast.info(`PACOTE ENFILEIRADO: [${payload.type}]`);
-              }
             }
           })
           .subscribe(async (status) => {
@@ -259,7 +258,7 @@ export const useNetworkStore = create<NetworkState>()(
                   targetName: payload.target,
                   data: payload.data,
                 });
-                RetroToast.info("PACOTE DE ATUALIZAÇÃO DO MESTRE RECEBIDO.");
+                // RetroToast.info("PACOTE DE ATUALIZAÇÃO DO MESTRE RECEBIDO.");
               }
               if (payload.command === "FORCE_UPDATE_ITEM") {
                 useCharacterStore
@@ -316,11 +315,11 @@ export const useNetworkStore = create<NetworkState>()(
         if (telemetryChannel) telemetryChannel.unsubscribe();
         set({ channel: null, telemetryChannel: null, onlinePlayers: [] });
       },
-
       sendPayload: (target, type, data) => {
         const senderName = useCharacterStore.getState().name;
         const isMasterMode = useCharacterStore.getState().isMasterMode;
-        
+        const isActualMaster = isMasterMode || !!useMasterStore.getState().masterBackup;
+
         if (target === "SELF") {
           get().pushToQueue({
             id: crypto.randomUUID(),
@@ -329,11 +328,11 @@ export const useNetworkStore = create<NetworkState>()(
             targetName: senderName,
             data,
           });
-          RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
+          // RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
           return;
         }
 
-        if (isMasterMode && get().localNpcNames.includes(target)) {
+        if (isActualMaster && (target === "MESTRE" || get().localNpcNames.includes(target))) {
           get().pushToQueue({
             id: crypto.randomUUID(),
             type,

@@ -146,7 +146,7 @@ export function MasterHud() {
         {activeTab === "TRACKER" && <PlayerTrackerTab />}
         {activeTab === "ARSENAL" && <MasterArsenalTab />}
         {activeTab === "PERSONAS" && <MasterNpcTab />}
-        {activeTab === "EVENTS" && <EventsTab isMaster />}
+        {activeTab === "EVENTS" && <EventsTab isMaster={!activeQuickActionNpcId} />}
       </div>
 
       <HashGeneratorModal

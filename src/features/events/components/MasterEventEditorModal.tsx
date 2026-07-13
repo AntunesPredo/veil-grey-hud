@@ -4,6 +4,8 @@ import { Button, Input } from "../../../shared/ui/Form";
 import type { GameEvent, EventType, EventStatus } from "../../../shared/types/events";
 import { useNetworkStore } from "../../../shared/store/useNetworkStore";
 import { useMasterEventsStore } from "../store/useMasterEventsStore";
+import type { CroppedImage } from "../../../shared/types/veil-grey";
+import { ImageCropperEditor } from "../../../shared/ui/ImageCropperEditor";
 
 import { TestEventForm } from "./forms/TestEventForm";
 import { MarketEventForm } from "./forms/MarketEventForm";
@@ -35,9 +37,11 @@ export function MasterEventEditorModal({
   const [type, setType] = useState<EventType>(eventToEdit?.type || "TEST");
   const [title, setTitle] = useState(eventToEdit?.title || "");
   const [description, setDescription] = useState(eventToEdit?.description || "");
-  const [coverImage, setCoverImage] = useState(eventToEdit?.coverImage || "");
+  const [coverImage, setCoverImage] = useState<CroppedImage | undefined>(eventToEdit?.coverImage);
+  const [isCropping, setIsCropping] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState(eventToEdit?.coverImage?.url || "");
   const [targets, setTargets] = useState<string[]>(eventToEdit?.targets || []);
-  const [status, setStatus] = useState<EventStatus>(eventToEdit?.status || "ACTIVE");
+  const [status, setStatus] = useState<EventStatus>(eventToEdit?.status || "PENDING"); // Defaults to PENDING now
 
   // Specific Payload State
   const [payload, setPayload] = useState<any>(eventToEdit?.payload || {});
@@ -49,14 +53,20 @@ export function MasterEventEditorModal({
       setType(eventToEdit?.type || "TEST");
       setTitle(eventToEdit?.title || "");
       setDescription(eventToEdit?.description || "");
-      setCoverImage(eventToEdit?.coverImage || "");
+      setCoverImage(eventToEdit?.coverImage);
+      setTempImageUrl(eventToEdit?.coverImage?.url || "");
       setTargets(eventToEdit?.targets || []);
-      setStatus(eventToEdit?.status || "ACTIVE");
-      setPayload(eventToEdit?.payload || {});
+      setStatus(eventToEdit?.status || "PENDING");
+      setPayload(eventToEdit?.payload || (eventToEdit?.type === "P2P_TRANSFER" ? { currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] } : {}));
     }
   }, [isOpen, eventToEdit]);
 
   if (!isOpen) return null;
+
+  const handleCropComplete = (cropData: any) => {
+    setCoverImage({ url: tempImageUrl, cropData });
+    setIsCropping(false);
+  };
 
   const handleNext = () => {
     if (!title.trim()) return alert("Título é obrigatório!");
@@ -64,6 +74,18 @@ export function MasterEventEditorModal({
   };
 
   const handleSave = () => {
+    let finalPayload = { ...payload };
+    if (type === "P2P_TRANSFER" && status === "ACTIVE" && (!eventToEdit || eventToEdit.status !== "ACTIVE")) {
+       finalPayload = {
+         ...finalPayload,
+         participants: {},
+         hostIsPresent: false,
+         hostConfirmed: false,
+         isAllConfirmed: false,
+         transactions: []
+       };
+    }
+
     const newEvent: GameEvent = {
       id: eventToEdit?.id || crypto.randomUUID(),
       roomId: "session",
@@ -74,7 +96,7 @@ export function MasterEventEditorModal({
       status,
       createdAt: eventToEdit?.createdAt || Date.now(),
       targets,
-      payload
+      payload: finalPayload
     } as GameEvent;
 
     if (eventToEdit) {
@@ -130,7 +152,11 @@ export function MasterEventEditorModal({
                     disabled={!!eventToEdit}
                     onClick={() => {
                       setType(opt.id as EventType);
-                      setPayload({});
+                      if (opt.id === "P2P_TRANSFER") {
+                         setPayload({ currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
+                      } else {
+                         setPayload({});
+                      }
                     }}
                     className={`p-2 border-2 text-xs font-bold font-mono transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed ${type === opt.id
                       ? "bg-[var(--theme-accent)]/20 border-[var(--theme-accent)] text-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]"
@@ -165,11 +191,26 @@ export function MasterEventEditorModal({
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-slate-400">URL da Imagem de Capa (Opcional)</label>
-              <Input
-                value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="https://..."
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={tempImageUrl}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTempImageUrl(val);
+                    if (!val) setCoverImage(undefined);
+                  }}
+                  placeholder="https://..."
+                />
+                <Button 
+                  type="button" 
+                  variant="primary" 
+                  disabled={!tempImageUrl}
+                  onClick={() => setIsCropping(true)}
+                >
+                  CORTAR
+                </Button>
+              </div>
+              <span className="text-[10px] text-slate-500 font-mono">Insira um link e clique em Cortar para enquadrar.</span>
             </div>
 
             <div className="flex flex-col gap-2 mt-2">
@@ -234,6 +275,18 @@ export function MasterEventEditorModal({
         )}
 
       </div>
+
+      {isCropping && (
+        <ImageCropperEditor
+          url={tempImageUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={() => {
+            setIsCropping(false);
+            if (!coverImage) setTempImageUrl("");
+            else setTempImageUrl(coverImage.url);
+          }}
+        />
+      )}
     </Modal>
   );
 }

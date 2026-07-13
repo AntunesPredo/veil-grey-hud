@@ -1,4 +1,4 @@
-import type { Attribute, CustomEffect, SecondaryAttribute, Skill } from "./veil-grey";
+import type { Attribute, CustomEffect, SecondaryAttribute, Skill, CroppedImage } from "./veil-grey";
 
 export type EventStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
@@ -18,7 +18,7 @@ export interface EventBase {
   type: EventType;
   title: string;
   description: string;
-  coverImage?: string;
+  coverImage?: CroppedImage;
   status: EventStatus;
   createdAt: number;
   targets: string[]; // Character IDs
@@ -91,13 +91,18 @@ export interface P2PTransferEvent extends EventBase {
     currency: CurrencyType;
     hostId: string; // Character ID, NPC ou "MASTER"
     pool: number;
+    initialPool: number;
+    hostIsPresent: boolean;
+    hostConfirmed?: boolean;
+    transactions: { id: string; from: string; to: string; amount: number; timestamp: number }[];
     participants: Record<
       string,
       {
         walletId: string;
-        availableBalance: number;
-        contribution: number;
-        approved: boolean;
+        initialBalance: number;
+        currentBalance: number;
+        approved: boolean; // Confirmed wallet
+        transferConfirmed?: boolean;
       }
     >;
   };

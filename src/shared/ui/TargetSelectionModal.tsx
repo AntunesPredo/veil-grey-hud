@@ -11,6 +11,7 @@ interface TargetSelectionModalProps {
   onSelect: (targets: string[]) => void;
   title?: string;
   allowAll?: boolean;
+  singleSelect?: boolean;
 }
 
 export function TargetSelectionModal({
@@ -19,6 +20,7 @@ export function TargetSelectionModal({
   onSelect,
   title = "SELECIONAR ALVOS",
   allowAll = false,
+  singleSelect = false,
 }: TargetSelectionModalProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -48,7 +50,7 @@ export function TargetSelectionModal({
       if (prev.includes(target)) {
         return prev.filter((t) => t !== target);
       } else {
-        if (!isMasterMode) {
+        if (!isMasterMode || singleSelect) {
           return [target];
         }
         return [...prev.filter((t) => t !== "ALL"), target];
