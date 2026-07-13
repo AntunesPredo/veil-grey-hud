@@ -7,7 +7,9 @@ interface JobsEventCardProps {
   isMaster?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
-  onPush?: () => void;
+  onPublish?: () => void;
+  onRevoke?: () => void;
+  onUpdateTargets?: (targets: string[]) => void;
   onAccept?: (eventId: string) => void;
   onReject?: (eventId: string) => void;
   onPayWorkers?: (eventId: string) => void;
@@ -20,7 +22,9 @@ export function JobsEventCard({
   isMaster,
   onEdit,
   onDelete,
-  onPush,
+  onPublish,
+  onRevoke,
+  onUpdateTargets,
   onAccept,
   onReject,
   onPayWorkers,
@@ -32,7 +36,7 @@ export function JobsEventCard({
     !isMaster && characterId && event.payload.limboTransactions?.[characterId];
 
   return (
-    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPush={onPush} colorTheme={colorTheme}>
+    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPublish={onPublish} onRevoke={onRevoke} onUpdateTargets={onUpdateTargets} colorTheme={colorTheme}>
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 mb-2">
           <FiBriefcase className="text-slate-400 text-2xl" />

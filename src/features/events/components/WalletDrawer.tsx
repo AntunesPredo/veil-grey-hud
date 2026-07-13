@@ -1,4 +1,4 @@
-﻿import { useDraggable } from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
 import { FiChevronUp, FiChevronDown, FiCreditCard } from "../../../shared/ui/Icons";
 import type { BaseItem } from "../../../shared/types/veil-grey";
 import { useCharacterStore } from "../../character/store";
@@ -77,7 +77,7 @@ export function WalletDrawer({ isOpen, onClose, onOpen }: WalletDrawerProps) {
       </div>
       <div className="p-4 max-h-[40vh] overflow-y-auto">
         {walletItems.length === 0 ? (
-          <p className="text-slate-500 text-center text-sm">Nenhuma carteira encontrada no inventÃ¡rio.</p>
+          <p className="text-slate-500 text-center text-sm">Nenhuma carteira encontrada no inventário.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

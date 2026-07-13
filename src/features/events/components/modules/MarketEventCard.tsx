@@ -7,7 +7,9 @@ interface MarketEventCardProps {
   isMaster?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
-  onPush?: () => void;
+  onPublish?: () => void;
+  onRevoke?: () => void;
+  onUpdateTargets?: (targets: string[]) => void;
   onOpenShop?: (eventId: string) => void;
   colorTheme?: string;
 }
@@ -17,12 +19,14 @@ export function MarketEventCard({
   isMaster,
   onEdit,
   onDelete,
-  onPush,
+  onPublish,
+  onRevoke,
+  onUpdateTargets,
   onOpenShop,
   colorTheme,
 }: MarketEventCardProps) {
   return (
-    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPush={onPush} colorTheme={colorTheme}>
+    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPublish={onPublish} onRevoke={onRevoke} onUpdateTargets={onUpdateTargets} colorTheme={colorTheme}>
       <div className="flex flex-col gap-3">
         <div className="bg-slate-800 p-3 rounded-none text-sm text-slate-300">
           <p>

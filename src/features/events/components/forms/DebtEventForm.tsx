@@ -1,4 +1,4 @@
-﻿import { Input, Checkbox } from "../../../../shared/ui/Form";
+import { Input, Checkbox } from "../../../../shared/ui/Form";
 import type { DebtEvent } from "../../../../shared/types/events";
 
 interface DebtEventFormProps {
@@ -37,6 +37,7 @@ export function DebtEventForm({ payload, onChange }: DebtEventFormProps) {
           onChange={(e) => onChange({ ...payload, totalAmount: parseInt(e.target.value) || 0, remainingAmount: parseInt(e.target.value) || 0 })}
           placeholder="Ex: 1000"
         />
+        <span className="text-[10px] text-slate-500 font-mono">Valor total da dívida cobrada.</span>
       </div>
 
       <div className="flex flex-col gap-1">

@@ -7,7 +7,9 @@ interface DebtsEventCardProps {
   isMaster?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
-  onPush?: () => void;
+  onPublish?: () => void;
+  onRevoke?: () => void;
+  onUpdateTargets?: (targets: string[]) => void;
   onPay?: (eventId: string) => void;
   characterId?: string;
   colorTheme?: string;
@@ -18,7 +20,9 @@ export function DebtsEventCard({
   isMaster,
   onEdit,
   onDelete,
-  onPush,
+  onPublish,
+  onRevoke,
+  onUpdateTargets,
   onPay,
   characterId,
   colorTheme,
@@ -34,12 +38,12 @@ export function DebtsEventCard({
   const isBlinking = !isMaster && myDebt > 0;
 
   return (
-    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPush={onPush} colorTheme={colorTheme}>
+    <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPublish={onPublish} onRevoke={onRevoke} onUpdateTargets={onUpdateTargets} colorTheme={colorTheme}>
       <div className={`flex flex-col gap-3 ${isBlinking ? "animate-pulse" : ""}`}>
         <div className="flex items-center gap-2 mb-2">
           <FiAlertTriangle className="text-red-500 text-2xl" />
           <h4 className="font-bold text-white text-lg">
-            {isJoint ? "DÃ­vida Conjunta" : "DÃ­vida Individual"}
+            {isJoint ? "Dívida Conjunta" : "Dívida Individual"}
           </h4>
         </div>
 

@@ -1,5 +1,16 @@
 import { VG_CONFIG } from "../config/system.config";
 
+export interface CroppedImage {
+  url: string;
+  cropData?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    zoom: number;
+  };
+}
+
 export type AttributeCategory =
   | typeof VG_CONFIG.att_groups.physical.rollCategory
   | typeof VG_CONFIG.att_groups.mental.rollCategory

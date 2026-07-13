@@ -16,6 +16,8 @@ import { SustenanceTransactionModal } from "../../features/vitals/SustenanceTran
 import { QuickRestModal } from "../../features/vitals/QuickRestModal";
 import { FullRestModal } from "../../features/vitals/FullRestModal";
 import { NetworkQueueManager } from "./NetworkQueueManager";
+import { MasterNetworkQueueManager } from "../../features/master/components/MasterNetworkQueueManager";
+import { useMasterStore } from "../../features/master/masterStore";
 import { useTelemetrySync } from "../../features/character/useTelemetrySync";
 import { usePossessionSync } from "../../features/character/usePossessionSync";
 import { LogisticsPanelV2 } from "../../features/inventory/LogisticsPanelV2";
@@ -23,6 +25,8 @@ import { LogisticsPanelV2 } from "../../features/inventory/LogisticsPanelV2";
 export function SystemHud() {
   useTelemetrySync();
   usePossessionSync();
+
+  const isPossessing = !!useMasterStore((state) => state.masterBackup);
 
   const tabs = [
     { key: "front", label: "MAINFRAME" },
@@ -53,6 +57,7 @@ export function SystemHud() {
       <CrisisOverlay />
       <RollResolverModal />
       <NetworkQueueManager />
+      {isPossessing && <MasterNetworkQueueManager />}
       <VitalsResolutionModal />
       <CombatDefenseModal />
       <InsanityTransactionModal />

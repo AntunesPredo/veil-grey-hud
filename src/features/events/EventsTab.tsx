@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEventsStore } from "./store/useEventsStore";
 import { useMasterEventsStore } from "./store/useMasterEventsStore";
 import { TestEventCard } from "./components/modules/TestEventCard";
@@ -24,6 +24,8 @@ interface EventsTabProps {
   isMaster?: boolean;
 }
 
+import { EventResultManager } from "./components/EventResultManager";
+
 export function EventsTab({ isMaster = false }: EventsTabProps) {
   const playerEvents = useEventsStore((state) => state.activeEvents);
   const masterEvents = useMasterEventsStore((state) => state.masterEvents);
@@ -38,6 +40,32 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
   const [marketPurchaseEvent, setMarketPurchaseEvent] = useState<any | undefined>(undefined);
 
   const events = isMaster ? masterEvents : playerEvents;
+
+  useEffect(() => {
+    if (!isMaster) {
+      if (p2pPaymentEvent) {
+        const liveEvent = events.find(e => e.id === p2pPaymentEvent.id);
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        if (!liveEvent || !isTargeted) {
+          setP2pPaymentEvent(undefined);
+        }
+      }
+      if (marketPurchaseEvent) {
+        const liveEvent = events.find(e => e.id === marketPurchaseEvent.id);
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        if (!liveEvent || !isTargeted) {
+          setMarketPurchaseEvent(undefined);
+        }
+      }
+      if (debtPaymentEvent) {
+        const liveEvent = events.find(e => e.id === debtPaymentEvent.id);
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        if (!liveEvent || !isTargeted) {
+          setDebtPaymentEvent(undefined);
+        }
+      }
+    }
+  }, [events, p2pPaymentEvent, marketPurchaseEvent, debtPaymentEvent, characterId, isMaster]);
 
   const EVENT_COLORS: Record<EventType, string> = {
     TEST: "border-indigo-500",
@@ -63,8 +91,85 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: id });
   };
 
-  const handlePush = (event: GameEvent) => {
-    useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event });
+  const handlePublish = (event: GameEvent) => {
+    if (event.type === "P2P_TRANSFER") {
+      const p2p = event as any;
+      const host = p2p.payload.hostId;
+      const state = useNetworkStore.getState();
+      const allOnline = [
+        ...state.onlinePlayers,
+        ...(state.globalNpcs || []).map(n => n.name),
+        ...(state.localNpcNames || [])
+      ];
+      if (host !== "MASTER" && !allOnline.includes(host)) {
+        RetroToast.error("HOST OFFLINE! Não é possível publicar a transferência.");
+        return;
+      }
+    }
+
+    let updatedEvent = { ...event, status: "ACTIVE" } as GameEvent;
+    
+    if (updatedEvent.type === "P2P_TRANSFER") {
+      updatedEvent = {
+        ...updatedEvent,
+        payload: {
+          ...updatedEvent.payload,
+          participants: {},
+          hostIsPresent: false,
+          hostConfirmed: false,
+          isAllConfirmed: false,
+          transactions: []
+        }
+      } as any;
+    }
+
+    useMasterEventsStore.getState().updateEvent(event.id, updatedEvent);
+    useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: updatedEvent });
+    RetroToast.success("EVENTO PUBLICADO");
+  };
+
+  const handleRevoke = (event: GameEvent) => {
+    const updatedEvent = { ...event, status: "PENDING" } as GameEvent;
+    useMasterEventsStore.getState().updateEvent(event.id, updatedEvent);
+    useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: event.id });
+    RetroToast.warning("EVENTO REVOGADO");
+  };
+
+  const handleUpdateTargets = (eventId: string, newTargets: string[]) => {
+    const event = masterEvents.find(e => e.id === eventId);
+    if (!event) return;
+    let updatedEvent = { ...event, targets: newTargets } as GameEvent;
+
+    if (updatedEvent.type === "P2P_TRANSFER") {
+       const parts = { ...updatedEvent.payload.participants };
+       let changed = false;
+       Object.keys(parts).forEach(k => {
+          if (!newTargets.includes(k)) {
+             delete parts[k];
+             changed = true;
+          }
+       });
+       if (changed) {
+          Object.keys(parts).forEach(k => {
+             parts[k] = { ...parts[k], transferConfirmed: false };
+          });
+          updatedEvent = {
+             ...updatedEvent,
+             payload: {
+                ...updatedEvent.payload,
+                hostConfirmed: false,
+                participants: parts
+             }
+          } as any;
+       }
+    }
+
+    useMasterEventsStore.getState().updateEvent(eventId, updatedEvent);
+    
+    if (updatedEvent.status === "ACTIVE") {
+      useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: updatedEvent });
+      RetroToast.success("ALVOS ATUALIZADOS");
+    }
   };
 
   const renderEvent = (event: GameEvent) => {
@@ -74,7 +179,9 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
       isMaster,
       onEdit: () => handleEdit(event),
       onDelete: () => handleDelete(event.id),
-      onPush: () => handlePush(event),
+      onPublish: () => handlePublish(event),
+      onRevoke: () => handleRevoke(event),
+      onUpdateTargets: (targets: string[]) => handleUpdateTargets(event.id, targets),
       colorTheme,
     };
 
@@ -144,19 +251,69 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     }
   };
 
+  const renderModals = () => (
+    <>
+      <EventResultManager />
+      <MasterEventEditorModal
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        eventToEdit={eventToEdit}
+      />
+      <MasterEventLogsModal 
+        isOpen={isLogsOpen} 
+        onClose={() => setIsLogsOpen(false)} 
+      />
+      {debtPaymentEvent && (
+        <DebtPaymentModal
+          isOpen={!!debtPaymentEvent}
+          onClose={() => setDebtPaymentEvent(undefined)}
+          event={(events.find(e => e.id === debtPaymentEvent.id) || debtPaymentEvent) as any}
+        />
+      )}
+      {p2pPaymentEvent && (
+        <P2PPaymentModal
+          isOpen={!!p2pPaymentEvent}
+          onClose={() => setP2pPaymentEvent(undefined)}
+          event={(events.find(e => e.id === p2pPaymentEvent.id) || p2pPaymentEvent) as any}
+        />
+      )}
+      {p2pHostManageEvent && (
+        <P2PHostManageModal
+          isOpen={!!p2pHostManageEvent}
+          onClose={() => setP2pHostManageEvent(undefined)}
+          event={(events.find(e => e.id === p2pHostManageEvent.id) || p2pHostManageEvent) as any}
+          isMaster={isMaster}
+        />
+      )}
+      {marketPurchaseEvent && (
+        <MarketPurchaseModal
+          isOpen={!!marketPurchaseEvent}
+          onClose={() => setMarketPurchaseEvent(undefined)}
+          event={(events.find(e => e.id === marketPurchaseEvent.id) || marketPurchaseEvent) as any}
+        />
+      )}
+    </>
+  );
+
   if (!isMaster) {
     if (events.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-slate-500 font-mono text-sm">
-          NENHUM EVENTO ATIVO
-        </div>
+        <>
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 font-mono text-sm">
+            NENHUM EVENTO ATIVO
+          </div>
+          {renderModals()}
+        </>
       );
     }
     
     return (
-      <div className="flex flex-col gap-4 p-2 relative h-full">
-        {events.map((ev) => renderEvent(ev))}
-      </div>
+      <>
+        <div className="flex flex-col gap-4 p-2 relative h-full">
+          {events.map((ev) => renderEvent(ev))}
+        </div>
+        {renderModals()}
+      </>
     );
   }
 
@@ -233,44 +390,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
         )}
       </div>
 
-      <MasterEventEditorModal
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        eventToEdit={eventToEdit}
-      />
-      <MasterEventLogsModal 
-        isOpen={isLogsOpen} 
-        onClose={() => setIsLogsOpen(false)} 
-      />
-      {debtPaymentEvent && (
-        <DebtPaymentModal
-          isOpen={!!debtPaymentEvent}
-          onClose={() => setDebtPaymentEvent(undefined)}
-          event={debtPaymentEvent}
-        />
-      )}
-      {p2pPaymentEvent && (
-        <P2PPaymentModal
-          isOpen={!!p2pPaymentEvent}
-          onClose={() => setP2pPaymentEvent(undefined)}
-          event={p2pPaymentEvent}
-        />
-      )}
-      {p2pHostManageEvent && (
-        <P2PHostManageModal
-          isOpen={!!p2pHostManageEvent}
-          onClose={() => setP2pHostManageEvent(undefined)}
-          event={p2pHostManageEvent}
-          isMaster={isMaster}
-        />
-      )}
-      {marketPurchaseEvent && (
-        <MarketPurchaseModal
-          isOpen={!!marketPurchaseEvent}
-          onClose={() => setMarketPurchaseEvent(undefined)}
-          event={marketPurchaseEvent}
-        />
-      )}
+      {renderModals()}
     </div>
   );
 }

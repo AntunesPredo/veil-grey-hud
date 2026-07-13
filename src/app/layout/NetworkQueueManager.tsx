@@ -97,11 +97,16 @@ export function NetworkQueueManager() {
         RetroToast.warning("EVENTO CANCELADO PELO MESTRE.");
       } else if (data.action === "UPSERT" && data.event) {
         // Ignora se for o mestre recebendo o proprio echo (já tem salvo no useMasterEventsStore)
-        if (data.event.targets.includes(activeName) || data.event.targets.length === 0 || data.event.targets.includes("ALL") || activeName === "MASTER") {
-           const existing = activeEvents.find(e => e.id === data.event!.id);
+        const isTargeted = data.event.targets.includes(activeName) || data.event.targets.length === 0 || data.event.targets.includes("ALL") || activeName === "MASTER";
+        const existing = activeEvents.find(e => e.id === data.event!.id);
+
+        if (!isTargeted || data.event.status !== "ACTIVE") {
+           if (existing) {
+             removeEvent(data.event.id);
+           }
+        } else {
            if (existing) {
              updateEvent(existing.id, data.event);
-             RetroToast.success(`EVENTO ATUALIZADO: [${data.event.title}]`);
            } else {
              addEvent(data.event);
              RetroToast.success(`NOVO EVENTO: [${data.event.title}]`);
@@ -112,6 +117,61 @@ export function NetworkQueueManager() {
       removeQueueItem(current.id);
       if (processingIdRef.current === current.id)
         processingIdRef.current = null;
+      return;
+    }
+
+    if (current.type === "P2P_FINAL_SETTLEMENT") {
+      const data = current.data as { walletId: string; delta: number; finalBalance?: number; currency: string };
+      const targetWallet = useCharacterStore.getState().inventory.find(i => i.id === data.walletId);
+      if (targetWallet && targetWallet.wallet) {
+         useCharacterStore.getState().updateInventoryItem(data.walletId, "wallet", {
+            ...targetWallet.wallet,
+            value: targetWallet.wallet.value + data.delta
+         });
+         window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", { detail: {
+            title: "COMPROVANTE DE TRANSFERÊNCIA P2P",
+            hostName: current.attackerName || "MAINFRAME",
+            walletId: data.walletId,
+            walletName: targetWallet.name,
+            delta: data.delta,
+            finalBalance: data.finalBalance,
+            currency: data.currency
+         }}));
+      } else if (data.walletId === "NEW_WALLET") {
+         const newWallet: Item = {
+           id: crypto.randomUUID(),
+           name: `Fundo Coletivo Recebido`,
+           type: "EQUIPABLE",
+           quantity: 1,
+           slots: 0,
+           isCarried: true,
+           isEquipped: false,
+           parentId: null,
+           drawer: null,
+           effects: [],
+           description: "",
+           svgId: "wallet",
+           price: 0,
+           wallet: {
+             type: data.currency as "CC" | "FCC",
+             value: data.delta,
+             max: null,
+           },
+         };
+         useCharacterStore.getState().addInventoryItem(newWallet);
+         
+         window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", { detail: {
+            title: "RESGATE DE POOL FINAL",
+            hostName: "SISTEMA",
+            walletId: newWallet.id,
+            walletName: newWallet.name,
+            delta: data.delta,
+            finalBalance: data.finalBalance,
+            currency: data.currency
+         }}));
+      }
+      removeQueueItem(current.id);
+      if (processingIdRef.current === current.id) processingIdRef.current = null;
       return;
     }
 

@@ -1,4 +1,4 @@
-﻿import { Input, Button } from "../../../../shared/ui/Form";
+import { Input, Button } from "../../../../shared/ui/Form";
 import type { MarketEvent, MarketItem } from "../../../../shared/types/events";
 
 interface MarketEventFormProps {
@@ -34,7 +34,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-bold text-slate-400">Moeda PadrÃ£o</label>
+        <label className="text-xs font-bold text-slate-400">Moeda Padrão</label>
         <div className="grid grid-cols-2 gap-2">
           {["CC", "FCC"].map(curr => (
             <button
@@ -51,11 +51,12 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
             </button>
           ))}
         </div>
+        <span className="text-[10px] text-slate-500 font-mono">Tipo de moeda que será cobrada dos jogadores neste mercado.</span>
       </div>
 
       <div className="flex flex-col gap-2 mt-4">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-slate-400">Itens Ã  Venda</label>
+          <label className="text-xs font-bold text-slate-400">Itens à Venda</label>
           <Button type="button" variant="success" size="sm" onClick={handleAddItem}>
             + ADICIONAR ITEM
           </Button>
@@ -87,7 +88,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
 
               <div className="flex gap-4">
                 <div className="flex flex-col gap-1 w-1/2">
-                  <label className="text-[10px] text-slate-400 font-bold">PreÃ§o Base</label>
+                  <label className="text-[10px] text-slate-400 font-bold">Preço Base</label>
                   <Input 
                     type="number"
                     value={item.basePrice} 
@@ -95,7 +96,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
                   />
                 </div>
                 <div className="flex flex-col gap-1 w-1/2">
-                  <label className="text-[10px] text-slate-400 font-bold">PreÃ§o Final (Venda)</label>
+                  <label className="text-[10px] text-slate-400 font-bold">Preço Final (Venda)</label>
                   <Input 
                     type="number"
                     value={item.finalPrice} 
@@ -124,6 +125,7 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
                   />
                 </div>
               </div>
+              <span className="text-[9px] text-slate-500 font-mono mt-1">Deixe em branco ou 0 para ilimitado. O estoque é compartilhado globalmente, o limite por jogador é individual.</span>
             </div>
           ))
         )}
@@ -131,6 +133,3 @@ export function MarketEventForm({ payload, onChange }: MarketEventFormProps) {
     </div>
   );
 }
-
-
-

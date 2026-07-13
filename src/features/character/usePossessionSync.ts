@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useCharacterStore, extractCharacterData } from "./store";
 import { useMasterStore } from "../master/masterStore";
+import { useMasterEventsStore } from "../events/store/useMasterEventsStore";
+import { useEventsStore } from "../events/store/useEventsStore";
 
 export function usePossessionSync() {
   const charStore = useCharacterStore();
@@ -8,7 +10,25 @@ export function usePossessionSync() {
   const npcs = useMasterStore((state) => state.npcs);
   const activeQuickActionNpcId = useMasterStore((state) => state.activeQuickActionNpcId);
 
+  const masterEvents = useMasterEventsStore((state) => state.masterEvents);
+
   const prevStringified = useRef("");
+
+  // Sync events from master store to player store when possessing
+  useEffect(() => {
+    const identifier = charStore.isPossessing || activeQuickActionNpcId;
+    if (identifier) {
+      const activeName = charStore.name;
+      const targetedEvents = masterEvents.filter(
+        (e) =>
+          e.status === "ACTIVE" &&
+          (e.targets.length === 0 ||
+            e.targets.includes("ALL") ||
+            e.targets.includes(activeName))
+      );
+      useEventsStore.getState().setEvents(targetedEvents);
+    }
+  }, [charStore.isPossessing, activeQuickActionNpcId, charStore.name, masterEvents]);
 
   useEffect(() => {
     const identifier = charStore.isPossessing || activeQuickActionNpcId;
