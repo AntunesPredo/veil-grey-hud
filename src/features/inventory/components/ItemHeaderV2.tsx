@@ -9,6 +9,7 @@ import { useCharacterStore } from "../../character/store";
 import { HardwareGauge } from "../components/HardwareGauge";
 import { TelemetryBar } from "../components/TelemetryBar";
 import { generateInjectionHash } from "../../../shared/utils/hashIntegration";
+import { useCombatConsumption } from "../../combat/useCombatConsumption";
 
 const isDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -45,6 +46,7 @@ export function ItemHeaderV2({
   const { getSpecificIcon } = useCustomSvgIcons();
   const { getSkillById } = useSystemData();
   const toggleEquipItem = useCharacterStore((state) => state.toggleEquipItem);
+  const { consumeAction } = useCombatConsumption();
   const sandboxMode = useCharacterStore((state) => state.sandboxMode);
 
   const icon = getSpecificIcon(item.svgId);
@@ -77,6 +79,9 @@ export function ItemHeaderV2({
     if (item.isSoulBound && item.isEquipped) {
       RetroToast.error("VINCULO ATIVO.");
       return;
+    }
+    if (!item.isEquipped) {
+      if (!consumeAction(false)) return;
     }
     toggleEquipItem(item.id);
   };

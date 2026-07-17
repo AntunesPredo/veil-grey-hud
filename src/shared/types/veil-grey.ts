@@ -143,7 +143,7 @@ export type WeaponRange =
 export type WeaponScaling = "S" | "A" | "B" | "C" | "D" | "NONE";
 
 export interface CombatProps {
-  weaponType: "MELEE" | "RANGED" | "NONE";
+  weaponType: "MELEE" | "FIREARM" | "RANGED" | "NONE";
   baseDamage: number;
   range: WeaponRange;
   baseDifficulty: number;
@@ -205,6 +205,7 @@ export interface ActiveItem extends BaseItem {
   requiresAmmo: boolean;
   skillId: Skill | null;
   combatProps?: CombatProps;
+  instantActions?: InstantAction[];
 }
 
 export interface KitItem extends BaseItem {

@@ -13,6 +13,10 @@ export function migrateCharacterToV2(state: any): any {
         item.parentId !== null && item.parentId !== undefined
           ? String(item.parentId)
           : null,
+      combatProps: item.combatProps ? {
+        ...item.combatProps,
+        weaponType: item.combatProps.weaponType === "RANGED" ? "FIREARM" : item.combatProps.weaponType
+      } : undefined
     }));
   }
 
@@ -57,6 +61,10 @@ export function migrateMasterToV2(state: any): any {
         item.parentId !== null && item.parentId !== undefined
           ? String(item.parentId)
           : null,
+      combatProps: item.combatProps ? {
+        ...item.combatProps,
+        weaponType: item.combatProps.weaponType === "RANGED" ? "FIREARM" : item.combatProps.weaponType
+      } : undefined
     }));
   }
 
@@ -91,6 +99,10 @@ export function migrateMasterToV2(state: any): any {
               item.parentId !== null && item.parentId !== undefined
                 ? String(item.parentId)
                 : null,
+            combatProps: item.combatProps ? {
+              ...item.combatProps,
+              weaponType: item.combatProps.weaponType === "RANGED" ? "FIREARM" : item.combatProps.weaponType
+            } : undefined
           })),
         };
       }

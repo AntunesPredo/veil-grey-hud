@@ -179,6 +179,18 @@ export function SettingsModal({
                   })
                 }
               />
+              <Checkbox
+                label="EXIBIR MODAL DE RESOLUÇÃO DE ATAQUE"
+                checked={settings.showAttackModal ?? true}
+                onChange={() =>
+                  updateProgression({
+                    settings: {
+                      ...settings,
+                      showAttackModal: !(settings.showAttackModal ?? true),
+                    },
+                  })
+                }
+              />
               {sandboxMode && (
                 <Checkbox
                   label="FORÇAR TRAVAMENTO DE PONTOS"

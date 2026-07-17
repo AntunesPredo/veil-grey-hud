@@ -13,6 +13,7 @@ import { MerchantEventForm } from "./forms/MerchantEventForm";
 import { JobEventForm } from "./forms/JobEventForm";
 import { DebtEventForm } from "./forms/DebtEventForm";
 import { P2PTransferForm } from "./forms/P2PTransferForm";
+import { CombatEventForm } from "./forms/CombatEventForm";
 
 interface MasterEventEditorModalProps {
   isOpen: boolean;
@@ -57,7 +58,13 @@ export function MasterEventEditorModal({
       setTempImageUrl(eventToEdit?.coverImage?.url || "");
       setTargets(eventToEdit?.targets || []);
       setStatus(eventToEdit?.status || "PENDING");
-      setPayload(eventToEdit?.payload || (eventToEdit?.type === "P2P_TRANSFER" ? { currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] } : {}));
+      if (eventToEdit?.type === "P2P_TRANSFER") {
+        setPayload(eventToEdit.payload || { currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
+      } else if (eventToEdit?.type === "COMBAT") {
+        setPayload(eventToEdit.payload || { participants: {}, currentRound: 0, currentTurn: null });
+      } else {
+        setPayload(eventToEdit?.payload || {});
+      }
     }
   }, [isOpen, eventToEdit]);
 
@@ -76,14 +83,23 @@ export function MasterEventEditorModal({
   const handleSave = () => {
     let finalPayload = { ...payload };
     if (type === "P2P_TRANSFER" && status === "ACTIVE" && (!eventToEdit || eventToEdit.status !== "ACTIVE")) {
-       finalPayload = {
-         ...finalPayload,
-         participants: {},
-         hostIsPresent: false,
-         hostConfirmed: false,
-         isAllConfirmed: false,
-         transactions: []
-       };
+      finalPayload = {
+        ...finalPayload,
+        participants: {},
+        hostIsPresent: false,
+        hostConfirmed: false,
+        isAllConfirmed: false,
+        transactions: []
+      };
+    }
+    
+    if (type === "COMBAT" && status !== "ACTIVE") {
+      finalPayload = {
+        ...finalPayload,
+        participants: {},
+        currentRound: 0,
+        currentTurn: null
+      };
     }
 
     const newEvent: GameEvent = {
@@ -144,7 +160,8 @@ export function MasterEventEditorModal({
                   { id: "JOB", label: "TRABALHO" },
                   { id: "DEBT", label: "DÍVIDA" },
                   { id: "TEST", label: "TESTE" },
-                  { id: "P2P_TRANSFER", label: "TRANFERÊNCIA" }
+                  { id: "P2P_TRANSFER", label: "TRANFERÊNCIA" },
+                  { id: "COMBAT", label: "COMBATE" }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -153,9 +170,11 @@ export function MasterEventEditorModal({
                     onClick={() => {
                       setType(opt.id as EventType);
                       if (opt.id === "P2P_TRANSFER") {
-                         setPayload({ currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
+                        setPayload({ currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
+                      } else if (opt.id === "COMBAT") {
+                        setPayload({ participants: {}, currentRound: 0, currentTurn: null });
                       } else {
-                         setPayload({});
+                        setPayload({});
                       }
                     }}
                     className={`p-2 border-2 text-xs font-bold font-mono transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed ${type === opt.id
@@ -201,9 +220,9 @@ export function MasterEventEditorModal({
                   }}
                   placeholder="https://..."
                 />
-                <Button 
-                  type="button" 
-                  variant="primary" 
+                <Button
+                  type="button"
+                  variant="primary"
                   disabled={!tempImageUrl}
                   onClick={() => setIsCropping(true)}
                 >
@@ -265,6 +284,7 @@ export function MasterEventEditorModal({
               {type === "JOB" && <JobEventForm payload={payload} onChange={setPayload} />}
               {type === "DEBT" && <DebtEventForm payload={payload} onChange={setPayload} />}
               {type === "P2P_TRANSFER" && <P2PTransferForm payload={payload} onChange={setPayload} />}
+              {type === "COMBAT" && <CombatEventForm />}
             </div>
 
             <div className="mt-4 flex justify-between">

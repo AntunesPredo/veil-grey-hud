@@ -412,8 +412,8 @@ export function Step3Properties({
         )}
       </div>
 
-      {isConsumable && (
-        <div className="bg-[var(--theme-success)]/10 border border-[var(--theme-success)]/30 p-3 flex flex-col gap-3">
+      {(isConsumable || isActive) && (
+        <div className="bg-[var(--theme-success)]/10 border border-[var(--theme-success)]/30 p-3 flex flex-col gap-3 mt-3">
           <Checkbox
             label="INJETAR AÇÕES INSTANTÂNEAS"
             checked={formData.hasInstantActions}

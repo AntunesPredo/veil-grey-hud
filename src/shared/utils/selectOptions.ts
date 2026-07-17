@@ -39,6 +39,7 @@ export const PROGRESSION_TARGETS = [
 
 export const WEAPON_TYPES = [
   { value: "MELEE", label: "CORPO-A-CORPO" },
+  { value: "FIREARM", label: "ARMA DE FOGO" },
   { value: "RANGED", label: "À DISTÂNCIA" },
 ];
 

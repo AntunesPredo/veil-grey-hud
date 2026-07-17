@@ -24,7 +24,8 @@ export function usePossessionSync() {
           e.status === "ACTIVE" &&
           (e.targets.length === 0 ||
             e.targets.includes("ALL") ||
-            e.targets.includes(activeName))
+            e.targets.includes(activeName) ||
+            (e.type === "COMBAT" && (e as any).payload?.participants?.[activeName]))
       );
       useEventsStore.getState().setEvents(targetedEvents);
     }

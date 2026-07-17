@@ -10,7 +10,8 @@ export type EventType =
   | "MERCHANT"
   | "JOB"
   | "DEBT"
-  | "P2P_TRANSFER";
+  | "P2P_TRANSFER"
+  | "COMBAT";
 
 export interface EventBase {
   id: string;
@@ -108,13 +109,33 @@ export interface P2PTransferEvent extends EventBase {
   };
 }
 
+export interface CombatParticipant {
+  id: string; // characterId or NPC ID
+  name: string;
+  initiative: number;
+  hasRolledInitiative: boolean;
+  reactionUsed: number;
+  apUsed: number;
+  isBlocked?: boolean;
+}
+
+export interface CombatEvent extends EventBase {
+  type: "COMBAT";
+  payload: {
+    participants: Record<string, CombatParticipant>;
+    currentRound: number;
+    currentTurn: string | null; // characterId ou null se ainda não iniciou
+  };
+}
+
 export type GameEvent =
   | TestEvent
   | MarketEvent
   | MerchantEvent
   | JobEvent
   | DebtEvent
-  | P2PTransferEvent;
+  | P2PTransferEvent
+  | CombatEvent;
 
 export interface EventLogEntry {
   id: string;

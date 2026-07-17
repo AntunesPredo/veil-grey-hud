@@ -69,7 +69,7 @@ export function TargetSelectionModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-2 bg-[var(--theme-background)] border border-[var(--theme-border)]">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-2 bg-[var(--theme-background)] border border-[var(--theme-border)]">
           <Button
             variant={selected.includes("SELF") ? "success" : "primary"}
             onClick={() => toggleSelect("SELF")}
@@ -83,13 +83,6 @@ export function TargetSelectionModal({
           >
             [ MESTRE ]
           </Button>
-          <Button
-            variant={selected.includes("ENEMY") ? "success" : "danger"}
-            onClick={() => toggleSelect("ENEMY")}
-            className="border-dashed"
-          >
-            [ INIMIGO GENÉRICO ]
-          </Button>
           {allowAll && isMasterMode && (
             <Button
               variant={selected.includes("ALL") ? "success" : "primary"}
@@ -99,24 +92,24 @@ export function TargetSelectionModal({
             </Button>
           )}
           <div className="col-span-full border-t border-[var(--theme-border)] my-2"></div>
-          {filteredPlayers.map((player) => {
+          {filteredPlayers.map((player, index) => {
             const isEnemy = globalNpcs.find((n) => n.name === player)?.isEnemy;
             const isSelected = selected.includes(player);
             let btnVariant: "primary" | "warning" | "danger" | "success" = "primary";
-            
+
             if (isSelected) {
               btnVariant = "warning";
             } else if (isEnemy) {
               btnVariant = "danger";
             }
-            
+
             return (
               <Button
                 key={player}
                 variant={btnVariant}
                 onClick={() => toggleSelect(player)}
               >
-                UNIDADE: {player}
+                U{index.toString().padStart(2, '0')}: {player}
               </Button>
             );
           })}

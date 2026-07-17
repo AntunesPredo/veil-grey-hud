@@ -3,6 +3,7 @@ import { Button } from "../../shared/ui/Form";
 import { useRoller } from "../../shared/hooks/useRoller";
 import { useCharacterStore } from "../character/store";
 import { useRollStore } from "./useRollStore";
+import { VG_CONFIG } from "../../shared/config/system.config";
 
 export function RollRequestModal() {
   const incomingRequest = useRollStore((state) => state.incomingRequest);
@@ -22,7 +23,7 @@ export function RollRequestModal() {
 
     initiateRoll(
       incomingRequest.title,
-      `1d20+${baseVal}`,
+      `${VG_CONFIG.rules.mainDice}+${baseVal}`,
       [incomingRequest.rollKey, incomingRequest.rollCategory],
       incomingRequest.dc,
     );

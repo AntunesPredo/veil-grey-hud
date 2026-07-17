@@ -70,7 +70,7 @@ export function FullRestModal() {
     const comfortMod = fullRestMasterConfig.comfort;
 
     const mod = foodMod + tempMod + comfortMod;
-    const roll = executeRawRoll(`1d20+${mod}`);
+    const roll = executeRawRoll(`${VG_CONFIG.rules.mainDice}+${mod}`);
 
     if (roll.error) return RetroToast.error(roll.error);
 

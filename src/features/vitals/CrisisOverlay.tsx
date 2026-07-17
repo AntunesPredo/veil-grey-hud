@@ -52,11 +52,11 @@ export function CrisisOverlay() {
 
   const handleRollCrisis = () => {
     const mhMod = !isDeath
-      ? secondaryAttributes.mental_health >= 0
+      ? secondaryAttributes.mental_health > 0
         ? `+${secondaryAttributes.mental_health}`
-        : `${secondaryAttributes.mental_health}`
+        : ""
       : "";
-    const notation = `1d20${mhMod}`;
+    const notation = `${VG_CONFIG.rules.mainDice}${mhMod}`;
 
     const result = executeRawRoll(notation);
     if (result.error) return;
@@ -156,18 +156,16 @@ export function CrisisOverlay() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`w-full max-w-3xl border-4 bg-[var(--theme-background)] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.8)] ${
-          isDeath
+        className={`w-full max-w-3xl border-4 bg-[var(--theme-background)] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.8)] ${isDeath
             ? "border-[var(--theme-danger)]"
             : "border-[var(--theme-warning)]"
-        }`}
+          }`}
       >
         <div
-          className={`p-5 border-b-4 flex flex-col gap-1 relative overflow-hidden ${
-            isDeath
+          className={`p-5 border-b-4 flex flex-col gap-1 relative overflow-hidden ${isDeath
               ? "bg-[var(--theme-danger)] border-[var(--theme-danger)]"
               : "bg-[var(--theme-warning)] border-[var(--theme-warning)]"
-          }`}
+            }`}
         >
           <div
             className="absolute inset-0 opacity-20 pointer-events-none"
@@ -187,62 +185,54 @@ export function CrisisOverlay() {
         <div className="p-4 flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-6">
             <div
-              className={`border-2 p-4 flex flex-col items-center justify-center bg-[var(--theme-background)] relative ${
-                isDeath
+              className={`border-2 p-4 flex flex-col items-center justify-center bg-[var(--theme-background)] relative ${isDeath
                   ? "border-[var(--theme-danger)] shadow-[inset_0_0_20px_var(--theme-danger)]"
                   : "border-[var(--theme-warning)] shadow-[inset_0_0_20px_var(--theme-warning)]"
-              }`}
+                }`}
             >
               <span
-                className={`absolute top-0 left-0 ${
-                  isDeath
+                className={`absolute top-0 left-0 ${isDeath
                     ? "bg-[var(--theme-danger)]"
                     : "bg-[var(--theme-warning)]"
-                } text-white text-[12px] px-1 font-bold tracking-widest uppercase ${
-                  isDeath
+                  } text-white text-[12px] px-1 font-bold tracking-widest uppercase ${isDeath
                     ? "shadow-[0_0_20px_var(--theme-danger)]"
                     : "shadow-[0_0_20px_var(--theme-warning)]"
-                }`}
+                  }`}
               >
                 DIFICULDADE
               </span>
               <span
-                className={`text-6xl font-mono font-black mt-2 ${
-                  isDeath
+                className={`text-6xl font-mono font-black mt-2 ${isDeath
                     ? "text-[var(--theme-danger)] glow-danger"
                     : "text-[var(--theme-warning)] glow-warning"
-                } ${crisis.fails === 2 ? "madness-burst" : crisis.fails === 1 ? "madness-unstable-2x" : "madness-unstable"}`}
+                  } ${crisis.fails === 2 ? "madness-burst" : crisis.fails === 1 ? "madness-unstable-2x" : "madness-unstable"}`}
               >
                 {currentDC}
               </span>
             </div>
 
             <div
-              className={`border-2 p-4 flex flex-col items-center justify-center bg-[var(--theme-background)] relative ${
-                isDeath
+              className={`border-2 p-4 flex flex-col items-center justify-center bg-[var(--theme-background)] relative ${isDeath
                   ? "border-[var(--theme-danger)] shadow-[inset_0_0_20px_var(--theme-danger)]"
                   : "border-[var(--theme-warning)] shadow-[inset_0_0_20px_var(--theme-warning)]"
-              }`}
+                }`}
             >
               <span
-                className={`absolute top-0 left-0 ${
-                  isDeath
+                className={`absolute top-0 left-0 ${isDeath
                     ? "bg-[var(--theme-danger)]"
                     : "bg-[var(--theme-warning)]"
-                } text-white text-[12px] px-1 font-bold tracking-widest uppercase ${
-                  isDeath
+                  } text-white text-[12px] px-1 font-bold tracking-widest uppercase ${isDeath
                     ? "shadow-[0_0_20px_var(--theme-danger)]"
                     : "shadow-[0_0_20px_var(--theme-warning)]"
-                }`}
+                  }`}
               >
                 TENTATIVAS RESTANTES
               </span>
               <span
-                className={`text-6xl font-mono font-black mt-2 ${
-                  crisis.fails === 2
+                className={`text-6xl font-mono font-black mt-2 ${crisis.fails === 2
                     ? "text-[var(--theme-danger)] animate-pulse glow-danger"
                     : "text-[var(--theme-accent)]"
-                }`}
+                  }`}
               >
                 {3 - crisis.fails}
               </span>
@@ -270,11 +260,10 @@ export function CrisisOverlay() {
 
           {lastRoll ? (
             <div
-              className={`p-2 border-2 flex justify-between items-center font-bold text-lg uppercase tracking-widest ${
-                lastRoll.success
+              className={`p-2 border-2 flex justify-between items-center font-bold text-lg uppercase tracking-widest ${lastRoll.success
                   ? "border-[var(--theme-success)] bg-[var(--theme-success)]/10 text-[var(--theme-success)]"
                   : "border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 text-[var(--theme-danger)] madness-unstable"
-              }`}
+                }`}
             >
               <span>RESULTADO: {lastRoll.total}</span>
               <span>
@@ -296,9 +285,8 @@ export function CrisisOverlay() {
           ) : (
             <Button
               variant={isDeath ? "danger" : "warning"}
-              className={`w-full py-5 text-xl border-2 font-black text-white tracking-widest ${
-                lastRoll ? "border-dashed" : ""
-              }`}
+              className={`w-full py-5 text-xl border-2 font-black text-white tracking-widest ${lastRoll ? "border-dashed" : ""
+                }`}
               onClick={handleRollCrisis}
             >
               {lastRoll ? "NOVA TENTATIVA" : "EXECUTAR ROLAGEM"}

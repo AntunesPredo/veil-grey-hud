@@ -25,6 +25,10 @@ export function RollResolverModal() {
     const allActive = [...payload.fixedEffects, ...selectedOptionals];
 
     const rollResult = executeRawRoll(payload.baseExpression, allActive);
+    
+    if (payload.onConfirm) {
+      payload.onConfirm();
+    }
 
     if (rollResult.error) {
       RetroToast.error(rollResult.error);

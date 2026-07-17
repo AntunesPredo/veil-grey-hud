@@ -17,6 +17,7 @@ import { MergeStackModal } from "../components/MergeStackModal";
 import { RepairActiveModal } from "../components/RepairActiveModal";
 import { DamageItemModal } from "../components/DamageItemModal";
 import { HardwareGauge } from "../components/HardwareGauge";
+import { useCombatConsumption } from "../../combat/useCombatConsumption";
 
 const isDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -75,7 +76,11 @@ export function ItemActionsV2({
     );
   }, [allInventory, item, canStack]);
 
+  const { consumeAction } = useCombatConsumption();
+
   const handleShareOrDrop = (targets: string[]) => {
+    if (!consumeAction(false)) return;
+
     targets.forEach((targetName) => {
       sendPayload(targetName, "ITEM", item);
     });

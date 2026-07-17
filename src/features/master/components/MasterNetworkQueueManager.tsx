@@ -20,12 +20,13 @@ import type {
 import { Modal } from "../../../shared/ui/Overlays";
 import { Button, Slider } from "../../../shared/ui/Form";
 import { ItemNodeV2 } from "../../inventory/components/ItemNodeV2";
-import { useMasterStore } from "../masterStore";
+import { useMasterStore, type MasterItem } from "../masterStore";
+import { VG_CONFIG } from "../../../shared/config/system.config";
 
 export function MasterNetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
   const removeQueueItem = useNetworkStore((state) => state.removeQueueItem);
-  
+
   const npcs = useMasterStore((state) => state.npcs);
   const activeNpcs = npcs.filter((n) => n.isActive);
   const activeNpcNames = activeNpcs.map((n) => n.name);
@@ -94,11 +95,11 @@ export function MasterNetworkQueueManager() {
 
         if (!isDirectAction && !anyVitalsModalOpen) {
           if (activeNpcNames.includes(current.targetName)) {
-             const charStore = useCharacterStore.getState();
-             const npc = npcs.find((n) => n.name === current.targetName);
-             if (npc) {
-                useMasterStore.getState().updateNpcData(npc.id, charStore);
-             }
+            const charStore = useCharacterStore.getState();
+            const npc = npcs.find((n) => n.name === current.targetName);
+            if (npc) {
+              useMasterStore.getState().updateNpcData(npc.id, charStore);
+            }
           }
           removeQueueItem(current.id);
           processingIdRef.current = null;
@@ -108,34 +109,45 @@ export function MasterNetworkQueueManager() {
     }
 
     if (current.type === "EVENT_SYNC") {
-       removeQueueItem(current.id);
-       if (processingIdRef.current === current.id) processingIdRef.current = null;
-       return;
+      const data = current.data as { action: "UPSERT" | "REMOVE"; event?: any; eventId?: string };
+      const mEventsStore = useMasterEventsStore.getState();
+      if (data.action === "UPSERT" && data.event) {
+        if (mEventsStore.masterEvents.some((e) => e.id === data.event!.id)) {
+          mEventsStore.updateEvent(data.event!.id, data.event);
+        } else {
+          mEventsStore.addEvent(data.event);
+        }
+      } else if (data.action === "REMOVE" && data.eventId) {
+        mEventsStore.removeEvent(data.eventId);
+      }
+      removeQueueItem(current.id);
+      if (processingIdRef.current === current.id) processingIdRef.current = null;
+      return;
     }
 
     if (current.type === "SAVE_DELIVERY") {
-        processingIdRef.current = current.id;
-        const dataUri =
-          "data:text/plain;charset=utf-8," +
-          encodeURIComponent(current.data as string);
-        const link = document.createElement("a");
-        link.href = dataUri;
-        link.download = `VG_DELIVERY_SAVE_${current.attackerName}.json`;
-        link.click();
-        RetroToast.success(
-          `FICHA DE [${current.attackerName}] RECEBIDA E BAIXADA.`,
-        );
-        removeQueueItem(current.id);
-        return;
+      processingIdRef.current = current.id;
+      const dataUri =
+        "data:text/plain;charset=utf-8," +
+        encodeURIComponent(current.data as string);
+      const link = document.createElement("a");
+      link.href = dataUri;
+      link.download = `VG_DELIVERY_SAVE_${current.attackerName}.json`;
+      link.click();
+      RetroToast.success(
+        `FICHA DE [${current.attackerName}] RECEBIDA E BAIXADA.`,
+      );
+      removeQueueItem(current.id);
+      return;
     }
-    
+
     if (current.type === "OVERRIDE_ACCEPTED") {
-       processingIdRef.current = current.id;
-       const data = current.data as { playerName: string };
-       useMasterStore.getState().removePendingOverride(data.playerName);
-       RetroToast.success(`ALTERAÇÕES ASSIMILADAS POR: ${data.playerName}`);
-       removeQueueItem(current.id);
-       return;
+      processingIdRef.current = current.id;
+      const data = current.data as { playerName: string };
+      useMasterStore.getState().removePendingOverride(data.playerName);
+      RetroToast.success(`ALTERAÇÕES ASSIMILADAS POR: ${data.playerName}`);
+      removeQueueItem(current.id);
+      return;
     }
 
     if (current.type === "EVENT_ACTION") {
@@ -143,16 +155,53 @@ export function MasterNetworkQueueManager() {
       const data = current.data as any;
       const mEventsStore = useMasterEventsStore.getState();
       const targetEvent = mEventsStore.masterEvents.find(e => e.id === data.eventId);
-      
+
       if (targetEvent) {
+        if (data.action === "NEXT_TURN" && targetEvent.type === "COMBAT") {
+          const participantsList = Object.values(targetEvent.payload.participants).sort((a: any, b: any) => b.initiative - a.initiative);
+
+          if (participantsList.length > 0 && !participantsList.every((p: any) => p.isBlocked)) {
+            const currentIndex = participantsList.findIndex((p: any) => p.name === targetEvent.payload.currentTurn);
+            let nextIndex = currentIndex + 1;
+            let nextRound = targetEvent.payload.currentRound || 1;
+
+            if (nextIndex >= participantsList.length) {
+              nextIndex = 0;
+              nextRound += 1;
+            }
+
+            while ((participantsList[nextIndex] as any).isBlocked) {
+              nextIndex += 1;
+              if (nextIndex >= participantsList.length) {
+                nextIndex = 0;
+                nextRound += 1;
+              }
+            }
+
+            const nextTurnParticipant = (participantsList[nextIndex] as any).name;
+
+            const newEvent = structuredClone(targetEvent) as any;
+            newEvent.payload.currentRound = nextRound;
+            newEvent.payload.currentTurn = nextTurnParticipant;
+
+            if (newEvent.payload.participants[nextTurnParticipant]) {
+              newEvent.payload.participants[nextTurnParticipant].apUsed = 0;
+              newEvent.payload.participants[nextTurnParticipant].reactionUsed = 0;
+            }
+
+            mEventsStore.updateEvent(targetEvent.id, newEvent);
+            useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+          }
+        }
+
         if (data.action === "PAY_DEBT" && targetEvent.type === "DEBT") {
           const charId = data.characterId;
           const amt = data.amount;
           const currentOwed = targetEvent.payload.debts[charId] || 0;
-          
+
           const newOwed = Math.max(0, currentOwed - amt);
           const newRemaining = Math.max(0, targetEvent.payload.remainingAmount - amt);
-          
+
           const newEvent = {
             ...targetEvent,
             payload: {
@@ -164,7 +213,7 @@ export function MasterNetworkQueueManager() {
               remainingAmount: newRemaining
             }
           };
-          
+
           const msg = `Pagou ${amt} ${targetEvent.payload.currency} usando ${data.walletName}.`;
           mEventsStore.addLog({
             eventId: newEvent.id,
@@ -177,206 +226,206 @@ export function MasterNetworkQueueManager() {
             color: 15158332,
             author: { name: charId }
           }]);
-          
+
           RetroToast.success(`[EVENTO] ${charId} pagou ${amt} na dívida!`);
-          
+
           // Re-broadcast updated event
           useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
         }
-        
+
         if (targetEvent.type === "P2P_TRANSFER") {
-           let newEvent = { ...targetEvent };
-           let skipSync = false;
+          let newEvent = { ...targetEvent };
+          let skipSync = false;
 
-           const resetP2PConfirmations = (payload: any) => {
-              const parts = { ...payload.participants };
-              Object.keys(parts).forEach(k => { parts[k] = { ...parts[k], transferConfirmed: false }; });
-              return { ...payload, hostConfirmed: false, participants: parts };
-           };
+          const resetP2PConfirmations = (payload: any) => {
+            const parts = { ...payload.participants };
+            Object.keys(parts).forEach(k => { parts[k] = { ...parts[k], transferConfirmed: false }; });
+            return { ...payload, hostConfirmed: false, participants: parts };
+          };
 
-           if (data.action === "P2P_HOST_ENTER") {
-              newEvent.payload = { ...newEvent.payload, hostIsPresent: true };
-           }
-           if (data.action === "P2P_HOST_LEAVE") {
-              newEvent.payload = { ...newEvent.payload, hostIsPresent: false };
-           }
-           if (data.action === "P2P_CONFIRM_WALLET") {
-              const charId = data.characterId;
-              const walletId = data.walletId;
-              const balance = data.balance;
-              
+          if (data.action === "P2P_HOST_ENTER") {
+            newEvent.payload = { ...newEvent.payload, hostIsPresent: true };
+          }
+          if (data.action === "P2P_HOST_LEAVE") {
+            newEvent.payload = { ...newEvent.payload, hostIsPresent: false };
+          }
+          if (data.action === "P2P_CONFIRM_WALLET") {
+            const charId = data.characterId;
+            const walletId = data.walletId;
+            const balance = data.balance;
+
+            newEvent.payload = {
+              ...newEvent.payload,
+              participants: {
+                ...newEvent.payload.participants,
+                [charId]: {
+                  walletId,
+                  initialBalance: balance,
+                  currentBalance: balance,
+                  approved: true,
+                  transferConfirmed: false
+                }
+              }
+            };
+          }
+          if (data.action === "P2P_CANCEL_WALLET") {
+            const charId = data.characterId;
+            const newParticipants = { ...newEvent.payload.participants };
+            if (newParticipants[charId]) {
+              delete newParticipants[charId];
+              newEvent.payload = resetP2PConfirmations({
+                ...newEvent.payload,
+                participants: newParticipants
+              });
+            }
+          }
+          if (data.action === "P2P_TOGGLE_CONFIRM") {
+            const charId = data.characterId;
+            if (charId === newEvent.payload.hostId) {
+              newEvent.payload = { ...newEvent.payload, hostConfirmed: !newEvent.payload.hostConfirmed };
+            } else if (newEvent.payload.participants[charId]) {
               newEvent.payload = {
-                 ...newEvent.payload,
-                 participants: {
-                    ...newEvent.payload.participants,
-                    [charId]: {
-                       walletId,
-                       initialBalance: balance,
-                       currentBalance: balance,
-                       approved: true,
-                       transferConfirmed: false
-                    }
-                 }
+                ...newEvent.payload,
+                participants: {
+                  ...newEvent.payload.participants,
+                  [charId]: {
+                    ...newEvent.payload.participants[charId],
+                    transferConfirmed: !newEvent.payload.participants[charId].transferConfirmed
+                  }
+                }
               };
-           }
-           if (data.action === "P2P_CANCEL_WALLET") {
-              const charId = data.characterId;
-              const newParticipants = { ...newEvent.payload.participants };
-              if (newParticipants[charId]) {
-                 delete newParticipants[charId];
-                 newEvent.payload = resetP2PConfirmations({
-                    ...newEvent.payload,
-                    participants: newParticipants
-                 });
-              }
-           }
-           if (data.action === "P2P_TOGGLE_CONFIRM") {
-              const charId = data.characterId;
-              if (charId === newEvent.payload.hostId) {
-                 newEvent.payload = { ...newEvent.payload, hostConfirmed: !newEvent.payload.hostConfirmed };
-              } else if (newEvent.payload.participants[charId]) {
-                 newEvent.payload = {
-                    ...newEvent.payload,
-                    participants: {
-                       ...newEvent.payload.participants,
-                       [charId]: {
-                          ...newEvent.payload.participants[charId],
-                          transferConfirmed: !newEvent.payload.participants[charId].transferConfirmed
-                       }
-                    }
-                 };
-              }
-           }
-           if (data.action === "P2P_DIVIDE_POOL") {
-              const participantIds = Object.keys(newEvent.payload.participants);
-              if (participantIds.length > 0) {
-                 const splitAmount = Math.floor(newEvent.payload.pool / participantIds.length);
-                 const remainder = newEvent.payload.pool % participantIds.length;
-                 const newParticipants = { ...newEvent.payload.participants };
-                 const newTransactions = [...(newEvent.payload.transactions || [])];
-                 
-                 participantIds.forEach((pid) => {
-                    newParticipants[pid].currentBalance += splitAmount;
-                    newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: splitAmount, timestamp: Date.now() });
-                 });
-                 
-                 newEvent.payload = resetP2PConfirmations({
-                     ...newEvent.payload,
-                     pool: remainder,
-                     participants: newParticipants,
-                     transactions: newTransactions
-                  });
-              }
-           }
-           if (data.action === "P2P_TRANSFER_TO_POOL") {
+            }
+          }
+          if (data.action === "P2P_DIVIDE_POOL") {
+            const participantIds = Object.keys(newEvent.payload.participants);
+            if (participantIds.length > 0) {
+              const splitAmount = Math.floor(newEvent.payload.pool / participantIds.length);
+              const remainder = newEvent.payload.pool % participantIds.length;
               const newParticipants = { ...newEvent.payload.participants };
               const newTransactions = [...(newEvent.payload.transactions || [])];
-              let addedToPool = 0;
-              Object.keys(newParticipants).forEach(pid => {
-                 const p = newParticipants[pid];
-                 const minBalance = Math.min(0, p.initialBalance);
-                 const maxPull = p.currentBalance - minBalance;
-                 if (maxPull > 0) {
-                    addedToPool += maxPull;
-                    p.currentBalance -= maxPull;
-                    newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: maxPull, timestamp: Date.now() });
-                 }
+
+              participantIds.forEach((pid) => {
+                newParticipants[pid].currentBalance += splitAmount;
+                newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: splitAmount, timestamp: Date.now() });
               });
+
               newEvent.payload = resetP2PConfirmations({
-                  ...newEvent.payload,
-                  pool: newEvent.payload.pool + addedToPool,
-                  participants: newParticipants,
-                  transactions: newTransactions
-               });
-           }
-           if (data.action === "P2P_PULL_FROM_PLAYER") {
-              const pid = data.participantId;
-              const newParticipants = { ...newEvent.payload.participants };
-              const newTransactions = [...(newEvent.payload.transactions || [])];
-              if (newParticipants[pid]) {
-                 const p = newParticipants[pid];
-                 const minBalance = Math.min(0, p.initialBalance);
-                 const maxPull = p.currentBalance - minBalance;
-                 
-                 if (maxPull > 0) {
-                    const pullAmount = data.amount !== undefined ? Math.min(data.amount, maxPull) : maxPull;
-                    if (pullAmount > 0) {
-                       p.currentBalance -= pullAmount;
-                       newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: pullAmount, timestamp: Date.now() });
-
-                       newEvent.payload = resetP2PConfirmations({
-                           ...newEvent.payload,
-                           pool: newEvent.payload.pool + pullAmount,
-                           participants: newParticipants,
-                           transactions: newTransactions
-                        });
-                    }
-                 }
+                ...newEvent.payload,
+                pool: remainder,
+                participants: newParticipants,
+                transactions: newTransactions
+              });
+            }
+          }
+          if (data.action === "P2P_TRANSFER_TO_POOL") {
+            const newParticipants = { ...newEvent.payload.participants };
+            const newTransactions = [...(newEvent.payload.transactions || [])];
+            let addedToPool = 0;
+            Object.keys(newParticipants).forEach(pid => {
+              const p = newParticipants[pid];
+              const minBalance = Math.min(0, p.initialBalance);
+              const maxPull = p.currentBalance - minBalance;
+              if (maxPull > 0) {
+                addedToPool += maxPull;
+                p.currentBalance -= maxPull;
+                newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: maxPull, timestamp: Date.now() });
               }
-           }
-           if (data.action === "P2P_TRANSFER_TO_PLAYER") {
-              const pid = data.participantId;
-              const amount = data.amount;
-              const newParticipants = { ...newEvent.payload.participants };
-              const newTransactions = [...(newEvent.payload.transactions || [])];
-              
-              if (newEvent.payload.pool >= amount && newParticipants[pid]) {
-                 newParticipants[pid].currentBalance += amount;
-                 newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: amount, timestamp: Date.now() });
-                 
-                 newEvent.payload = resetP2PConfirmations({
-                     ...newEvent.payload,
-                     pool: newEvent.payload.pool - amount,
-                     participants: newParticipants,
-                     transactions: newTransactions
+            });
+            newEvent.payload = resetP2PConfirmations({
+              ...newEvent.payload,
+              pool: newEvent.payload.pool + addedToPool,
+              participants: newParticipants,
+              transactions: newTransactions
+            });
+          }
+          if (data.action === "P2P_PULL_FROM_PLAYER") {
+            const pid = data.participantId;
+            const newParticipants = { ...newEvent.payload.participants };
+            const newTransactions = [...(newEvent.payload.transactions || [])];
+            if (newParticipants[pid]) {
+              const p = newParticipants[pid];
+              const minBalance = Math.min(0, p.initialBalance);
+              const maxPull = p.currentBalance - minBalance;
+
+              if (maxPull > 0) {
+                const pullAmount = data.amount !== undefined ? Math.min(data.amount, maxPull) : maxPull;
+                if (pullAmount > 0) {
+                  p.currentBalance -= pullAmount;
+                  newTransactions.push({ id: nanoid(), from: pid, to: "POOL", amount: pullAmount, timestamp: Date.now() });
+
+                  newEvent.payload = resetP2PConfirmations({
+                    ...newEvent.payload,
+                    pool: newEvent.payload.pool + pullAmount,
+                    participants: newParticipants,
+                    transactions: newTransactions
                   });
+                }
               }
-           }
-           if (data.action === "CLOSE_P2P") {
-              const charId = data.characterId;
-              const finalParticipants = newEvent.payload.participants;
-              
-              Object.keys(finalParticipants).forEach(pid => {
-                 const pData = finalParticipants[pid];
-                 const delta = pData.currentBalance - pData.initialBalance;
-                 
-                 useNetworkStore.getState().sendPayload(pid, "P2P_FINAL_SETTLEMENT", {
-                     walletId: pData.walletId,
-                     delta: delta,
-                     finalBalance: pData.currentBalance,
-                     currency: newEvent.payload.currency
-                 });
-              });
-              
-              const activeName = useCharacterStore.getState().name;
-              if (newEvent.payload.pool > 0 && activeName === "MASTER") {
-                 RetroToast.success(`P2P FINALIZADO. Fundo de ${newEvent.payload.pool} ${newEvent.payload.currency} dissipado pelo sistema.`);
-              } else if (newEvent.payload.pool > 0 && activeName !== "MASTER") {
-                 useNetworkStore.getState().sendPayload(charId, "P2P_FINAL_SETTLEMENT", {
-                     walletId: "NEW_WALLET",
-                     delta: newEvent.payload.pool,
-                     finalBalance: newEvent.payload.pool,
-                     currency: newEvent.payload.currency
-                 });
-                 RetroToast.success(`P2P FINALIZADO. O host resgatou o resto da pool.`);
-              }
+            }
+          }
+          if (data.action === "P2P_TRANSFER_TO_PLAYER") {
+            const pid = data.participantId;
+            const amount = data.amount;
+            const newParticipants = { ...newEvent.payload.participants };
+            const newTransactions = [...(newEvent.payload.transactions || [])];
 
-              newEvent.status = "PENDING";
+            if (newEvent.payload.pool >= amount && newParticipants[pid]) {
+              newParticipants[pid].currentBalance += amount;
+              newTransactions.push({ id: nanoid(), from: "POOL", to: pid, amount: amount, timestamp: Date.now() });
+
               newEvent.payload = resetP2PConfirmations({
-                 ...newEvent.payload,
-                 initialPool: newEvent.payload.pool
+                ...newEvent.payload,
+                pool: newEvent.payload.pool - amount,
+                participants: newParticipants,
+                transactions: newTransactions
               });
-           }
+            }
+          }
+          if (data.action === "CLOSE_P2P") {
+            const charId = data.characterId;
+            const finalParticipants = newEvent.payload.participants;
 
-           if (!skipSync) {
-              mEventsStore.updateEvent(newEvent.id, newEvent);
-              useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
-           }
+            Object.keys(finalParticipants).forEach(pid => {
+              const pData = finalParticipants[pid];
+              const delta = pData.currentBalance - pData.initialBalance;
+
+              useNetworkStore.getState().sendPayload(pid, "P2P_FINAL_SETTLEMENT", {
+                walletId: pData.walletId,
+                delta: delta,
+                finalBalance: pData.currentBalance,
+                currency: newEvent.payload.currency
+              });
+            });
+
+            const activeName = useCharacterStore.getState().name;
+            if (newEvent.payload.pool > 0 && activeName === "MASTER") {
+              RetroToast.success(`P2P FINALIZADO. Fundo de ${newEvent.payload.pool} ${newEvent.payload.currency} dissipado pelo sistema.`);
+            } else if (newEvent.payload.pool > 0 && activeName !== "MASTER") {
+              useNetworkStore.getState().sendPayload(charId, "P2P_FINAL_SETTLEMENT", {
+                walletId: "NEW_WALLET",
+                delta: newEvent.payload.pool,
+                finalBalance: newEvent.payload.pool,
+                currency: newEvent.payload.currency
+              });
+              RetroToast.success(`P2P FINALIZADO. O host resgatou o resto da pool.`);
+            }
+
+            newEvent.status = "PENDING";
+            newEvent.payload = resetP2PConfirmations({
+              ...newEvent.payload,
+              initialPool: newEvent.payload.pool
+            });
+          }
+
+          if (!skipSync) {
+            mEventsStore.updateEvent(newEvent.id, newEvent);
+            useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+          }
         }
 
         if (data.action === "ACCEPT_JOB" && targetEvent.type === "JOB") {
           const charId = data.characterId;
-          
+
           const newEvent = {
             ...targetEvent,
             payload: {
@@ -387,7 +436,7 @@ export function MasterNetworkQueueManager() {
               }
             }
           };
-          
+
           mEventsStore.updateEvent(newEvent.id, newEvent);
           const msg = `Aceitou o trabalho. Aguardando pagamento.`;
           mEventsStore.addLog({
@@ -401,59 +450,59 @@ export function MasterNetworkQueueManager() {
             color: 1752220,
             author: { name: charId }
           }]);
-          
+
           RetroToast.success(`[EMPREGO] ${charId} aceitou o trabalho!`);
-          
+
           // Re-broadcast updated event
           useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
         }
 
         if (data.action === "PAY_WORKERS" && targetEvent.type === "JOB") {
           const workers = Object.keys(targetEvent.payload.limboTransactions || {});
-          
+
           if (workers.length > 0) {
-             
-             workers.forEach(workerId => {
-               const salaryItem = {
-                  id: nanoid(),
-                  name: `Salário: ${targetEvent.payload.employerName}`,
-                  type: "EQUIPABLE",
-                  quantity: 1,
-                  slots: 0,
-                  isCarried: true,
-                  isEquipped: false,
-                  parentId: null,
-                  drawer: null,
-                  effects: [],
-                  description: "",
-                  svgId: "wallet",
-                  price: 0,
-                  wallet: {
-                    type: targetEvent.payload.currency as "CC" | "FCC",
-                    value: targetEvent.payload.salary,
-                    max: null,
-                  },
-               };
-               
-               useNetworkStore.getState().sendPayload(workerId, "INVENTORY_UPSERT", salaryItem);
-               
-               const msg = `Recebeu pagamento de ${targetEvent.payload.salary} ${targetEvent.payload.currency}.`;
-               mEventsStore.addLog({
-                  eventId: targetEvent.id,
-                  characterId: workerId,
-                  message: msg
-               });
-               dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
-                 title: targetEvent.title,
-                 description: msg,
-                 color: 1752220,
-                 author: { name: workerId }
-               }]);
-             });
-             
-             RetroToast.success(`[EMPREGO] ${workers.length} trabalhador(es) pago(s)! Evento encerrado.`);
+
+            workers.forEach(workerId => {
+              const salaryItem = {
+                id: nanoid(),
+                name: `Salário: ${targetEvent.payload.employerName}`,
+                type: "EQUIPABLE",
+                quantity: 1,
+                slots: 0,
+                isCarried: true,
+                isEquipped: false,
+                parentId: null,
+                drawer: null,
+                effects: [],
+                description: "",
+                svgId: "wallet",
+                price: 0,
+                wallet: {
+                  type: targetEvent.payload.currency as "CC" | "FCC",
+                  value: targetEvent.payload.salary,
+                  max: null,
+                },
+              };
+
+              useNetworkStore.getState().sendPayload(workerId, "INVENTORY_UPSERT", salaryItem);
+
+              const msg = `Recebeu pagamento de ${targetEvent.payload.salary} ${targetEvent.payload.currency}.`;
+              mEventsStore.addLog({
+                eventId: targetEvent.id,
+                characterId: workerId,
+                message: msg
+              });
+              dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+                title: targetEvent.title,
+                description: msg,
+                color: 1752220,
+                author: { name: workerId }
+              }]);
+            });
+
+            RetroToast.success(`[EMPREGO] ${workers.length} trabalhador(es) pago(s)! Evento encerrado.`);
           }
-          
+
           mEventsStore.removeEvent(targetEvent.id);
           useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: targetEvent.id });
         }
@@ -462,93 +511,93 @@ export function MasterNetworkQueueManager() {
           const charId = data.characterId;
           const itemId = data.itemId;
           const price = data.price;
-          
+
           const itemIndex = targetEvent.payload.items.findIndex((i: any) => i.itemId === itemId);
           if (itemIndex > -1) {
-             const marketItem = targetEvent.payload.items[itemIndex];
-             let outOfStock = false;
-             
-             if (marketItem.stockLimit !== null) {
-                if (marketItem.stockLimit <= 0) {
-                   outOfStock = true;
+            const marketItem = targetEvent.payload.items[itemIndex];
+            let outOfStock = false;
+
+            if (marketItem.stockLimit !== null) {
+              if (marketItem.stockLimit <= 0) {
+                outOfStock = true;
+              }
+            }
+
+            if (!outOfStock) {
+              // Update stock
+              const newItems = [...targetEvent.payload.items];
+              if (newItems[itemIndex].stockLimit !== null) {
+                newItems[itemIndex].stockLimit! -= 1;
+              }
+
+              const newEvent = {
+                ...targetEvent,
+                payload: {
+                  ...targetEvent.payload,
+                  items: newItems
                 }
-             }
-             
-             if (!outOfStock) {
-                // Update stock
-                const newItems = [...targetEvent.payload.items];
-                if (newItems[itemIndex].stockLimit !== null) {
-                   newItems[itemIndex].stockLimit! -= 1;
-                }
-                
-                const newEvent = {
-                   ...targetEvent,
-                   payload: {
-                      ...targetEvent.payload,
-                      items: newItems
-                   }
-                };
-                
-                mEventsStore.updateEvent(newEvent.id, newEvent);
-                
-                // Get item from master database
-                const masterItem = useMasterStore.getState().globalItems.find((i: any) => i.id === itemId);
-                
-                const purchasedItem = masterItem ? {
-                   ...masterItem,
-                   id: nanoid()
-                } : {
-                   id: nanoid(),
-                   name: itemId,
-                   type: "CONSUMABLE",
-                   quantity: 1,
-                   slots: 1,
-                   isCarried: true,
-                   isEquipped: false,
-                   parentId: null,
-                   drawer: null,
-                   effects: [],
-                   description: "",
-                   svgId: "consumable",
-                   price: price,
-                   uses: 1,
-                   maxUses: 1,
-                   commsType: "DEFAULT",
-                   instantActions: [],
-                };
-                
-                useNetworkStore.getState().sendPayload(charId, "INVENTORY_UPSERT", purchasedItem);
-                
-                const msg = `Comprou ${itemId} por ${price} ${targetEvent.payload.currency}.`;
-                mEventsStore.addLog({
-                   eventId: targetEvent.id,
-                   characterId: charId,
-                   message: msg
-                });
-                dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
-                  title: targetEvent.title,
-                  description: msg,
-                  color: 3066993,
-                  author: { name: charId }
-                }]);
-                
-                RetroToast.success(`[MERCADO] ${charId} comprou ${itemId}!`);
-                
-                useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
-             } else {
-                RetroToast.warning(`[MERCADO] ${charId} tentou comprar ${itemId}, mas está esgotado.`);
-             }
+              };
+
+              mEventsStore.updateEvent(newEvent.id, newEvent);
+
+              // Get item from master database
+              const masterItem = useMasterStore.getState().globalItems.find((i: any) => i.id === itemId);
+
+              const purchasedItem = masterItem ? {
+                ...masterItem,
+                id: nanoid()
+              } : {
+                id: nanoid(),
+                name: itemId,
+                type: "CONSUMABLE",
+                quantity: 1,
+                slots: 1,
+                isCarried: true,
+                isEquipped: false,
+                parentId: null,
+                drawer: null,
+                effects: [],
+                description: "",
+                svgId: "consumable",
+                price: price,
+                uses: 1,
+                maxUses: 1,
+                commsType: "DEFAULT",
+                instantActions: [],
+              };
+
+              useNetworkStore.getState().sendPayload(charId, "INVENTORY_UPSERT", purchasedItem);
+
+              const msg = `Comprou ${itemId} por ${price} ${targetEvent.payload.currency}.`;
+              mEventsStore.addLog({
+                eventId: targetEvent.id,
+                characterId: charId,
+                message: msg
+              });
+              dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+                title: targetEvent.title,
+                description: msg,
+                color: 3066993,
+                author: { name: charId }
+              }]);
+
+              RetroToast.success(`[MERCADO] ${charId} comprou ${itemId}!`);
+
+              useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+            } else {
+              RetroToast.warning(`[MERCADO] ${charId} tentou comprar ${itemId}, mas está esgotado.`);
+            }
           }
         }
 
         if (data.action === "START_TEST" && targetEvent.type === "TEST") {
           const charId = data.characterId;
-          
+
           const msg = `Iniciou o teste. Resultado será enviado separadamente.`;
           mEventsStore.addLog({
-             eventId: targetEvent.id,
-             characterId: charId,
-             message: msg
+            eventId: targetEvent.id,
+            characterId: charId,
+            message: msg
           });
           dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
             title: targetEvent.title,
@@ -556,8 +605,42 @@ export function MasterNetworkQueueManager() {
             color: 3447003,
             author: { name: charId }
           }]);
-          
+
           RetroToast.info(`[TESTE] ${charId} iniciou a rolagem!`);
+        }
+
+        if (data.action === "JOIN_COMBAT" && targetEvent.type === "COMBAT") {
+          const newParticipant = data.participant;
+          const newEvent = {
+            ...targetEvent,
+            payload: {
+              ...targetEvent.payload,
+              participants: {
+                ...targetEvent.payload.participants,
+                [newParticipant.name]: newParticipant
+              }
+            }
+          };
+
+          mEventsStore.updateEvent(newEvent.id, newEvent);
+
+          const msg = `Entrou no combate com iniciativa ${newParticipant.initiative}.`;
+          mEventsStore.addLog({
+            eventId: newEvent.id,
+            characterId: newParticipant.name,
+            message: msg
+          });
+          dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+            title: newEvent.title,
+            description: msg,
+            color: 16711680,
+            author: { name: newParticipant.name }
+          }]);
+
+          RetroToast.success(`[COMBATE] ${newParticipant.name} rolou a iniciativa e entrou no combate!`);
+
+          // Re-broadcast updated event
+          useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
         }
       }
       removeQueueItem(current.id);
@@ -567,37 +650,37 @@ export function MasterNetworkQueueManager() {
     if (current.type === "REMOVE_EFFECT") {
       processingIdRef.current = current.id;
       if (activeNpcNames.includes(current.targetName)) {
-         const charStore = useCharacterStore.getState();
-         const isNpc = npcs.find((n) => n.name === current.targetName);
-         let needsRestore = false;
-         let tempBackup: any = null;
-         if (isNpc && charStore.name !== current.targetName) {
-            needsRestore = true;
-            tempBackup = extractCharacterData(charStore);
-            useCharacterStore.getState().importCharacterData({ ...isNpc, isMasterMode: true });
-         }
-         const data = current.data as { id: number };
-         useCharacterStore.getState().removeCustomEffect(data.id);
-         RetroToast.warning(`O MESTRE REMOVEU UM EFEITO DE [${current.targetName}].`);
-         
-         if (isNpc) {
-           useMasterStore.getState().updateNpcData(isNpc.id, useCharacterStore.getState());
-           if (needsRestore && tempBackup) {
-              useCharacterStore.getState().importCharacterData(tempBackup);
-           }
-         }
+        const charStore = useCharacterStore.getState();
+        const isNpc = npcs.find((n) => n.name === current.targetName);
+        let needsRestore = false;
+        let tempBackup: any = null;
+        if (isNpc && charStore.name !== current.targetName) {
+          needsRestore = true;
+          tempBackup = extractCharacterData(charStore);
+          useCharacterStore.getState().importCharacterData({ ...isNpc, isMasterMode: true });
+        }
+        const data = current.data as { id: number };
+        useCharacterStore.getState().removeCustomEffect(data.id);
+        RetroToast.warning(`O MESTRE REMOVEU UM EFEITO DE [${current.targetName}].`);
+
+        if (isNpc) {
+          useMasterStore.getState().updateNpcData(isNpc.id, useCharacterStore.getState());
+          if (needsRestore && tempBackup) {
+            useCharacterStore.getState().importCharacterData(tempBackup);
+          }
+        }
       } else {
         const data = current.data as { id: number };
         removeCustomEffect(data.id);
         RetroToast.warning("O MESTRE REMOVEU UM EFEITO.");
       }
-      
+
       removeQueueItem(current.id);
       return;
     }
 
-    const isMasterToNpc = 
-      (current.attackerName === "MESTRE" || current.attackerName === useCharacterStore.getState().name) && 
+    const isMasterToNpc =
+      (current.attackerName === "MESTRE" || current.attackerName === useCharacterStore.getState().name) &&
       activeNpcNames.includes(current.targetName);
     if (isMasterToNpc) {
       const npc = npcs.find((n) => n.name === current.targetName);
@@ -606,37 +689,37 @@ export function MasterNetworkQueueManager() {
         let tempBackup: any = null;
         const charStore = useCharacterStore.getState();
         if (charStore.name !== current.targetName) {
-           needsRestore = true;
-           tempBackup = extractCharacterData(charStore);
-           useCharacterStore.getState().importCharacterData({ ...npc, isMasterMode: true, sandboxMode: npc.type === "NON_HUMAN" });
+          needsRestore = true;
+          tempBackup = extractCharacterData(charStore);
+          useCharacterStore.getState().importCharacterData({ ...npc, isMasterMode: true, sandboxMode: npc.type === "NON_HUMAN" });
         }
 
         if (current.type === "COMBAT_DEFENSE") {
-           const data = current.data as { damage: number };
-           useCharacterStore.getState().applyDamage(data.damage, "IGNORE", null);
+          const data = current.data as { damage: number };
+          useCharacterStore.getState().applyDamage(data.damage, "IGNORE", null);
         } else if (current.type === "ACTION") {
-           useCharacterStore.getState().processDirectAction(current.data as InstantAction);
+          useCharacterStore.getState().processDirectAction(current.data as InstantAction);
         } else if (current.type === "ITEM") {
-            const itemData = current.data as Item;
-            if (itemData.isSoulBound) {
-              useCharacterStore.getState().addInventoryItem({ ...itemData, id: crypto.randomUUID(), parentId: null, isCarried: true, isEquipped: true });
-            } else {
-              useCharacterStore.getState().addInventoryItem({ ...itemData, id: crypto.randomUUID(), parentId: null, isCarried: true, isEquipped: false });
-            }
+          const itemData = current.data as Item;
+          if (itemData.isSoulBound) {
+            useCharacterStore.getState().addInventoryItem({ ...itemData, id: crypto.randomUUID(), parentId: null, isCarried: true, isEquipped: true });
+          } else {
+            useCharacterStore.getState().addInventoryItem({ ...itemData, id: crypto.randomUUID(), parentId: null, isCarried: true, isEquipped: false });
+          }
         } else if (current.type === "XP") {
-           useCharacterStore.getState().addXp((current.data as { amount: number }).amount);
+          useCharacterStore.getState().addXp((current.data as { amount: number }).amount);
         } else if (current.type === "EFFECT") {
-           useCharacterStore.getState().addCustomEffect({ ...(current.data as CustomEffect), id: Date.now() + Math.random(), link: null });
+          useCharacterStore.getState().addCustomEffect({ ...(current.data as CustomEffect), id: Date.now() + Math.random(), link: null });
         } else if (current.type === "NOTE") {
-           const payloadData = current.data as { note: Note; effects: CustomEffect[] };
-           useCharacterStore.getState().importExternalNote(payloadData.note, payloadData.effects);
+          const payloadData = current.data as { note: Note; effects: CustomEffect[] };
+          useCharacterStore.getState().importExternalNote(payloadData.note, payloadData.effects);
         } else if (current.type === "FULL_OVERRIDE") {
-           useCharacterStore.getState().importCharacterData(current.data as Partial<CharacterStore>);
+          useCharacterStore.getState().importCharacterData(current.data as Partial<CharacterStore>);
         }
 
         useMasterStore.getState().updateNpcData(npc.id, useCharacterStore.getState());
         if (needsRestore && tempBackup) {
-           useCharacterStore.getState().importCharacterData(tempBackup);
+          useCharacterStore.getState().importCharacterData(tempBackup);
         }
       }
       removeQueueItem(current.id);
@@ -647,29 +730,36 @@ export function MasterNetworkQueueManager() {
 
     if (!anyVitalsModalOpen) {
       if (activeNpcNames.includes(current.targetName)) {
-         const charStore = useCharacterStore.getState();
-         const npc = npcs.find((n) => n.name === current.targetName);
-         if (npc && charStore.name !== current.targetName) {
-            // Note: Wait, this is for processingIdRef.current (Combat Defense). 
-            // We should NOT use temporary backups here since it opens a modal!
-            // It MUST keep the masterBackup state if it hasn't already.
-            if (!useMasterStore.getState().masterBackup) {
-               useMasterStore.getState().setMasterBackup(charStore);
-            }
-            useCharacterStore.getState().importCharacterData({ ...npc, isMasterMode: true, sandboxMode: npc.type === "NON_HUMAN" });
-         }
+        const charStore = useCharacterStore.getState();
+        const npc = npcs.find((n) => n.name === current.targetName);
+        if (npc && charStore.name !== current.targetName) {
+          if (!useMasterStore.getState().masterBackup) {
+            useMasterStore.getState().setMasterBackup(charStore);
+          }
+          useCharacterStore.getState().importCharacterData({ ...npc, isMasterMode: true, sandboxMode: npc.type === "NON_HUMAN" });
+        }
       }
 
       processingIdRef.current = current.id;
 
       if (current.type === "COMBAT_DEFENSE") {
-        vitals.openDefenseModal(
-          current.data as {
-            attackRoll: number;
-            damage: number;
-            attackerName: string;
-          },
-        );
+        const payloadData = current.data as {
+          attackRoll: number;
+          damage: number;
+          attackerName: string;
+          targetId?: string;
+          targetName?: string;
+        };
+        vitals.openDefenseModal({
+          attackRoll: payloadData.attackRoll,
+          damage: payloadData.damage,
+          attackerName: payloadData.attackerName,
+          targetId: payloadData.targetId || current.targetName,
+          targetName: payloadData.targetName || current.targetName,
+        });
+        removeQueueItem(current.id);
+        processingIdRef.current = null;
+        return;
       } else if (current.type === "ACTION") {
         const act = current.data as {
           target: string;
@@ -713,7 +803,7 @@ export function MasterNetworkQueueManager() {
     return (
       <Modal
         isOpen={true}
-        onClose={() => {}}
+        onClose={() => { }}
         title={`PEDIDO DE DESCANSO [${activeQueue.length} RESTANTES]`}
         maxWidth="max-w-md"
       >
@@ -751,27 +841,27 @@ export function MasterNetworkQueueManager() {
                 0: "CAMA DE CAMPANHA", 1: "COBERTA E TRAVESSEIRO", 2: "CAMA CONFORTÁVEL", 3: "LENÇÓIS DE SEDA"
               }}
             />
-            
+
             <div className="flex flex-col gap-2 mt-2">
               <span className="text-[10px] font-bold tracking-widest text-[var(--theme-warning)] uppercase">
                 DIFICULDADE DA ÁREA (DC)
               </span>
               <div className="flex gap-2">
-                <Button 
+                <Button
                   className={`flex-1 ${restDiff === 10 ? "border-[var(--theme-warning)] bg-[var(--theme-warning)]/20 text-[var(--theme-warning)]" : "border-dashed opacity-50"}`}
                   onClick={() => setRestDiff(10)}
                   variant="primary"
                 >
                   FÁCIL (10)
                 </Button>
-                <Button 
+                <Button
                   className={`flex-1 ${restDiff === 15 ? "border-[var(--theme-warning)] bg-[var(--theme-warning)]/20 text-[var(--theme-warning)]" : "border-dashed opacity-50"}`}
                   onClick={() => setRestDiff(15)}
                   variant="primary"
                 >
                   MÉDIO (15)
                 </Button>
-                <Button 
+                <Button
                   className={`flex-1 ${restDiff === 20 ? "border-[var(--theme-warning)] bg-[var(--theme-warning)]/20 text-[var(--theme-warning)]" : "border-dashed opacity-50"}`}
                   onClick={() => setRestDiff(20)}
                   variant="primary"
@@ -863,15 +953,16 @@ export function MasterNetworkQueueManager() {
         useCharacterStore.getState().addInventoryItem(boundItem);
         RetroToast.warning("ITEM VINCULADO À ALMA EQUIPADO AUTOMATICAMENTE.");
       } else {
-        const newItem: Item = {
+        const newItem: MasterItem = {
           ...itemData,
           id: crypto.randomUUID(),
           parentId: null,
           isCarried: true,
           isEquipped: false,
+          folderId: null,
         };
-        useCharacterStore.getState().addInventoryItem(newItem);
-        RetroToast.success(`MATÉRIA RECEBIDA: [${newItem.name}]`);
+        useMasterStore.getState().addGlobalItem(newItem);
+        RetroToast.success(`MATÉRIA RECEBIDA NO ARSENAL: [${newItem.name}]`);
       }
     } else if (current.type === "XP") {
       const xpData = current.data as { amount: number };
@@ -901,7 +992,7 @@ export function MasterNetworkQueueManager() {
         baseVal = skls[req.rollKey as keyof typeof skls];
       initiateRoll(
         req.title,
-        `1d20+${baseVal}`,
+        `${VG_CONFIG.rules.mainDice}+${baseVal}`,
         [req.rollKey, req.rollCategory],
         req.dc,
       );
@@ -940,7 +1031,7 @@ export function MasterNetworkQueueManager() {
   return (
     <Modal
       isOpen={true}
-      onClose={() => {}}
+      onClose={() => { }}
       title={`TRANSMISSÃO RECEBIDA [${activeQueue.length} RESTANTES]`}
       maxWidth="max-w-md"
     >
@@ -955,9 +1046,9 @@ export function MasterNetworkQueueManager() {
               <ItemNodeV2
                 item={current.data as Item}
                 allInventory={[]}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                onToggleEquip={() => {}}
+                onEdit={() => { }}
+                onDelete={() => { }}
+                onToggleEquip={() => { }}
                 isEditMode={false}
                 isPreview={true}
               />
@@ -1017,12 +1108,12 @@ export function MasterNetworkQueueManager() {
               </span>
               {(current.data as { effects: CustomEffect[] }).effects.length >
                 0 && (
-                <span className="text-[10px] text-[var(--theme-warning)] font-bold mt-2 uppercase tracking-widest">
-                  +{" "}
-                  {(current.data as { effects: CustomEffect[] }).effects.length}{" "}
-                  EFEITO(S) INCLUSO(S)
-                </span>
-              )}
+                  <span className="text-[10px] text-[var(--theme-warning)] font-bold mt-2 uppercase tracking-widest">
+                    +{" "}
+                    {(current.data as { effects: CustomEffect[] }).effects.length}{" "}
+                    EFEITO(S) INCLUSO(S)
+                  </span>
+                )}
             </div>
           )}
 

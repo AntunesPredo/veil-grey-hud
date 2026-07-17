@@ -80,7 +80,7 @@ export function CombatConfig({
           </select>
         </div>
 
-        {formData.combatProps.weaponType === "RANGED" && (
+        {formData.combatProps.weaponType === "FIREARM" && (
           <div className="flex flex-col gap-1 col-span-2 border-t border-dashed border-[var(--theme-danger)]/30 pt-2">
             <span className="text-[9px] text-[var(--theme-danger)] tracking-widest uppercase">
               DIFICULDADE BASE DE DISPARO
@@ -99,7 +99,7 @@ export function CombatConfig({
           </div>
         )}
 
-        {formData.combatProps.weaponType === "MELEE" && (
+        {(formData.combatProps.weaponType === "MELEE" || formData.combatProps.weaponType === "RANGED") && (
           <>
             <div className="flex flex-col gap-1 border-t border-dashed border-[var(--theme-danger)]/30 pt-2">
               <span className="text-[9px] text-[var(--theme-danger)] tracking-widest uppercase">

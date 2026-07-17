@@ -64,7 +64,7 @@ const getSafeEnergyCurrent = (state: CharacterStore): number => {
 
   const agi = Math.floor(
     ((state.attributes?.dexterity || 0) + (state.attributes?.instinct || 0)) /
-      2,
+    2,
   );
   const ap = 1 + Math.floor(agi / 3);
   const slots = 4 + ap;
@@ -88,7 +88,7 @@ const getEnergyCap = (
 
   const agi = Math.floor(
     ((state.attributes?.dexterity || 0) + (state.attributes?.instinct || 0)) /
-      2,
+    2,
   );
   const ap = 1 + Math.floor(agi / 3);
   const slotsPerStage = 4 + ap;
@@ -124,26 +124,26 @@ export const createVitalsSlice: StateCreator<
     set((state) => {
       const safeAmount = Math.abs(sanitizeNumber(amount, 0));
       const playerName = state.name || "DESCONHECIDO";
-      
+
       const embed: DiscordEmbed = {
         title: "[+] RECUPERAÇÃO VITAL [+]",
         color: 3066993,
-        description: `**UNIDADE OPERACIONAL:** ${playerName}\n**CÚPULA RESTAURADA:** ${safeAmount} HP`,
+        description: `**UNIDADE OPERACIONAL:** ${playerName}\n**PV RESTAURADO:** ${safeAmount} HP`,
         footer: { text: "SYS.MNLT // BIO_TRACKER" },
         timestamp: new Date().toISOString(),
       };
       dispatchDiscordLog("PLAYER", playerName, "", [embed]);
 
       return {
-      hp: {
-        ...state.hp,
-        current: Math.min(
-          state.hp.baseMax + state.hp.maxBonus,
-          sanitizeNumber(state.hp.current, 65) + safeAmount,
-        ),
-      },
-    };
-  }),
+        hp: {
+          ...state.hp,
+          current: Math.min(
+            state.hp.baseMax + state.hp.maxBonus,
+            sanitizeNumber(state.hp.current, 65) + safeAmount,
+          ),
+        },
+      };
+    }),
 
   addMaxHpBonus: (amount) =>
     set((state) => ({
@@ -283,7 +283,7 @@ export const createVitalsSlice: StateCreator<
 
     const agi = Math.floor(
       ((state.attributes?.dexterity || 0) + (state.attributes?.instinct || 0)) /
-        2,
+      2,
     );
     const ap = 1 + Math.floor(agi / 3);
     const slotsPerStage = 4 + ap;
@@ -297,7 +297,7 @@ export const createVitalsSlice: StateCreator<
         const equippedArmor = state.inventory.find(
           (i) => i.isEquipped && "armorProps" in i && !!i.armorProps
         );
-        
+
         if (equippedArmor) {
           useVitalsStore.getState().openModal("DAMAGE", String(safeActVal), true);
         } else {
@@ -323,7 +323,6 @@ export const createVitalsSlice: StateCreator<
         break;
 
       case "ENERGY_USES_RESTORE": {
-        let remainingVal = safeActVal;
         let currentEnergy = state.energy.current;
 
         const mass =
@@ -338,25 +337,11 @@ export const createVitalsSlice: StateCreator<
         else if (state.sustenance.current <= sustStages[0] - 1 + sustStages[1])
           energyCap = slotsPerStage * 2;
 
-        while (remainingVal > 0 && currentEnergy < energyCap) {
-          if (
-            currentEnergy === slotsPerStage ||
-            currentEnergy === slotsPerStage * 2
-          ) {
-            remainingVal = Math.floor(remainingVal / 2);
-            if (remainingVal <= 0) break;
-          }
-          let nextBoundary = energyCap;
-          if (currentEnergy < slotsPerStage) nextBoundary = slotsPerStage;
-          else if (currentEnergy < slotsPerStage * 2)
-            nextBoundary = slotsPerStage * 2;
-
-          const spaceInStage = nextBoundary - currentEnergy;
-          const pointsToTake = Math.min(spaceInStage, remainingVal);
-
-          currentEnergy += pointsToTake;
-          remainingVal -= pointsToTake;
+        currentEnergy += safeActVal;
+        if (currentEnergy > energyCap) {
+          currentEnergy = energyCap;
         }
+
         state.updateEnergy(currentEnergy);
         break;
       }
@@ -420,7 +405,7 @@ export const createVitalsSlice: StateCreator<
         const mentalHealth = Math.floor(
           ((state.attributes.intelligence || 0) +
             (state.attributes.wisdom || 0)) /
-            2,
+          2,
         );
         const maxInsanity = VG_CONFIG.rules.baseInsanity + mentalHealth;
         const newTotal = state.insanity.current + safeActVal;

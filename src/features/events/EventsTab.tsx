@@ -7,6 +7,7 @@ import { MerchantEventCard } from "./components/modules/MerchantEventCard";
 import { JobsEventCard } from "./components/modules/JobsEventCard";
 import { DebtsEventCard } from "./components/modules/DebtsEventCard";
 import { P2PTransferCard } from "./components/modules/P2PTransferCard";
+import { CombatEventCard } from "./components/modules/CombatEventCard";
 import type { GameEvent, EventType } from "../../shared/types/events";
 import { useCharacterStore } from "../character/store";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
@@ -74,6 +75,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     JOB: "border-cyan-500",
     DEBT: "border-red-500",
     P2P_TRANSFER: "border-purple-500",
+    COMBAT: "border-red-600",
   };
 
   const handleEdit = (event: GameEvent) => {
@@ -130,6 +132,16 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
 
   const handleRevoke = (event: GameEvent) => {
     const updatedEvent = { ...event, status: "PENDING" } as GameEvent;
+
+    if (updatedEvent.type === "COMBAT") {
+      updatedEvent.payload = {
+        ...updatedEvent.payload,
+        participants: {},
+        currentRound: 0,
+        currentTurn: null,
+      };
+    }
+
     useMasterEventsStore.getState().updateEvent(event.id, updatedEvent);
     useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: event.id });
     RetroToast.warning("EVENTO REVOGADO");
@@ -246,6 +258,8 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
             onHostManage={() => setP2pHostManageEvent(event)}
           />
         );
+      case "COMBAT":
+        return <CombatEventCard key={event.id} {...cardProps} event={event as any} />;
       default:
         return null;
     }
@@ -333,6 +347,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     { type: "JOB", label: "TRABALHOS" },
     { type: "DEBT", label: "DÍVIDAS" },
     { type: "P2P_TRANSFER", label: "TRANSFERÊNCIAS (P2P)" },
+    { type: "COMBAT", label: "COMBATE" },
   ];
 
   return (

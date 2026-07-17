@@ -19,6 +19,7 @@ import { Modal } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
 import { ItemNodeV2 } from "../../features/inventory/components/ItemNodeV2";
 import { WalletSelectorDnd } from "../../shared/ui/WalletSelectorDnd";
+import { VG_CONFIG } from "../../shared/config/system.config";
 
 export function NetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
@@ -91,7 +92,7 @@ export function NetworkQueueManager() {
     if (current.type === "EVENT_SYNC") {
       const data = current.data as { action: "UPSERT" | "DELETE"; event?: GameEvent; eventId?: string };
       const { addEvent, updateEvent, removeEvent, activeEvents } = useEventsStore.getState();
-      
+
       if (data.action === "DELETE" && data.eventId) {
         removeEvent(data.eventId);
         RetroToast.warning("EVENTO CANCELADO PELO MESTRE.");
@@ -101,19 +102,19 @@ export function NetworkQueueManager() {
         const existing = activeEvents.find(e => e.id === data.event!.id);
 
         if (!isTargeted || data.event.status !== "ACTIVE") {
-           if (existing) {
-             removeEvent(data.event.id);
-           }
+          if (existing) {
+            removeEvent(data.event.id);
+          }
         } else {
-           if (existing) {
-             updateEvent(existing.id, data.event);
-           } else {
-             addEvent(data.event);
-             RetroToast.success(`NOVO EVENTO: [${data.event.title}]`);
-           }
+          if (existing) {
+            updateEvent(existing.id, data.event);
+          } else {
+            addEvent(data.event);
+            RetroToast.success(`NOVO EVENTO: [${data.event.title}]`);
+          }
         }
       }
-      
+
       removeQueueItem(current.id);
       if (processingIdRef.current === current.id)
         processingIdRef.current = null;
@@ -124,11 +125,12 @@ export function NetworkQueueManager() {
       const data = current.data as { walletId: string; delta: number; finalBalance?: number; currency: string };
       const targetWallet = useCharacterStore.getState().inventory.find(i => i.id === data.walletId);
       if (targetWallet && targetWallet.wallet) {
-         useCharacterStore.getState().updateInventoryItem(data.walletId, "wallet", {
-            ...targetWallet.wallet,
-            value: targetWallet.wallet.value + data.delta
-         });
-         window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", { detail: {
+        useCharacterStore.getState().updateInventoryItem(data.walletId, "wallet", {
+          ...targetWallet.wallet,
+          value: targetWallet.wallet.value + data.delta
+        });
+        window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+          detail: {
             title: "COMPROVANTE DE TRANSFERÊNCIA P2P",
             hostName: current.attackerName || "MAINFRAME",
             walletId: data.walletId,
@@ -136,31 +138,33 @@ export function NetworkQueueManager() {
             delta: data.delta,
             finalBalance: data.finalBalance,
             currency: data.currency
-         }}));
+          }
+        }));
       } else if (data.walletId === "NEW_WALLET") {
-         const newWallet: Item = {
-           id: crypto.randomUUID(),
-           name: `Fundo Coletivo Recebido`,
-           type: "EQUIPABLE",
-           quantity: 1,
-           slots: 0,
-           isCarried: true,
-           isEquipped: false,
-           parentId: null,
-           drawer: null,
-           effects: [],
-           description: "",
-           svgId: "wallet",
-           price: 0,
-           wallet: {
-             type: data.currency as "CC" | "FCC",
-             value: data.delta,
-             max: null,
-           },
-         };
-         useCharacterStore.getState().addInventoryItem(newWallet);
-         
-         window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", { detail: {
+        const newWallet: Item = {
+          id: crypto.randomUUID(),
+          name: `Fundo Coletivo Recebido`,
+          type: "EQUIPABLE",
+          quantity: 1,
+          slots: 0,
+          isCarried: true,
+          isEquipped: false,
+          parentId: null,
+          drawer: null,
+          effects: [],
+          description: "",
+          svgId: "wallet",
+          price: 0,
+          wallet: {
+            type: data.currency as "CC" | "FCC",
+            value: data.delta,
+            max: null,
+          },
+        };
+        useCharacterStore.getState().addInventoryItem(newWallet);
+
+        window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+          detail: {
             title: "RESGATE DE POOL FINAL",
             hostName: "SISTEMA",
             walletId: newWallet.id,
@@ -168,7 +172,8 @@ export function NetworkQueueManager() {
             delta: data.delta,
             finalBalance: data.finalBalance,
             currency: data.currency
-         }}));
+          }
+        }));
       }
       removeQueueItem(current.id);
       if (processingIdRef.current === current.id) processingIdRef.current = null;
@@ -205,13 +210,23 @@ export function NetworkQueueManager() {
       processingIdRef.current = current.id;
 
       if (current.type === "COMBAT_DEFENSE") {
-        vitals.openDefenseModal(
-          current.data as {
-            attackRoll: number;
-            damage: number;
-            attackerName: string;
-          },
-        );
+        const payloadData = current.data as {
+          attackRoll: number;
+          damage: number;
+          attackerName: string;
+          targetId?: string;
+          targetName?: string;
+        };
+        useVitalsStore.getState().openDefenseModal({
+          attackRoll: payloadData.attackRoll,
+          damage: payloadData.damage,
+          attackerName: payloadData.attackerName,
+          targetId: payloadData.targetId || useCharacterStore.getState().name,
+          targetName: payloadData.targetName || useCharacterStore.getState().name,
+        });
+        removeQueueItem(current.id);
+        processingIdRef.current = null;
+        return;
       } else if (current.type === "ACTION") {
         const act = current.data as {
           target: string;
@@ -310,7 +325,7 @@ export function NetworkQueueManager() {
         baseVal = skills[req.rollKey as keyof typeof skills];
       initiateRoll(
         req.title,
-        `1d20+${baseVal}`,
+        `${VG_CONFIG.rules.mainDice}+${baseVal}`,
         [req.rollKey, req.rollCategory],
         req.dc,
       );
@@ -348,7 +363,7 @@ export function NetworkQueueManager() {
         RetroToast.error("CARTEIRA INVÁLIDA.");
         return;
       }
-      
+
       const isUnlimited = targetWallet.wallet.max === null;
       const spaceLeft = isUnlimited ? Infinity : targetWallet.wallet.max! - targetWallet.wallet.value;
       if (spaceLeft < fundsData.amount) {
@@ -394,7 +409,7 @@ export function NetworkQueueManager() {
   return (
     <Modal
       isOpen={true}
-      onClose={() => {}}
+      onClose={() => { }}
       title={`TRANSMISSÃO RECEBIDA [${activeQueue.length} RESTANTES]`}
       maxWidth="max-w-md"
     >
@@ -409,9 +424,9 @@ export function NetworkQueueManager() {
               <ItemNodeV2
                 item={current.data as Item}
                 allInventory={[]}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                onToggleEquip={() => {}}
+                onEdit={() => { }}
+                onDelete={() => { }}
+                onToggleEquip={() => { }}
                 isEditMode={false}
                 isPreview={true}
               />
@@ -439,9 +454,21 @@ export function NetworkQueueManager() {
           )}
 
           {current.type === "ACTION" && (
-            <div className="text-lg font-mono text-[var(--theme-success)] font-bold my-4 border border-[var(--theme-success)] p-2">
-              AÇÃO IMEDIATA:{" "}
-              {(current.data as { description: string }).description}
+            <div className="my-4 p-4 border border-[var(--theme-success)] text-[var(--theme-success)] font-mono flex flex-col gap-3">
+              <div className="text-lg font-bold tracking-wide">
+                AÇÃO IMEDIATA
+              </div>
+
+              <div className="flex flex-col gap-1 font-bold">
+                <div><span className="opacity-75">TARGET:</span> {(current.data as { target: string }).target}</div>
+                <div><span className="opacity-75">VALUE:</span> {(current.data as { val: number }).val}</div>
+              </div>
+
+              {(current.data as { description: string }).description && (
+                <p className="pt-2 border-t border-[var(--theme-success)]/30 text-sm font-normal">
+                  {(current.data as { description: string }).description}
+                </p>
+              )}
             </div>
           )}
 
@@ -471,12 +498,12 @@ export function NetworkQueueManager() {
               </span>
               {(current.data as { effects: CustomEffect[] }).effects.length >
                 0 && (
-                <span className="text-[10px] text-[var(--theme-warning)] font-bold mt-2 uppercase tracking-widest">
-                  +{" "}
-                  {(current.data as { effects: CustomEffect[] }).effects.length}{" "}
-                  EFEITO(S) INCLUSO(S)
-                </span>
-              )}
+                  <span className="text-[10px] text-[var(--theme-warning)] font-bold mt-2 uppercase tracking-widest">
+                    +{" "}
+                    {(current.data as { effects: CustomEffect[] }).effects.length}{" "}
+                    EFEITO(S) INCLUSO(S)
+                  </span>
+                )}
             </div>
           )}
 
