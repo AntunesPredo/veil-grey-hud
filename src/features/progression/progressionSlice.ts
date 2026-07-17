@@ -20,7 +20,7 @@ export interface ProgressionSlice {
   isPossessing: string | null;
   freePoints: { attributes: number; skills: number; specializations: number };
   role: Role | null;
-  settings: { lockPoints: boolean; showRollDetails: boolean };
+  settings: { lockPoints: boolean; showRollDetails: boolean; showAttackModal: boolean };
   lockedSnapshot: SnapshotStats | null;
   disadvantages: Disadvantage[];
 
@@ -57,7 +57,7 @@ export const createProgressionSlice: StateCreator<
   isPossessing: null,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
   role: null,
-  settings: { lockPoints: true, showRollDetails: true },
+  settings: { lockPoints: true, showRollDetails: true, showAttackModal: true },
   lockedSnapshot: null,
   disadvantages: [],
 

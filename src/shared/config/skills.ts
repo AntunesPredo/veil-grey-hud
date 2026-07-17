@@ -27,6 +27,13 @@ const physical = {
     description:
       "O domínio de fuzis de assalto, escopetas e rifles. Foca na postura de tiro, mira e operação mecânica correta do armamento.",
   },
+  firearms_big: {
+    id: "firearms_big",
+    label: "ARMAS DE FOGO (GRANDE PORTE)",
+    bases: ["dexterity", "strength"],
+    description:
+      "O domínio de lança-mísseis, lança-chamas e metralhadoras pesadas. Exige força para suportar o recuo e precisão para controlar a rajada de tiros.",
+  },
   lockpick: {
     id: "lockpick",
     label: "ARROMBAMENTO",
@@ -62,6 +69,13 @@ const physical = {
     description:
       "O uso de armas de impacto mais pesadas que podem ser usadas com uma ou duas mãos, como tacos de beisebol ou bastões retráteis.",
   },
+  blunt_big: {
+    id: "blunt_big",
+    label: "CONTUNDENTES (GRANDES)",
+    bases: ["strength", "constitution"],
+    description:
+      "O domínio de armas contundentes extremamente pesadas e desajeitadas, como pé de cabra e martelos de demolição. Exige força bruta para brandir e resistência para suportar o cansaço.",
+  },
   blades_short: {
     id: "blades_short",
     label: "LÂMINAS (CURTAS)",
@@ -75,6 +89,13 @@ const physical = {
     bases: ["strength", "dexterity"],
     description:
       "O combate com lâminas de maior alcance e peso, como espadas curtas, facões e machadinhas.",
+  },
+  blades_big: {
+    id: "blades_big",
+    label: "LÂMINAS (GRANDES)",
+    bases: ["strength", "constitution"],
+    description:
+      "O domínio de lâminas grandes e pesadas, como espadas longas e machados. Exige habilidade para manejar com eficiência e resistência para suportar o peso.",
   },
   light_hands: {
     id: "light_hands",

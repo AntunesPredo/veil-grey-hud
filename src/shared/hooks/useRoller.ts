@@ -5,13 +5,16 @@ import { executeRawRoll } from "../utils/diceEngine";
 import { RetroToast } from "../ui/RetroToast";
 import { dispatchDiscordLog, type DiscordEmbed } from "../utils/discordWebhook";
 import type { CustomEffect } from "../types/veil-grey";
-
+import { useCombatStatus } from "../../features/combat/useCombatStatus";
+import { useCombatConsumption } from "../../features/combat/useCombatConsumption";
 export function useRoller() {
   const settings = useCharacterStore((state) => state.settings);
   const name = useCharacterStore((state) => state.name);
 
   const { activeEffects } = useActiveModifiers();
   const rollStore = useRollStore();
+  const combatStatus = useCombatStatus();
+  const { consumeAction } = useCombatConsumption();
 
   const initiateRoll = (
     title: string,
@@ -23,6 +26,30 @@ export function useRoller() {
       targets.includes(e.target),
     );
 
+    if (combatStatus.inCombat) {
+      const npcType = useCharacterStore.getState().npcType;
+      const isMasterMode = useCharacterStore.getState().isMasterMode;
+      const isNonHuman = isMasterMode && npcType === "NON_HUMAN";
+
+      if (!isNonHuman) {
+        const attributes = useCharacterStore.getState().attributes;
+        const maxAp = 1 + Math.floor(Math.floor(((attributes.dexterity || 0) + (attributes.instinct || 0)) / 2) / 3);
+
+        if (!combatStatus.myTurn) {
+          RetroToast.error("NÃO É O SEU TURNO!");
+          return;
+        }
+        if (combatStatus.participant && combatStatus.participant.apUsed >= maxAp) {
+          RetroToast.error("SEM PONTOS DE AÇÃO!");
+          return;
+        }
+        if (useCharacterStore.getState().energy.current <= 0 && !useCharacterStore.getState().sandboxMode) {
+          RetroToast.error("SEM ENERGIA PARA REALIZAR TESTE!");
+          return;
+        }
+      }
+    }
+
     const fixedEffects = relevantEffects.filter((e) => e.mode !== "OPTIONAL");
     const optionalEffects = relevantEffects.filter(
       (e) => e.mode === "OPTIONAL",
@@ -30,7 +57,12 @@ export function useRoller() {
 
     const showDetails = settings.showRollDetails;
 
+    const doCombatConsumption = () => {
+      consumeAction(true);
+    };
+
     if (!showDetails && optionalEffects.length === 0) {
+      doCombatConsumption();
       executeDirectRoll(title, baseExpression, fixedEffects, [], dc, name);
       return;
     }
@@ -42,6 +74,9 @@ export function useRoller() {
       fixedEffects,
       optionalEffects,
       resolveAsToast: !showDetails,
+      onConfirm: () => {
+        doCombatConsumption();
+      }
     });
   };
 

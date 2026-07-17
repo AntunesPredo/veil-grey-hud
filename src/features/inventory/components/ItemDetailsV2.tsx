@@ -16,7 +16,7 @@ export function ItemDetailsV2({
   const hasInstantActions =
     "instantActions" in item &&
     Array.isArray(item.instantActions) &&
-    item.instantActions.length > 0;
+    (item.instantActions || []).length > 0;
 
   const { attributes } = useSystemData();
 
@@ -50,7 +50,7 @@ export function ItemDetailsV2({
             <div className="flex flex-1 justify-center gap-2 text-[12px] font-mono opacity-70">
               <span>DANO: {item.combatProps.baseDamage}</span> |
               <span>ALCANCE: {item.combatProps.range}</span>|
-              {item.combatProps.weaponType === "RANGED" ? (
+              {item.combatProps.weaponType === "FIREARM" ? (
                 <span>BASE DIFF: {item.combatProps.baseDifficulty}</span>
               ) : (
                 <>
@@ -110,7 +110,7 @@ export function ItemDetailsV2({
           <span className="text-[9px] text-[var(--theme-success)] uppercase font-bold tracking-widest">
             AÇÕES IMEDIATAS (ON USE)
           </span>
-          {item.instantActions.map((act) => (
+          {item.instantActions?.map((act) => (
             <div
               key={act.id}
               className="flex gap-2 text-[10px] font-mono text-[var(--theme-success)] bg-[var(--theme-success)]/10 px-2 py-1"

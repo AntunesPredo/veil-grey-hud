@@ -11,6 +11,10 @@ import {
 } from "../../../shared/utils/discordWebhook";
 import { VG_CONFIG } from "../../../shared/config/system.config";
 import { useVitalsStore } from "../../vitals/useVitalsStore";
+import { useCombatModalsStore } from "../../combat/useCombatModalsStore";
+import { useCombatStatus } from "../../combat/useCombatStatus";
+import { useCharacterStats } from "../../../shared/hooks/useCharacterStats";
+import { useCombatConsumption } from "../../combat/useCombatConsumption";
 
 export function useActionEngine(item: Item, allInventory: Item[]) {
   const name = useCharacterStore((state) => state.name);
@@ -22,6 +26,7 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
   );
   const sendPayload = useNetworkStore((state) => state.sendPayload);
   const { getSkillById } = useSystemData();
+  const combatStatus = useCombatStatus();
 
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
 
@@ -69,24 +74,40 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
           (i) => i.parentId === mag.id && i.type === "CONSUMABLE" && i.uses > 0,
         ).length;
       });
-    hasAmmo = ammos.length > 0 || magAmmos > 0;
+    hasAmmo = (item.instantActions || []).length > 0 || ammos.length > 0 || magAmmos > 0;
   }
 
+  const npcType = useCharacterStore((state) => state.npcType);
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
+  const isNonHuman = isMasterMode && npcType === "NON_HUMAN";
+
+  const { actionPoints } = useCharacterStats();
+  const maxAp = actionPoints;
+  const hasNoEnergy = !isNonHuman && useCharacterStore((state) => state.energy.current <= 0);
+
+  const isCombatBlocked = !isNonHuman && combatStatus.inCombat && (!combatStatus.myTurn || (combatStatus.participant && combatStatus.participant.apUsed >= maxAp));
+
+  const { consumeAction } = useCombatConsumption();
   const disableUse =
-    item.type === "ACTIVE" &&
-    (!item.isEquipped ||
-      ("uses" in item && item.uses <= 0) ||
-      ("requiresAmmo" in item && item.requiresAmmo && !hasAmmo));
+    Boolean(item.type === "ACTIVE" && !item.isEquipped) ||
+    Boolean("uses" in item && item.uses <= 0) ||
+    Boolean("requiresAmmo" in item && item.requiresAmmo && !hasAmmo) ||
+    Boolean(isCombatBlocked);
 
   const handleUse = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (disableUse) return;
     if (
       item.type === "MATERIAL" ||
-      item.type === "CONTAINER" ||
-      item.type === "EQUIPABLE"
+      item.type === "CONTAINER"
     )
       return;
+
+    if (item.type === "EQUIPABLE") {
+      if (!consumeAction(false)) return;
+      useCharacterStore.getState().toggleEquipItem(item.id);
+      return;
+    }
 
     if (item.type === "ACTIVE" && !item.isEquipped) {
       RetroToast.error("ITEM PRECISA ESTAR EQUIPADO PARA USO.");
@@ -98,18 +119,31 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
       item.combatProps &&
       item.combatProps.weaponType !== "NONE"
     ) {
+      if (hasNoEnergy && !useCharacterStore.getState().sandboxMode) {
+        RetroToast.error("SEM ENERGIA PARA REALIZAR TESTE!");
+        return;
+      }
       setIsTargetModalOpen(true);
       return;
     }
 
-    if (item.type === "RECHARGEABLE" || item.type === "KIT") {
+    if (item.type === "RECHARGEABLE" || item.type === "KIT" || item.type === "CONSUMABLE") {
       if (currentUses > 0) {
-        consumeRechargeable(item.id);
+        if (item.type === "KIT" && hasNoEnergy && !useCharacterStore.getState().sandboxMode) {
+          RetroToast.error("SEM ENERGIA PARA REALIZAR TESTE!");
+          return;
+        }
+        if (!consumeAction(item.type === "KIT")) return;
+        if (item.type === "RECHARGEABLE" || item.type === "KIT") {
+          consumeRechargeable(item.id);
+        } else {
+          consumeItem(item.id);
+        }
         let extraDesc = "";
         if (item.type === "KIT" && item.skillId) {
           const itemSkill = getSkillById(item.skillId);
           const skillVal = skills[item.skillId as keyof typeof skills] || 0;
-          const rollRes = executeRawRoll(`1d20+${skillVal}`);
+          const rollRes = executeRawRoll(`${VG_CONFIG.rules.mainDice}+${skillVal}`);
           extraDesc = `\n**ROLAGEM (${itemSkill?.label || "NO-SKILL"}):** ${rollRes.total}`;
         }
         const embed: DiscordEmbed = {
@@ -144,6 +178,9 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
 
   const executeCombatAction = (targets: string[]) => {
     setIsTargetModalOpen(false);
+
+    if (!consumeAction(true)) return;
+
     const res = consumeItem(item.id);
     if (!res.success) {
       RetroToast.error(res.message);
@@ -161,16 +198,23 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
 
     if (res.rollData?.skillId) {
       const skillVal = skills[res.rollData.skillId as keyof typeof skills] || 0;
-      const rollRes = executeRawRoll(`1d20+${skillVal > 1 ? skillVal : -1}`);
+      const rollRes = executeRawRoll(`${VG_CONFIG.rules.mainDice}+${skillVal >= 1 ? skillVal : -1}`);
+      attackRoll = rollRes.total;
+      isCrit = rollRes.isCriticalSuccess;
+      isFail = rollRes.isCriticalFail;
+      rollLog = rollRes.log;
+    } else {
+      const rollRes = executeRawRoll(VG_CONFIG.rules.mainDice);
       attackRoll = rollRes.total;
       isCrit = rollRes.isCriticalSuccess;
       isFail = rollRes.isCriticalFail;
       rollLog = rollRes.log;
     }
 
-    if (props.weaponType === "RANGED") {
+    if (props.weaponType === "FIREARM" || props.weaponType === "RANGED") {
       finalDmg += res.rollData?.bonusDamage || 0;
-    } else if (props.weaponType === "MELEE") {
+    }
+    if (props.weaponType === "MELEE" || props.weaponType === "RANGED") {
       const scalingMap: Record<string, number> = {
         S: 5,
         A: 3,
@@ -190,12 +234,12 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
     let isSuccess = false;
     if (!isFail) {
       if (
-        props.weaponType === "RANGED" &&
+        props.weaponType === "FIREARM" &&
         (attackRoll >= props.baseDifficulty || isCrit)
       )
         isSuccess = true;
       if (
-        props.weaponType === "MELEE" &&
+        (props.weaponType === "MELEE" || props.weaponType === "RANGED") &&
         (attackRoll >= VG_CONFIG.rules.minMeleeAttack || isCrit)
       )
         isSuccess = true;
@@ -207,12 +251,16 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
           attackRoll,
           damage: finalDmg,
           attackerName: name,
+          targetId: name,
+          targetName: name,
         });
-      } else if (targetName !== "ENEMY" && isSuccess) {
+      } else if (isSuccess) {
         sendPayload(targetName, "COMBAT_DEFENSE", {
           attackRoll,
           damage: finalDmg,
           attackerName: name,
+          targetId: targetName,
+          targetName: targetName,
         });
       }
 
@@ -220,7 +268,7 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
       const isFailStr = isFail ? "\n> [X] ERRO CRITICO" : "";
 
       const combatEmbed: DiscordEmbed = {
-        title: `[>] ATAQUE ${props.weaponType === "RANGED" ? "A DISTANCIA" : "CORPO-A-CORPO"}`,
+        title: `[>] ATAQUE DE ${props.weaponType === "FIREARM" ? "ARMA DE FOGO" : "ARMA BRANCA"}`,
         color: 16711680,
         description: `**AGRESSOR:** ${name}\n**ALVO:** ${targetName}\n**ARMA:** ${item.name}\n**ALCANCE:** ${props.range}`,
         thumbnail: item.imageUrl ? { url: item.imageUrl } : undefined,
@@ -234,7 +282,7 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
         footer: { text: "SYS.MNLT // NETWORK_SYNC" },
       };
 
-      if (props.weaponType === "RANGED") {
+      if (props.weaponType === "FIREARM") {
         if (isSuccess) {
           combatEmbed.fields!.push({
             name: "DANO PROJETADO",
@@ -271,6 +319,23 @@ export function useActionEngine(item: Item, allInventory: Item[]) {
       });
       dispatchDiscordLog("INVENTORY", name, "", [combatEmbed]);
       RetroToast.success(`ATAQUE ENVIADO PARA: ${targetName}`);
+
+      if (useCharacterStore.getState().settings.showAttackModal ?? true) {
+        useCombatModalsStore.getState().openAttackResult({
+          weaponId: activeItem.id,
+          weaponName: activeItem.name,
+          weaponType: props.weaponType,
+          weaponCondition: activeItem.condition,
+          attackRoll,
+          isCrit,
+          isFail,
+          finalDamage: finalDmg,
+          isSuccess,
+          rollLog,
+          targetName,
+          attackerName: name,
+        });
+      }
     });
   };
 

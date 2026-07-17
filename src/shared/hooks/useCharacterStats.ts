@@ -87,15 +87,15 @@ export function useCharacterStats() {
 
     const { currentLoad, maxLoad, isOverweight } = sandboxMode
       ? {
-          currentLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).currentLoad,
-          maxLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).maxLoad,
-          isOverweight: false
-        }
+        currentLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).currentLoad,
+        maxLoad: calculateInventoryLoad(inventory, attributes.strength, attributes.constitution).maxLoad,
+        isOverweight: false
+      }
       : calculateInventoryLoad(
-          inventory,
-          attributes.strength,
-          attributes.constitution,
-        );
+        inventory,
+        attributes.strength,
+        attributes.constitution,
+      );
 
     const actualHp = Math.min(safeHpCurrent, maxHp);
     const hpPorc = maxHp === 0 ? 0 : (actualHp / maxHp) * 100;
@@ -134,9 +134,9 @@ export function useCharacterStats() {
 
     const rawEnergyCurrent =
       typeof energy === "object" &&
-      energy !== null &&
-      "current" in energy &&
-      !isNaN(Number(energy.current))
+        energy !== null &&
+        "current" in energy &&
+        !isNaN(Number(energy.current))
         ? Number(energy.current)
         : maxEnergy;
 

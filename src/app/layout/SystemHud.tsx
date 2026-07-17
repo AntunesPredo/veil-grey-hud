@@ -5,6 +5,7 @@ import { EventsTab } from "../../features/events/EventsTab";
 import { useUIStore } from "../../shared/store/useUIStore";
 import { AttributeDrawer } from "../../features/stats/AttributeDrawer";
 import { SkillDrawer } from "../../features/stats/SkillDrawer";
+import { CombatDrawer } from "../../features/combat/CombatDrawer";
 import { CrisisOverlay } from "../../features/vitals/CrisisOverlay";
 import { VitalsPanel } from "../../features/vitals/VitalsPanel";
 import { BioPanel } from "../../features/notes/BioPanel";
@@ -21,6 +22,7 @@ import { useMasterStore } from "../../features/master/masterStore";
 import { useTelemetrySync } from "../../features/character/useTelemetrySync";
 import { usePossessionSync } from "../../features/character/usePossessionSync";
 import { LogisticsPanelV2 } from "../../features/inventory/LogisticsPanelV2";
+import { AttackResolutionModal } from "../../features/combat/AttackResolutionModal";
 
 export function SystemHud() {
   useTelemetrySync();
@@ -64,6 +66,7 @@ export function SystemHud() {
       <SustenanceTransactionModal />
       <QuickRestModal />
       <FullRestModal />
+      <AttackResolutionModal />
       <Header />
       <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)] ">
         <AttributeDrawer />
@@ -92,6 +95,7 @@ export function SystemHud() {
         </div>
 
         <SkillDrawer />
+        <CombatDrawer />
       </div>
     </div>
   );

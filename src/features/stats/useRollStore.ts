@@ -11,6 +11,7 @@ interface RollPayload {
   fixedEffects: CustomEffect[];
   optionalEffects: CustomEffect[];
   resolveAsToast: boolean;
+  onConfirm?: () => void;
 }
 
 export interface RollRequestPayload {

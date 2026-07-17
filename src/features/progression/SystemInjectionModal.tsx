@@ -159,14 +159,20 @@ export function SystemInjectionModal({
             break;
           }
           case "COMBAT_DEFENSE": {
-            openDefenseModal(
-              payload.data as {
+            const defPayload = payload.data as {
                 attackRoll: number;
                 damage: number;
-                defenseType: "DODGE" | "BLOCK";
                 attackerName: string;
-              },
-            );
+                targetId?: string;
+                targetName?: string;
+            };
+            openDefenseModal({
+              attackRoll: defPayload.attackRoll,
+              damage: defPayload.damage,
+              attackerName: defPayload.attackerName,
+              targetId: defPayload.targetId || useCharacterStore.getState().name,
+              targetName: defPayload.targetName || useCharacterStore.getState().name,
+            });
             break;
           }
           default:

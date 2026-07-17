@@ -3,6 +3,8 @@ import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useVitalsStore } from "./useVitalsStore";
+import { useCombatStatus } from "../combat/useCombatStatus";
+import { useCombatConsumption } from "../combat/useCombatConsumption";
 
 export function EnergyWidget() {
   const name = useCharacterStore((state) => state.name);
@@ -21,6 +23,9 @@ export function EnergyWidget() {
     movMod,
     availableSustenanceToSpend,
   } = useCharacterStats();
+
+  const { inCombat, participant } = useCombatStatus();
+  const { consumeAction } = useCombatConsumption();
 
   const { openQuickRest, openFullRest } = useVitalsStore();
 
@@ -88,6 +93,7 @@ export function EnergyWidget() {
 
   const renderTelemetryStat = (compKey: string) => {
     if (compKey === "actionPoints") {
+      const activeLights = Math.max(0, actionPoints - (participant?.apUsed || 0));
       return (
         <div className="flex justify-between items-end">
           <span
@@ -99,7 +105,7 @@ export function EnergyWidget() {
             {Array.from({ length: actionPoints }).map((_, i) => (
               <div
                 key={`ap-${i}`}
-                className="w-2.5 h-full bg-[var(--theme-accent)] shadow-[0_0_5px_var(--theme-accent)]"
+                className={`w-2.5 h-full ${i < activeLights ? "bg-[var(--theme-accent)] shadow-[0_0_5px_var(--theme-accent)]" : "bg-[var(--theme-accent)] opacity-20 border border-[var(--theme-accent)]"}`}
               />
             ))}
           </div>
@@ -107,6 +113,7 @@ export function EnergyWidget() {
       );
     }
     if (compKey === "reactionPoints") {
+      const activeRx = Math.max(0, reactions - (participant?.reactionUsed || 0));
       return (
         <div className="flex justify-between items-end">
           <span
@@ -118,7 +125,7 @@ export function EnergyWidget() {
             {Array.from({ length: reactions }).map((_, i) => (
               <div
                 key={`rx-${i}`}
-                className="w-2.5 h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)]"
+                className={`w-2.5 h-full ${i < activeRx ? "bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)]" : "bg-[var(--theme-warning)] opacity-20 border border-[var(--theme-warning)]"}`}
               />
             ))}
           </div>
@@ -380,6 +387,7 @@ export function EnergyWidget() {
       <div className="mx-4 pb-5 grid grid-cols-[1fr_1.3fr_1fr] gap-3 md:gap-4 mt-2">
         <button
           onClick={openFullRest}
+          disabled={inCombat}
           className="group flex flex-col items-center justify-center p-3 border-2 border-[var(--theme-success)] bg-[var(--theme-background)] text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-black shadow-[0_4px_0_var(--theme-success)] active:shadow-[0_0px_0_var(--theme-success)] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:pointer-events-none outline-none"
         >
           <span className="font-black text-[10px] md:text-sm tracking-widest uppercase leading-tight group-hover:glow-none glow-success">
@@ -412,7 +420,13 @@ export function EnergyWidget() {
         </button>
 
         <button
-          onClick={openQuickRest}
+          onClick={() => {
+            if (inCombat) {
+              if (consumeAction(true)) openQuickRest();
+            } else {
+              openQuickRest();
+            }
+          }}
           disabled={
             actualEnergy >= energyCap || availableSustenanceToSpend <= 0
           }

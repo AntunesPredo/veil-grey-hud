@@ -7,6 +7,11 @@ import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog, type DiscordEmbed } from "../../shared/utils/discordWebhook";
 import { motion } from "framer-motion";
+import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
+import { useEventsStore } from "../events/store/useEventsStore";
+import { useMasterEventsStore } from "../events/store/useMasterEventsStore";
+import { useNetworkStore } from "../../shared/store/useNetworkStore";
+import { VG_CONFIG } from "../../shared/config/system.config";
 
 export function CombatDefenseModal() {
   const { isDefenseOpen, defenseData, closeDefenseModal, openModal } =
@@ -23,6 +28,21 @@ export function CombatDefenseModal() {
   const [finalDamage, setFinalDamage] = useState(0);
   const [defenseMsg, setDefenseMsg] = useState("");
 
+  const activeEvents = useEventsStore((state) => state.activeEvents);
+  const masterEvents = useMasterEventsStore((state) => state.masterEvents);
+
+  const targetKey = defenseData?.targetId || name;
+  let combatEv = activeEvents.find((e) => e.type === "COMBAT" && (e as any).payload?.participants?.[targetKey]);
+
+  if (!combatEv) {
+    combatEv = masterEvents.find((e) => e.type === "COMBAT" && (e as any).payload?.participants?.[targetKey]);
+  }
+
+  const reactionUsed = combatEv ? (combatEv as any).payload.participants[targetKey].reactionUsed || 0 : 0;
+  const inCombat = !!combatEv;
+
+  const { reactions: maxReactions } = useCharacterStats();
+
   const handleClose = () => {
     setStep("CHOOSE");
     setDefenseType(null);
@@ -37,13 +57,37 @@ export function CombatDefenseModal() {
   const mod = Math.floor(attrVal / 2);
 
   const handleRollDefense = () => {
-    const defRoll = executeRawRoll(`1d20+${mod}`);
+    const defRoll = executeRawRoll(`${VG_CONFIG.rules.mainDice}+${mod}`);
     if (defRoll.error) return RetroToast.error(defRoll.error);
 
     setDefenseRoll(defRoll.total);
     setDefenseLog(defRoll.log);
     let dmg = defenseData.damage;
     let msg = "";
+
+    // Consume Reaction
+    const targetKey = defenseData.targetId || name;
+
+    const activeEvents = useEventsStore.getState().activeEvents;
+    const masterEvents = useMasterEventsStore.getState().masterEvents;
+
+    let combatEv = activeEvents.find(e => e.type === "COMBAT" && (e as any).payload?.participants?.[targetKey]);
+    if (!combatEv) {
+      combatEv = masterEvents.find(e => e.type === "COMBAT" && (e as any).payload?.participants?.[targetKey]);
+    }
+
+    if (combatEv) {
+      const newEvent = structuredClone(combatEv) as any;
+      if (newEvent.payload.participants[targetKey]) {
+        newEvent.payload.participants[targetKey].reactionUsed = (newEvent.payload.participants[targetKey].reactionUsed || 0) + 1;
+
+        // Atualiza a rede P2P
+        useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+
+        // Atualiza localmente
+        useEventsStore.getState().updateEvent(newEvent.id, newEvent); useMasterEventsStore.getState().updateEvent(newEvent.id, newEvent);
+      }
+    }
 
     if (defRoll.total <= defenseData.attackRoll) {
       msg = "DEFESA FALHOU.";
@@ -116,34 +160,44 @@ export function CombatDefenseModal() {
             animate={{ opacity: 1 }}
             className="flex flex-col gap-3 mt-2"
           >
-            <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
-              SELECIONE UMA REAÇÃO TÁTICA:
-            </span>
-            <Button
-              onClick={() => {
-                setDefenseType("DODGE");
-                setStep("STANDBY");
-              }}
-              className="py-3 border-dashed"
-            >
-              TENTAR ESQUIVAR (USA DESTREZA)
-            </Button>
-            <Button
-              onClick={() => {
-                setDefenseType("BLOCK");
-                setStep("STANDBY");
-              }}
-              className="py-3 border-dashed"
-            >
-              TENTAR BLOQUEAR (USA CONSTITUIÇÃO)
-            </Button>
-            <div className="border-t border-dashed border-[var(--theme-danger)]/30 my-1" />
+            {(!inCombat || reactionUsed < maxReactions) ? (
+              <>
+                <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
+                  SELECIONE UMA REAÇÃO TÁTICA ({reactionUsed}/{maxReactions}):
+                </span>
+                <Button
+                  onClick={() => {
+                    setDefenseType("DODGE");
+                    setStep("STANDBY");
+                  }}
+                  className="py-3 border-dashed"
+                >
+                  TENTAR ESQUIVAR (USA DESTREZA)
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDefenseType("BLOCK");
+                    setStep("STANDBY");
+                  }}
+                  className="py-3 border-dashed"
+                >
+                  TENTAR BLOQUEAR (USA CONSTITUIÇÃO)
+                </Button>
+                <div className="border-t border-dashed border-[var(--theme-danger)]/30 my-1" />
+              </>
+            ) : (
+              <span className="text-[10px] font-bold text-[var(--theme-danger)] tracking-widest uppercase mb-2 block border border-[var(--theme-danger)] bg-[var(--theme-danger)]/10 p-2">
+                MÁXIMO DE REAÇÕES POR ROUND ATINGIDO.<br />
+                IMPOSSÍVEL DEFENDER. VOCÊ DEVE RECEBER O DANO DIRETAMENTE.
+              </span>
+            )}
+
             <Button
               variant="danger"
               onClick={handleTakeDirectDamage}
               className="py-3 border-dashed"
             >
-              IGNORAR DEFESA (RECEBER DANO DIRETO)
+              IGNORAR DEFESA E RECEBER O DANO
             </Button>
           </motion.div>
         )}
@@ -193,13 +247,12 @@ export function CombatDefenseModal() {
                 {defenseRoll}
               </span>
               <span
-                className={`text-[10px] tracking-widest font-bold mt-2 block ${
-                  finalDamage === 0
-                    ? "text-[var(--theme-success)]"
-                    : finalDamage < defenseData.damage
-                      ? "text-[var(--theme-warning)]"
-                      : "text-[var(--theme-danger)]"
-                }`}
+                className={`text-[10px] tracking-widest font-bold mt-2 block ${finalDamage === 0
+                  ? "text-[var(--theme-success)]"
+                  : finalDamage < defenseData.damage
+                    ? "text-[var(--theme-warning)]"
+                    : "text-[var(--theme-danger)]"
+                  }`}
               >
                 {defenseMsg}
               </span>

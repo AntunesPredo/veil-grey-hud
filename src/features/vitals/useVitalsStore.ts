@@ -7,6 +7,8 @@ export type DefenseData = {
   attackRoll: number;
   damage: number;
   attackerName: string;
+  targetId: string;
+  targetName: string;
 } | null;
 
 interface VitalsStore {

@@ -3,6 +3,7 @@ import type { TestEvent } from "../../../../shared/types/events";
 import { useCharacterStore } from "../../../character/store";
 import { useRoller } from "../../../../shared/hooks/useRoller";
 import { useNetworkStore } from "../../../../shared/store/useNetworkStore";
+import { VG_CONFIG } from "../../../../shared/config/system.config";
 
 interface TestEventCardProps {
   event: TestEvent;
@@ -30,22 +31,22 @@ export function TestEventCard({
   const { initiateRoll } = useRoller();
 
   const handleRoll = () => {
-    let base = "1d20";
+    let base = VG_CONFIG.rules.mainDice;
     let targets: string[] = [];
-    
+
     if (event.payload.targetAttribute) {
       const val = attributes[event.payload.targetAttribute as keyof typeof attributes] || 0;
       base += val >= 0 ? `+${val}` : `${val}`;
       targets.push(event.payload.targetAttribute);
     }
-    
+
     // Notify Master
     useNetworkStore.getState().sendPayload("MESTRE", "EVENT_ACTION", {
       eventId: event.id,
       action: "START_TEST",
       characterId,
     });
-    
+
     initiateRoll(
       event.title || "Teste de Evento",
       base,
