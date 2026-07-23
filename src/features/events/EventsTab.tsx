@@ -19,7 +19,12 @@ import { DebtPaymentModal } from "./components/DebtPaymentModal";
 import { P2PPaymentModal } from "./components/P2PPaymentModal";
 import { P2PHostManageModal } from "./components/P2PHostManageModal";
 import { MarketPurchaseModal } from "./components/MarketPurchaseModal";
+import { JobAcceptModal } from "./components/JobAcceptModal";
+import { JobPaymentMasterModal } from "./components/JobPaymentMasterModal";
+import { JobPaymentHistoryModal } from "./components/JobPaymentHistoryModal";
+import { JobRejectModal } from "./components/JobRejectModal";
 import { RetroToast } from "../../shared/ui/RetroToast";
+import { HardwareAccordion } from "../../shared/ui/HardwareAccordion";
 
 interface EventsTabProps {
   isMaster?: boolean;
@@ -31,7 +36,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
   const playerEvents = useEventsStore((state) => state.activeEvents);
   const masterEvents = useMasterEventsStore((state) => state.masterEvents);
   const characterId = useCharacterStore((state) => state.name);
-  
+
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<GameEvent | undefined>(undefined);
@@ -39,6 +44,10 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
   const [p2pPaymentEvent, setP2pPaymentEvent] = useState<any | undefined>(undefined);
   const [p2pHostManageEvent, setP2pHostManageEvent] = useState<any | undefined>(undefined);
   const [marketPurchaseEvent, setMarketPurchaseEvent] = useState<any | undefined>(undefined);
+  const [jobAcceptEvent, setJobAcceptEvent] = useState<any | undefined>(undefined);
+  const [jobRejectEvent, setJobRejectEvent] = useState<any | undefined>(undefined);
+  const [jobPaymentEvent, setJobPaymentEvent] = useState<any | undefined>(undefined);
+  const [jobHistoryEvent, setJobHistoryEvent] = useState<any | undefined>(undefined);
 
   const events = isMaster ? masterEvents : playerEvents;
 
@@ -46,27 +55,50 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     if (!isMaster) {
       if (p2pPaymentEvent) {
         const liveEvent = events.find(e => e.id === p2pPaymentEvent.id);
-        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.includes("ALL"));
         if (!liveEvent || !isTargeted) {
           setP2pPaymentEvent(undefined);
         }
       }
       if (marketPurchaseEvent) {
         const liveEvent = events.find(e => e.id === marketPurchaseEvent.id);
-        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.includes("ALL"));
         if (!liveEvent || !isTargeted) {
           setMarketPurchaseEvent(undefined);
         }
       }
       if (debtPaymentEvent) {
         const liveEvent = events.find(e => e.id === debtPaymentEvent.id);
-        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.length === 0 || liveEvent.targets.includes("ALL"));
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.includes("ALL"));
         if (!liveEvent || !isTargeted) {
           setDebtPaymentEvent(undefined);
         }
       }
+      if (jobAcceptEvent) {
+        const liveEvent = events.find(e => e.id === jobAcceptEvent.id);
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.includes("ALL"));
+        if (!liveEvent || !isTargeted) {
+          setJobAcceptEvent(undefined);
+        }
+      }
+      if (jobRejectEvent) {
+        const liveEvent = events.find(e => e.id === jobRejectEvent.id);
+        const isTargeted = liveEvent && (liveEvent.targets.includes(characterId) || liveEvent.targets.includes("ALL"));
+        if (!liveEvent || !isTargeted) {
+          setJobRejectEvent(undefined);
+        }
+      }
+    } else {
+      if (jobPaymentEvent) {
+        const liveEvent = events.find(e => e.id === jobPaymentEvent.id);
+        if (!liveEvent) setJobPaymentEvent(undefined);
+      }
     }
-  }, [events, p2pPaymentEvent, marketPurchaseEvent, debtPaymentEvent, characterId, isMaster]);
+    if (jobHistoryEvent) {
+      const liveEvent = events.find(e => e.id === jobHistoryEvent.id);
+      if (!liveEvent) setJobHistoryEvent(undefined);
+    }
+  }, [events, p2pPaymentEvent, marketPurchaseEvent, debtPaymentEvent, jobAcceptEvent, jobRejectEvent, jobPaymentEvent, jobHistoryEvent, characterId, isMaster]);
 
   const EVENT_COLORS: Record<EventType, string> = {
     TEST: "border-indigo-500",
@@ -110,7 +142,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     }
 
     let updatedEvent = { ...event, status: "ACTIVE" } as GameEvent;
-    
+
     if (updatedEvent.type === "P2P_TRANSFER") {
       updatedEvent = {
         ...updatedEvent,
@@ -142,8 +174,15 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
       };
     }
 
+    if (updatedEvent.type === "JOB") {
+      updatedEvent.payload = {
+        ...updatedEvent.payload,
+        hiredWorkers: {},
+      };
+    }
+
     useMasterEventsStore.getState().updateEvent(event.id, updatedEvent);
-    useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: event.id });
+    useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: event.id, eventType: event.type, wasRecurring: (event.payload as any).isRecurring, isCompleted: false });
     RetroToast.warning("EVENTO REVOGADO");
   };
 
@@ -153,31 +192,31 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
     let updatedEvent = { ...event, targets: newTargets } as GameEvent;
 
     if (updatedEvent.type === "P2P_TRANSFER") {
-       const parts = { ...updatedEvent.payload.participants };
-       let changed = false;
-       Object.keys(parts).forEach(k => {
-          if (!newTargets.includes(k)) {
-             delete parts[k];
-             changed = true;
+      const parts = { ...updatedEvent.payload.participants };
+      let changed = false;
+      Object.keys(parts).forEach(k => {
+        if (!newTargets.includes(k)) {
+          delete parts[k];
+          changed = true;
+        }
+      });
+      if (changed) {
+        Object.keys(parts).forEach(k => {
+          parts[k] = { ...parts[k], transferConfirmed: false };
+        });
+        updatedEvent = {
+          ...updatedEvent,
+          payload: {
+            ...updatedEvent.payload,
+            hostConfirmed: false,
+            participants: parts
           }
-       });
-       if (changed) {
-          Object.keys(parts).forEach(k => {
-             parts[k] = { ...parts[k], transferConfirmed: false };
-          });
-          updatedEvent = {
-             ...updatedEvent,
-             payload: {
-                ...updatedEvent.payload,
-                hostConfirmed: false,
-                participants: parts
-             }
-          } as any;
-       }
+        } as any;
+      }
     }
 
     useMasterEventsStore.getState().updateEvent(eventId, updatedEvent);
-    
+
     if (updatedEvent.status === "ACTIVE") {
       useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: updatedEvent });
       RetroToast.success("ALVOS ATUALIZADOS");
@@ -202,59 +241,46 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
         return <TestEventCard key={event.id} {...cardProps} event={event as any} />;
       case "MARKET":
         return (
-          <MarketEventCard 
-            key={event.id} 
-            {...cardProps} 
-            event={event as any} 
-            onOpenShop={() => setMarketPurchaseEvent(event)} 
+          <MarketEventCard
+            key={event.id}
+            {...cardProps}
+            event={event as any}
+            onOpenShop={() => setMarketPurchaseEvent(event)}
           />
         );
       case "MERCHANT":
         return <MerchantEventCard key={event.id} {...cardProps} event={event as any} />;
       case "JOB":
         return (
-          <JobsEventCard 
-            key={event.id} 
-            {...cardProps} 
-            event={event as any} 
+          <JobsEventCard
+            key={event.id}
+            {...cardProps}
+            event={event as any}
             characterId={characterId}
-            onAccept={() => {
-              useNetworkStore.getState().sendPayload("MESTRE", "EVENT_ACTION", {
-                eventId: event.id,
-                action: "ACCEPT_JOB",
-                characterId
-              });
-              RetroToast.success("EMPREGO ACEITO! Aguardando pagamento.");
-            }}
-            onReject={() => {
-              RetroToast.warning("EMPREGO RECUSADO.");
-            }}
-            onPayWorkers={() => {
-              useNetworkStore.getState().sendPayload("MESTRE", "EVENT_ACTION", {
-                eventId: event.id,
-                action: "PAY_WORKERS"
-              });
-            }}
+            onAccept={() => setJobAcceptEvent(event)}
+            onReject={() => setJobRejectEvent(event)}
+            onPayWorkers={() => setJobPaymentEvent(event)}
+            onViewHistory={() => setJobHistoryEvent(event)}
           />
         );
       case "DEBT":
         return (
-          <DebtsEventCard 
-            key={event.id} 
-            {...cardProps} 
-            event={event as any} 
-            characterId={characterId} 
+          <DebtsEventCard
+            key={event.id}
+            {...cardProps}
+            event={event as any}
+            characterId={characterId}
             onPay={() => setDebtPaymentEvent(event)}
           />
         );
       case "P2P_TRANSFER":
         return (
-          <P2PTransferCard 
-            key={event.id} 
-            {...cardProps} 
-            event={event as any} 
+          <P2PTransferCard
+            key={event.id}
+            {...cardProps}
+            event={event as any}
             characterId={characterId}
-            onJoin={() => setP2pPaymentEvent(event)} 
+            onJoin={() => setP2pPaymentEvent(event)}
             onHostManage={() => setP2pHostManageEvent(event)}
           />
         );
@@ -273,9 +299,9 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
         onClose={() => setIsEditorOpen(false)}
         eventToEdit={eventToEdit}
       />
-      <MasterEventLogsModal 
-        isOpen={isLogsOpen} 
-        onClose={() => setIsLogsOpen(false)} 
+      <MasterEventLogsModal
+        isOpen={isLogsOpen}
+        onClose={() => setIsLogsOpen(false)}
       />
       {debtPaymentEvent && (
         <DebtPaymentModal
@@ -306,33 +332,58 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
           event={(events.find(e => e.id === marketPurchaseEvent.id) || marketPurchaseEvent) as any}
         />
       )}
+      {jobAcceptEvent && (
+        <JobAcceptModal
+          isOpen={!!jobAcceptEvent}
+          onClose={() => setJobAcceptEvent(undefined)}
+          event={(events.find(e => e.id === jobAcceptEvent.id) || jobAcceptEvent) as any}
+          onConfirm={(walletId) => {
+            useNetworkStore.getState().sendPayload("MESTRE", "EVENT_ACTION", {
+              eventId: jobAcceptEvent.id,
+              action: "ACCEPT_JOB",
+              characterId,
+              walletId
+            });
+            RetroToast.success("EMPREGO ACEITO! Aguardando pagamento.");
+            setJobAcceptEvent(undefined);
+          }}
+        />
+      )}
+      {jobRejectEvent && (
+        <JobRejectModal
+          isOpen={!!jobRejectEvent}
+          onClose={() => setJobRejectEvent(undefined)}
+          event={(events.find(e => e.id === jobRejectEvent.id) || jobRejectEvent) as any}
+          characterId={characterId}
+        />
+      )}
+      {jobPaymentEvent && isMaster && (
+        <JobPaymentMasterModal
+          isOpen={!!jobPaymentEvent}
+          onClose={() => setJobPaymentEvent(undefined)}
+          event={(events.find(e => e.id === jobPaymentEvent.id) || jobPaymentEvent) as any}
+          onConfirm={(adjustments) => {
+            useNetworkStore.getState().sendPayload("MESTRE", "EVENT_ACTION", {
+              eventId: jobPaymentEvent.id,
+              action: "PAY_WORKERS",
+              adjustments
+            });
+            setJobPaymentEvent(undefined);
+          }}
+        />
+      )}
+      {jobHistoryEvent && (
+        <JobPaymentHistoryModal
+          isOpen={!!jobHistoryEvent}
+          onClose={() => setJobHistoryEvent(undefined)}
+          event={(events.find(e => e.id === jobHistoryEvent.id) || jobHistoryEvent) as any}
+          isMaster={isMaster}
+          characterId={characterId}
+        />
+      )}
     </>
   );
 
-  if (!isMaster) {
-    if (events.length === 0) {
-      return (
-        <>
-          <div className="flex flex-col items-center justify-center h-full text-slate-500 font-mono text-sm">
-            NENHUM EVENTO ATIVO
-          </div>
-          {renderModals()}
-        </>
-      );
-    }
-    
-    return (
-      <>
-        <div className="flex flex-col gap-4 p-2 relative h-full">
-          {events.map((ev) => renderEvent(ev))}
-        </div>
-        {renderModals()}
-      </>
-    );
-  }
-
-  // Master View
-  
   // Group events by type
   const groupedEvents = events.reduce((acc, event) => {
     if (!acc[event.type]) acc[event.type] = [];
@@ -351,7 +402,7 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
   ];
 
   return (
-    <div className="flex flex-col p-4 h-full relative">
+    <div className="flex flex-col h-full relative">
       {isMaster ? (
         <div className="flex justify-between items-center bg-slate-900 border-2 border-[var(--theme-accent)] p-4 shadow-[0_0_15px_var(--theme-accent)]/20 mb-6">
           <div>
@@ -368,38 +419,39 @@ export function EventsTab({ isMaster = false }: EventsTabProps) {
           </div>
         </div>
       ) : (
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-bold font-mono tracking-widest text-slate-200 uppercase">
             PAINEL DE EVENTOS
           </h2>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pr-2 pb-20 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto pr-2 pb-20 flex flex-col gap-2">
         {events.length === 0 ? (
           <div className="flex items-center justify-center h-40 border border-dashed border-slate-700 bg-slate-900/30 text-slate-500 font-mono text-sm uppercase">
-            Nenhum evento criado
+            Nenhum evento ativo
           </div>
         ) : (
           categories.map(({ type, label }) => {
             const typeEvents = groupedEvents[type];
             if (!typeEvents || typeEvents.length === 0) return null;
-            
+
             return (
-              <div key={type} className="flex flex-col">
-                <div className={`flex items-center gap-3 mb-4 border-b ${EVENT_COLORS[type]} pb-2`}>
-                  <h3 className={`font-bold uppercase tracking-widest ${EVENT_COLORS[type].replace("border-", "text-")}`}>
-                    {label}
-                  </h3>
-                  <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded font-mono">
-                    {typeEvents.length}
-                  </span>
+              <HardwareAccordion
+                key={type}
+                title={label}
+                count={typeEvents.length}
+                colorTheme={EVENT_COLORS[type]}
+                defaultOpen={true}
+              >
+                <div className="grid grid-flow-col auto-cols-[85vw] md:auto-cols-[380px] grid-rows-1 gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory md:snap-none">
+                  {typeEvents.map((ev) => (
+                    <div key={ev.id} className="snap-start min-h-full">
+                      {renderEvent(ev)}
+                    </div>
+                  ))}
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {typeEvents.map((ev) => renderEvent(ev))}
-                </div>
-              </div>
+              </HardwareAccordion>
             );
           })
         )}

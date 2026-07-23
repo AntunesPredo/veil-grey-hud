@@ -62,6 +62,8 @@ export function MasterEventEditorModal({
         setPayload(eventToEdit.payload || { currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
       } else if (eventToEdit?.type === "COMBAT") {
         setPayload(eventToEdit.payload || { participants: {}, currentRound: 0, currentTurn: null });
+      } else if (eventToEdit?.type === "JOB") {
+        setPayload(eventToEdit.payload || { currency: "CC", salary: 0, employerName: "", isRecurring: false, hiredWorkers: {}, paymentHistory: [] });
       } else {
         setPayload(eventToEdit?.payload || {});
       }
@@ -173,6 +175,8 @@ export function MasterEventEditorModal({
                         setPayload({ currency: "CC", participants: {}, pool: 0, initialPool: 0, hostIsPresent: false, transactions: [] });
                       } else if (opt.id === "COMBAT") {
                         setPayload({ participants: {}, currentRound: 0, currentTurn: null });
+                      } else if (opt.id === "JOB") {
+                        setPayload({ currency: "CC", salary: 0, employerName: "", isRecurring: false, hiredWorkers: {}, paymentHistory: [] });
                       } else {
                         setPayload({});
                       }

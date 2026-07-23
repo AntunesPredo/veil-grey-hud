@@ -81,10 +81,8 @@ export function CombatDefenseModal() {
       if (newEvent.payload.participants[targetKey]) {
         newEvent.payload.participants[targetKey].reactionUsed = (newEvent.payload.participants[targetKey].reactionUsed || 0) + 1;
 
-        // Atualiza a rede P2P
         useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
 
-        // Atualiza localmente
         useEventsStore.getState().updateEvent(newEvent.id, newEvent); useMasterEventsStore.getState().updateEvent(newEvent.id, newEvent);
       }
     }

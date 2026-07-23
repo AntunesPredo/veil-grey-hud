@@ -64,13 +64,26 @@ export interface MerchantEvent extends EventBase {
   };
 }
 
+export interface JobPaymentRecord {
+  transferId: string;
+  timestamp: number;
+  workerId: string;
+  walletId: string;
+  baseSalary: number;
+  bonus: number;
+  discount: number;
+  finalAmount: number;
+}
+
 export interface JobEvent extends EventBase {
   type: "JOB";
   payload: {
     employerName: string;
     currency: CurrencyType;
     salary: number;
-    limboTransactions: Record<string, boolean>; // characterId -> is pending ack
+    isRecurring: boolean;
+    hiredWorkers: Record<string, { walletId: string }>; // characterId -> { walletId }
+    paymentHistory: JobPaymentRecord[];
   };
 }
 

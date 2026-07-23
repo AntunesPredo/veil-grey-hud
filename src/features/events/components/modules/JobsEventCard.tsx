@@ -13,6 +13,7 @@ interface JobsEventCardProps {
   onAccept?: (eventId: string) => void;
   onReject?: (eventId: string) => void;
   onPayWorkers?: (eventId: string) => void;
+  onViewHistory?: (eventId: string) => void;
   characterId?: string; // Player's ID
   colorTheme?: string;
 }
@@ -28,12 +29,13 @@ export function JobsEventCard({
   onAccept,
   onReject,
   onPayWorkers,
+  onViewHistory,
   characterId,
   colorTheme,
 }: JobsEventCardProps) {
   // If player, check if already accepted
   const isAccepted =
-    !isMaster && characterId && event.payload.limboTransactions?.[characterId];
+    !isMaster && characterId && event.payload.hiredWorkers?.[characterId];
 
   return (
     <EventCardBase event={event} isMaster={isMaster} onEdit={onEdit} onDelete={onDelete} onPublish={onPublish} onRevoke={onRevoke} onUpdateTargets={onUpdateTargets} colorTheme={colorTheme}>
@@ -50,7 +52,21 @@ export function JobsEventCard({
               ${event.payload.salary} {event.payload.currency}
             </span>
           </p>
+          {event.payload.isRecurring && (
+            <span className="text-xs font-mono text-cyan-400 mt-2 bg-cyan-900/30 px-2 py-1 rounded inline-block">
+              TRABALHO RECORRENTE
+            </span>
+          )}
         </div>
+
+        {event.payload.isRecurring && (isMaster || isAccepted) && (
+          <button
+            onClick={() => onViewHistory && onViewHistory(event.id)}
+            className="w-full py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-300 font-bold rounded-none shadow-md transition-colors text-xs flex items-center justify-center gap-2"
+          >
+            Ver Histórico de Pagamentos
+          </button>
+        )}
 
         {!isMaster && (
           <div className="flex gap-2">
@@ -80,14 +96,14 @@ export function JobsEventCard({
         {isMaster && (
           <div className="mt-2 flex flex-col gap-2">
             <div className="text-xs text-slate-400">
-              {Object.keys(event.payload.limboTransactions || {}).length} jogador(es) no limbo (aceitos).
+              {Object.keys(event.payload.hiredWorkers || {}).length} trabalhador(es) contratado(s).
             </div>
-            {Object.keys(event.payload.limboTransactions || {}).length > 0 && (
+            {Object.keys(event.payload.hiredWorkers || {}).length > 0 && (
               <button
                 onClick={() => onPayWorkers && onPayWorkers(event.id)}
                 className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-none shadow-md transition-colors uppercase tracking-wider text-xs"
               >
-                Pagar Trabalhadores (Encerrar Job)
+                Pagar Trabalhadores
               </button>
             )}
           </div>

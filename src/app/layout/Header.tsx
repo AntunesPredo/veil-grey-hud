@@ -82,17 +82,14 @@ export function Header() {
 
     if (backup && possessedName) {
       const npcId = masterStore.npcs.find((n) => n.id === possessedName || n.name === possessedName)?.id;
-      
+
       if (npcId) {
-        // Se for um NPC, apenas salva localmente e sai (sem diff de telemetria)
         masterStore.updateNpcData(npcId, extractCharacterData(charStore) as any);
         RetroToast.success("POSSESSÃO DO NPC ENCERRADA E DADOS SALVOS.");
       } else {
-        // Se for um jogador (possessão remota), calcula diff e envia override
         const telemetry = useNetworkStore.getState().telemetryData[possessedName];
         const diff: Partial<typeof charStore> = {};
 
-        // Funções de pureza para diff
         const cleanObj = (obj: unknown) => JSON.parse(JSON.stringify(obj || {}));
         const isDiff = (a: unknown, b: unknown) =>
           JSON.stringify(cleanObj(a)) !== JSON.stringify(cleanObj(b));
@@ -154,7 +151,6 @@ export function Header() {
             diff.mainNoteHeight = charStore.mainNoteHeight;
         }
 
-        // Só envia pacote se houver diferenças reais
         if (Object.keys(diff).length > 0) {
           masterStore.addPendingOverride(possessedName, diff);
           const channel = useNetworkStore.getState().telemetryChannel;
@@ -217,8 +213,8 @@ export function Header() {
                 />
                 <span
                   className={`text-[8px] px-1.5 py-0.5 border font-bold uppercase tracking-widest ${isDistributing
-                      ? "border-[var(--theme-warning)] text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 animate-pulse"
-                      : "border-[var(--theme-success)] text-[var(--theme-success)] bg-[var(--theme-success)]/10"
+                    ? "border-[var(--theme-warning)] text-[var(--theme-warning)] bg-[var(--theme-warning)]/10 animate-pulse"
+                    : "border-[var(--theme-success)] text-[var(--theme-success)] bg-[var(--theme-success)]/10"
                     }`}
                 >
                   SYS: {creationStatus}

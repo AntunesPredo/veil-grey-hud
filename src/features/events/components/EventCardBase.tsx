@@ -32,7 +32,7 @@ export function EventCardBase({
 }: EventCardBaseProps) {
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [selectedTargetAction, setSelectedTargetAction] = useState<string | null>(null);
-  
+
   const onlinePlayers = useNetworkStore((state) => state.onlinePlayers);
   const isOnline = event.status === "ACTIVE";
 
@@ -55,13 +55,11 @@ export function EventCardBase({
   };
 
   return (
-    <div className={`flex flex-col bg-slate-900 border ${colorTheme} rounded-none overflow-hidden shadow-xl mb-4 relative`}>
-      {/* Cover Image */}
+    <div className={`flex flex-col h-full bg-slate-900 border ${colorTheme} rounded-none overflow-hidden shadow-xl relative`}>
       {event.coverImage && (
         <SmartImage image={event.coverImage} className="border-b border-slate-800" />
       )}
 
-      {/* Header */}
       <div className={`p-4 border-b ${colorTheme} flex justify-between items-start bg-slate-900/50`}>
         <div className="w-full">
           <div className="flex justify-between items-center w-full">
@@ -88,16 +86,13 @@ export function EventCardBase({
         </div>
       </div>
 
-      {/* Body / Module specifics */}
-      <div className="p-4">{children}</div>
+      <div className="p-4 flex-1 flex flex-col">{children}</div>
 
-      {/* Master Panel */}
       {isMaster && (
         <div className={`border-t ${colorTheme} bg-slate-950 p-4 flex flex-col md:flex-row gap-4`}>
-          {/* Actions Side */}
           <div className="flex flex-col gap-2 md:w-1/3">
             <h4 className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-1">Ações do Mestre</h4>
-            
+
             {isOnline ? (
               <Button variant="danger" onClick={onRevoke} className="w-full flex justify-center items-center gap-2 py-3">
                 <FiX /> REVOGAR EVENTO
@@ -118,7 +113,6 @@ export function EventCardBase({
             </div>
           </div>
 
-          {/* Targets Side */}
           <div className="flex flex-col gap-2 md:w-2/3 border-l border-slate-800 pl-4">
             <div className="flex justify-between items-center mb-1">
               <h4 className="text-[10px] font-bold text-slate-500 tracking-widest uppercase">Lista de Alvos</h4>
@@ -126,17 +120,17 @@ export function EventCardBase({
                 <FiPlus /> ADICIONAR ALVOS
               </Button>
             </div>
-            
+
             <div className="flex flex-col gap-1 max-h-40 overflow-y-auto custom-scrollbar pr-2">
               {event.targets.length === 0 ? (
                 <span className="text-xs text-slate-600 font-mono italic">Nenhum alvo definido.</span>
               ) : (
                 event.targets.map(target => {
                   const isTargetOnline = onlinePlayers.includes(target) || target === "ALL";
-                  
+
                   return (
-                    <button 
-                      key={target} 
+                    <button
+                      key={target}
                       onClick={() => setSelectedTargetAction(target)}
                       className="flex items-center justify-between bg-slate-800 border border-slate-700 hover:border-indigo-500 hover:bg-indigo-900/20 p-2 min-w-[140px] transition-colors text-left"
                     >
@@ -169,32 +163,32 @@ export function EventCardBase({
       {selectedTargetAction && (
         <Modal title={`AÇÕES DO ALVO: ${selectedTargetAction}`} onClose={() => setSelectedTargetAction(null)} isOpen={true} maxWidth="max-w-sm">
           <div className="p-4 flex flex-col gap-4 text-center">
-             <div className="text-slate-300 font-mono text-xs flex flex-col items-center gap-2 mb-2">
-                <FiAlertTriangle className="text-2xl text-indigo-400" />
-                Selecione a ação que deseja realizar com o alvo selecionado.
-             </div>
-             <div className="flex flex-col gap-2">
-                <Button 
-                   onClick={() => {
-                      handleForcePushTarget(selectedTargetAction);
-                      setSelectedTargetAction(null);
-                   }}
-                   disabled={!isOnline}
-                   className="w-full flex items-center justify-center gap-2"
-                >
-                   <FiSend /> REENVIAR EVENTO
-                </Button>
-                <Button 
-                   variant="danger"
-                   onClick={() => {
-                      handleRemoveTarget(selectedTargetAction);
-                      setSelectedTargetAction(null);
-                   }}
-                   className="w-full flex items-center justify-center gap-2"
-                >
-                   <FiTrash2 /> REMOVER DO EVENTO
-                </Button>
-             </div>
+            <div className="text-slate-300 font-mono text-xs flex flex-col items-center gap-2 mb-2">
+              <FiAlertTriangle className="text-2xl text-indigo-400" />
+              Selecione a ação que deseja realizar com o alvo selecionado.
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => {
+                  handleForcePushTarget(selectedTargetAction);
+                  setSelectedTargetAction(null);
+                }}
+                disabled={!isOnline}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <FiSend /> REENVIAR EVENTO
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  handleRemoveTarget(selectedTargetAction);
+                  setSelectedTargetAction(null);
+                }}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <FiTrash2 /> REMOVER DO EVENTO
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

@@ -12,7 +12,7 @@ import { useMasterStore } from "../masterStore";
 import { useCharacterStore } from "../../character/store";
 import { useDisclosure } from "../../../shared/hooks/useDisclosure";
 import { ItemModal } from "../../item-modal/ItemModal";
-import { ConfirmModal } from "../../../shared/ui/Overlays";
+import { ConfirmModal, Modal } from "../../../shared/ui/Overlays";
 import { RetroToast } from "../../../shared/ui/RetroToast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,6 +52,7 @@ export const PlayerCard = React.memo(
 
     const itemModal = useDisclosure();
     const deleteModal = useDisclosure();
+    const [isResendModalOpen, setIsResendModalOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
     const [accordions, setAccordions] = useState<Record<string, boolean>>({
@@ -249,7 +250,7 @@ export const PlayerCard = React.memo(
                 size="sm"
                 variant="danger"
                 className="h-5 py-0 px-2 text-[9px] animate-pulse border-dashed rounded-none"
-                onClick={handleResendOverride}
+                onClick={() => setIsResendModalOpen(true)}
                 title="Existem alterações pendentes não assimiladas pelo jogador."
               >
                 REENVIAR ALT.
@@ -707,6 +708,67 @@ export const PlayerCard = React.memo(
             </div>
           )}
         </div>
+
+        <Modal
+          isOpen={isResendModalOpen}
+          onClose={() => setIsResendModalOpen(false)}
+          title="GERENCIAR MUDANÇAS PENDENTES"
+          isDanger
+          maxWidth="max-w-md"
+        >
+          <div className="flex flex-col gap-4 text-center">
+            <div className="bg-black/50 p-3 border border-[var(--theme-danger)]/50 text-left">
+              <span className="font-bold text-[var(--theme-danger)] block mb-1 uppercase text-sm tracking-widest">
+                FILA DE TELEMETRIA
+              </span>
+              <p className="text-[var(--theme-text)]/60 text-xs font-mono">
+                Existem alterações locais neste personagem que ainda não foram recebidas pelo cliente do jogador. Como deseja prosseguir?
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  handleResendOverride();
+                  setIsResendModalOpen(false);
+                }}
+                className="w-full flex items-center justify-center border-dashed py-3"
+              >
+                REENVIAR MUDANÇAS (FORCE PUSH)
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  useMasterStore.getState().removePendingOverride(playerName);
+                  setIsResendModalOpen(false);
+
+                  const channel = useNetworkStore.getState().telemetryChannel;
+                  if (channel) {
+                    const msg = {
+                      type: "broadcast" as const,
+                      event: "MASTER_COMMAND",
+                      payload: {
+                        target: playerName,
+                        command: "CANCEL_OVERRIDE",
+                        attackerName: "MESTRE",
+                      },
+                    };
+                    if (typeof (channel as any).httpSend === "function") {
+                      (channel as any).httpSend(msg.event, msg.payload).catch(console.error);
+                    } else {
+                      channel.send(msg);
+                    }
+                  }
+
+                  RetroToast.info("MUDANÇAS DESCARTADAS LOCALMENTE.");
+                }}
+                className="w-full flex items-center justify-center border-dashed py-3"
+              >
+                EXCLUIR MUDANÇAS
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     );
   },
