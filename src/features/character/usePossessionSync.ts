@@ -22,8 +22,7 @@ export function usePossessionSync() {
       const targetedEvents = masterEvents.filter(
         (e) =>
           e.status === "ACTIVE" &&
-          (e.targets.length === 0 ||
-            e.targets.includes("ALL") ||
+          (e.targets.includes("ALL") ||
             e.targets.includes(activeName) ||
             (e.type === "COMBAT" && (e as any).payload?.participants?.[activeName]))
       );

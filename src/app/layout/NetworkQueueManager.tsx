@@ -90,27 +90,61 @@ export function NetworkQueueManager() {
     }
 
     if (current.type === "EVENT_SYNC") {
-      const data = current.data as { action: "UPSERT" | "DELETE"; event?: GameEvent; eventId?: string };
+      const data = current.data as { action: "UPSERT" | "DELETE"; event?: GameEvent; eventId?: string; eventType?: string; wasRecurring?: boolean; isCompleted?: boolean };
       const { addEvent, updateEvent, removeEvent, activeEvents } = useEventsStore.getState();
 
       if (data.action === "DELETE" && data.eventId) {
+        const existing = activeEvents.find(e => e.id === data.eventId);
         removeEvent(data.eventId);
-        RetroToast.warning("EVENTO CANCELADO PELO MESTRE.");
-      } else if (data.action === "UPSERT" && data.event) {
-        // Ignora se for o mestre recebendo o proprio echo (já tem salvo no useMasterEventsStore)
-        const isTargeted = data.event.targets.includes(activeName) || data.event.targets.length === 0 || data.event.targets.includes("ALL") || activeName === "MASTER";
-        const existing = activeEvents.find(e => e.id === data.event!.id);
 
-        if (!isTargeted || data.event.status !== "ACTIVE") {
-          if (existing) {
-            removeEvent(data.event.id);
+        if (data.eventType === "JOB" || (existing && existing.type === "JOB")) {
+          const wasRecurring = data.wasRecurring ?? (existing?.payload as any)?.isRecurring;
+          const isCompleted = data.isCompleted === true;
+
+          let title = isCompleted ? "TRABALHO CONCLUÍDO" : "PROPOSTA CANCELADA";
+          if (wasRecurring && !isCompleted) title = "CONTRATO ENCERRADO";
+
+          const message = isCompleted
+            ? "Os serviços solicitados foram concluídos com êxito e devidamente compensados. Agradecemos a colaboração e encerramos formalmente este vínculo."
+            : wasRecurring
+              ? "Por ordem superior, a manutenção contínua dos seus serviços não é mais necessária. O contrato foi revogado e seus acessos foram cortados imediatamente."
+              : "A proposta de trabalho foi cancelada antes do seu cumprimento ou pagamento. Qualquer contrato prévio atrelado a este evento foi anulado sem compensação.";
+
+          const isHired = existing && (existing.payload as any)?.hiredWorkers?.[activeName];
+
+          if (isHired) {
+            window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+              detail: {
+                title,
+                eventName: existing?.title || "EVENTO DESCONHECIDO",
+                message,
+                hostName: (existing?.payload as any)?.employerName || "SISTEMA",
+                walletName: "N/A",
+                delta: 0,
+                currency: "CC",
+                isRevoke: !isCompleted,
+                isConclusion: isCompleted,
+                transferId: isCompleted ? `DONE-${Math.random().toString(36).substring(2, 6).toUpperCase()}` : `REV-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+              }
+            }));
           }
         } else {
-          if (existing) {
-            updateEvent(existing.id, data.event);
+          RetroToast.warning("EVENTO CANCELADO PELO MESTRE.");
+        }
+      } else if (data.action === "UPSERT" && data.event) {
+        const isTargeted = data.event.targets.includes(activeName) || data.event.targets.includes("ALL") || activeName === "MASTER";
+        const isPublished = data.event.status === "ACTIVE";
+
+        if (isTargeted && isPublished) {
+          if (activeEvents.some(e => e.id === data.event!.id)) {
+            updateEvent(data.event.id, data.event);
           } else {
             addEvent(data.event);
             RetroToast.success(`NOVO EVENTO: [${data.event.title}]`);
+          }
+        } else {
+          if (activeEvents.some(e => e.id === data.event!.id)) {
+            removeEvent(data.event!.id);
           }
         }
       }
@@ -175,6 +209,49 @@ export function NetworkQueueManager() {
           }
         }));
       }
+      removeQueueItem(current.id);
+      if (processingIdRef.current === current.id) processingIdRef.current = null;
+      return;
+    }
+
+    if (current.type === "JOB_PAYMENT_RECEIPT") {
+      const data = current.data as {
+        transferId: string;
+        employerName: string;
+        currency: string;
+        walletId: string;
+        baseSalary: number;
+        bonus: number;
+        discount: number;
+        finalAmount: number;
+      };
+
+      const targetWallet = useCharacterStore.getState().inventory.find(i => i.id === data.walletId);
+      if (targetWallet && targetWallet.wallet) {
+        useCharacterStore.getState().updateInventoryItem(data.walletId, "wallet", {
+          ...targetWallet.wallet,
+          value: targetWallet.wallet.value + data.finalAmount
+        });
+
+        window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+          detail: {
+            title: "COMPROVANTE DE PAGAMENTO",
+            hostName: data.employerName,
+            walletId: data.walletId,
+            walletName: targetWallet.name,
+            delta: data.finalAmount,
+            finalBalance: targetWallet.wallet.value + data.finalAmount,
+            currency: data.currency,
+            transferId: data.transferId,
+            details: {
+              baseSalary: data.baseSalary,
+              bonus: data.bonus,
+              discount: data.discount
+            }
+          }
+        }));
+      }
+
       removeQueueItem(current.id);
       if (processingIdRef.current === current.id) processingIdRef.current = null;
       return;
@@ -375,9 +452,21 @@ export function NetworkQueueManager() {
         ...targetWallet.wallet,
         value: targetWallet.wallet.value + fundsData.amount,
       });
-      RetroToast.success(`FUNDOS RECEBIDOS: +${fundsData.amount} ${fundsData.currency}`);
+
+      window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+        detail: {
+          title: "COMPROVANTE DE TRANSFERÊNCIA",
+          hostName: current.attackerName || "MESTRE",
+          walletId: selectedWalletId,
+          walletName: targetWallet.name,
+          delta: fundsData.amount,
+          finalBalance: targetWallet.wallet.value + fundsData.amount,
+          currency: fundsData.currency,
+          transferId: (fundsData as any).transferId
+        }
+      }));
     } else if (current.type === "DEBT") {
-      const debtData = current.data as { amount: number; currency: string };
+      const debtData = current.data as { amount: number; currency: string; transferId?: string };
       if (!selectedWalletId) {
         RetroToast.error("SELECIONE UMA CARTEIRA PARA PAGAR A DÍVIDA.");
         return;
@@ -392,7 +481,18 @@ export function NetworkQueueManager() {
         ...targetWallet.wallet,
         value: targetWallet.wallet.value - debtData.amount,
       });
-      RetroToast.warning(`DÍVIDA PAGA: -${debtData.amount} ${debtData.currency}`);
+      window.dispatchEvent(new CustomEvent("OPEN_EVENT_RESULT", {
+        detail: {
+          title: "COMPROVANTE DE COBRANÇA",
+          hostName: current.attackerName || "MESTRE",
+          walletId: selectedWalletId,
+          walletName: targetWallet.name,
+          delta: -debtData.amount,
+          finalBalance: targetWallet.wallet.value - debtData.amount,
+          currency: debtData.currency,
+          transferId: debtData.transferId
+        }
+      }));
     }
 
     setSelectedWalletId("");

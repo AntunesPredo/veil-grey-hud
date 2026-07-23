@@ -43,14 +43,14 @@ export function ArsenalRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 border border-[var(--theme-border)] bg-[var(--theme-background)] p-1.5 hover:border-[var(--theme-accent)]/50 transition-colors ${
-        isDragging ? "opacity-50 border-dashed z-50" : "z-10"
-      }`}
+      className={`flex items-center gap-2 border-l-4 bg-[var(--theme-background)] p-1.5 transition-colors ${
+        isSelected ? "border-[var(--theme-accent)] bg-[var(--theme-accent)]/10" : "border-[var(--theme-border)] hover:bg-white/5"
+      } ${isDragging ? "opacity-50 border-dashed z-50" : "z-10"}`}
     >
       <div
         {...listeners}
         {...attributes}
-        className="cursor-grab active:cursor-grabbing p-1 text-[var(--theme-text)]/40 hover:text-[var(--theme-accent)] touch-none"
+        className="cursor-grab active:cursor-grabbing p-1 px-2 text-[var(--theme-text)]/40 hover:text-[var(--theme-accent)] touch-none"
       >
         <svg viewBox="0 0 20 20" className="w-4 h-4 fill-current">
           <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
@@ -68,6 +68,7 @@ export function ArsenalRow({
               ? `+${(data as CustomEffect).val}`
               : (data as CustomEffect).val}
             )
+
           </>
         ) : (
           (data as Item).name
@@ -78,7 +79,19 @@ export function ArsenalRow({
         <Button
           size="sm"
           variant="primary"
-          className="h-5 py-0 px-2 text-[8px]"
+          className="rounded-none px-2"
+          onClick={() => {
+            navigator.clipboard.writeText(String(data.id));
+            import("../../../shared/ui/RetroToast").then((m) => m.RetroToast.success("HASH COPIADA: " + data.id));
+          }}
+          title="Copiar Hash"
+        >
+          #HASH
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          className="rounded-none px-2"
           onClick={onView}
         >
           VIEW
@@ -86,10 +99,20 @@ export function ArsenalRow({
         <Button
           size="sm"
           variant="danger"
-          className="h-5 py-0 px-2 text-[8px]"
+          className="flex items-center justify-center rounded-none px-2"
           onClick={onDelete}
         >
-          X
+          <svg
+            viewBox="0 0 16 16"
+            className="w-3.5 h-3.5"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M5.1716 8.00003L1.08582 3.91424L3.91424 1.08582L8.00003 5.1716L12.0858 1.08582L14.9142 3.91424L10.8285 8.00003L14.9142 12.0858L12.0858 14.9142L8.00003 10.8285L3.91424 14.9142L1.08582 12.0858L5.1716 8.00003Z"
+              fill="currentColor"
+            />
+          </svg>
         </Button>
       </div>
     </div>

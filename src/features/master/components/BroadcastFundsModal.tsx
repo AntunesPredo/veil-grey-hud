@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Modal } from "../../../shared/ui/Overlays";
-import { Button, Input } from "../../../shared/ui/Form";
+import { Button, NumberInput } from "../../../shared/ui/Form";
 import { TargetSelectionModal } from "../../../shared/ui/TargetSelectionModal";
 import { useNetworkStore } from "../../../shared/store/useNetworkStore";
 import { RetroToast } from "../../../shared/ui/RetroToast";
-import { FiDollarSign } from "../../../shared/ui/Icons";
+import { CcLogo, FccLogo } from "../../../shared/ui/Icons";
 import { useMasterStore } from "../masterStore";
+import { generateTransferId } from "../../../shared/utils/generateTransferId";
+import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
 
 interface BroadcastFundsModalProps {
   isOpen: boolean;
@@ -54,16 +56,18 @@ export function BroadcastFundsModal({
     };
 
     targets.forEach((target) => {
+      const transferId = generateTransferId();
+      const updatedItemPayload = { ...itemPayload, id: transferId };
+
       if (target === "ALL") {
-        // Enviar para todos online (exceto mestre)
         const onlinePlayers = useNetworkStore.getState().onlinePlayers;
         onlinePlayers.forEach((p) => {
           if (p !== "MESTRE" && p !== "SANDBOX") {
-            sendFundsToPlayer(p, itemPayload);
+            sendFundsToPlayer(p, updatedItemPayload, transferId);
           }
         });
       } else {
-        sendFundsToPlayer(target, itemPayload);
+        sendFundsToPlayer(target, updatedItemPayload, transferId);
       }
     });
 
@@ -72,17 +76,26 @@ export function BroadcastFundsModal({
     onClose();
   };
 
-  const sendFundsToPlayer = (target: string, itemData: any) => {
+  const sendFundsToPlayer = (target: string, itemData: any, transferId: string) => {
     const isLocalNpc = useMasterStore.getState().npcs.find((n) => n.name === target);
     if (isLocalNpc) {
-       const npc = isLocalNpc;
-       const newInv = [...(npc.inventory || []), { ...itemData, id: crypto.randomUUID() }];
-       useMasterStore.getState().updateNpcData(npc.id, { inventory: newInv });
+      const npc = isLocalNpc;
+      const newInv = [...(npc.inventory || []), { ...itemData, id: transferId }];
+      useMasterStore.getState().updateNpcData(npc.id, { inventory: newInv });
     } else {
-       useNetworkStore.getState().sendPayload(target, mode, { 
-         amount: itemData.wallet.value, 
-         currency: itemData.wallet.type 
-       });
+      useNetworkStore.getState().sendPayload(target, mode, {
+        amount: itemData.wallet.value,
+        currency: itemData.wallet.type,
+        transferId
+      });
+
+      const opText = mode === "FUNDS" ? "Transferiu Fundos para" : "Cobrou Dívida de";
+      const msg = `${opText} ${target}: ${itemData.wallet.value} ${itemData.wallet.type}. ID: ${transferId}`;
+      dispatchDiscordLog("PLAYER", "Operações Financeiras", msg, [{
+        title: "Transação Direta",
+        description: msg,
+        color: mode === "FUNDS" ? 2067276 : 15548997
+      }]);
     }
   };
 
@@ -92,8 +105,9 @@ export function BroadcastFundsModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="BROADCAST DE TRANSAÇÕES">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 bg-slate-800/50 p-4 border border-slate-700">
-            <label className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          <div className="flex flex-col gap-2 bg-[var(--theme-background)] p-4 border border-[var(--theme-border)] relative [clip-path:polygon(8px_0,100%_0,100%_calc(100%-8px),calc(100%-8px)_100%,0_100%,0_8px)]">
+            <label className="text-[10px] font-bold text-[var(--theme-accent)] opacity-80 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-2 h-2 bg-[var(--theme-accent)] inline-block"></span>
               TIPO DE OPERAÇÃO:
             </label>
             <div className="flex gap-2">
@@ -107,31 +121,37 @@ export function BroadcastFundsModal({
               <Button
                 variant={mode === "DEBT" ? "danger" : "primary"}
                 onClick={() => setMode("DEBT")}
-                className="flex-1"
+                className={`flex-1 ${mode === "DEBT" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.3)_10px,rgba(0,0,0,0.3)_20px)]" : ""}`}
               >
                 COBRAR DÍVIDA
               </Button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 bg-slate-800/50 p-4 border border-slate-700">
-            <label className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          <div className="flex flex-col gap-2 bg-[var(--theme-background)] p-4 border border-[var(--theme-border)] relative">
+            <label className="text-[10px] font-bold text-[var(--theme-accent)] opacity-80 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-2 h-2 bg-[var(--theme-accent)] inline-block"></span>
               {mode === "FUNDS" ? "VALOR A ENVIAR:" : "VALOR DA DÍVIDA:"}
             </label>
-            <div className="flex items-center gap-2">
-              <FiDollarSign className={mode === "FUNDS" ? "text-emerald-500 text-xl" : "text-red-500 text-xl"} />
-              <Input
-                type="number"
+            <div className="flex items-center gap-4 mt-2">
+              {currency === "CC" ? (
+                <CcLogo className={mode === "FUNDS" ? "text-[var(--theme-success)] w-10 h-10" : "text-[var(--theme-danger)] w-10 h-10"} />
+              ) : (
+                <FccLogo className={mode === "FUNDS" ? "text-[var(--theme-success)] w-10 h-10" : "text-[var(--theme-danger)] w-10 h-10"} />
+              )}
+              <NumberInput
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChangeText={setAmount}
                 placeholder="0"
-                className="text-xl font-mono"
+                className="flex-1"
+                step={50}
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 bg-slate-800/50 p-4 border border-slate-700">
-            <label className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          <div className="flex flex-col gap-2 bg-[var(--theme-background)] p-4 border border-[var(--theme-border)] relative">
+            <label className="text-[10px] font-bold text-[var(--theme-accent)] opacity-80 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-2 h-2 bg-[var(--theme-accent)] inline-block"></span>
               MOEDA:
             </label>
             <div className="flex gap-2">

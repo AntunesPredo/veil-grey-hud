@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
+import { generateTransferId } from "../../../shared/utils/generateTransferId";
 import { useNetworkStore } from "../../../shared/store/useNetworkStore";
 import { useMasterEventsStore } from "../../events/store/useMasterEventsStore";
 import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
@@ -425,14 +426,15 @@ export function MasterNetworkQueueManager() {
 
         if (data.action === "ACCEPT_JOB" && targetEvent.type === "JOB") {
           const charId = data.characterId;
+          const walletId = data.walletId;
 
           const newEvent = {
             ...targetEvent,
             payload: {
               ...targetEvent.payload,
-              limboTransactions: {
-                ...(targetEvent.payload.limboTransactions || {}),
-                [charId]: true
+              hiredWorkers: {
+                ...(targetEvent.payload.hiredWorkers || {}),
+                [charId]: { walletId }
               }
             }
           };
@@ -444,7 +446,7 @@ export function MasterNetworkQueueManager() {
             characterId: charId,
             message: msg
           });
-          dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+          dispatchDiscordLog("PLAYER", "Painel de Eventos", "", [{
             title: newEvent.title,
             description: msg,
             color: 1752220,
@@ -457,54 +459,126 @@ export function MasterNetworkQueueManager() {
           useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
         }
 
+        if (data.action === "REJECT_JOB" && targetEvent.type === "JOB") {
+          const charId = data.characterId;
+
+          let newEvent = { ...targetEvent };
+
+          if (newEvent.payload.hiredWorkers && newEvent.payload.hiredWorkers[charId]) {
+            const newHired = { ...newEvent.payload.hiredWorkers };
+            delete newHired[charId];
+            newEvent.payload = { ...newEvent.payload, hiredWorkers: newHired };
+          }
+
+          if (newEvent.targets.includes(charId)) {
+            newEvent.targets = newEvent.targets.filter((t: string) => t !== charId);
+          }
+
+          mEventsStore.updateEvent(newEvent.id, newEvent);
+          const msg = `Recusou o trabalho.`;
+          mEventsStore.addLog({
+            eventId: newEvent.id,
+            characterId: charId,
+            message: msg
+          });
+          dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+            title: newEvent.title,
+            description: msg,
+            color: 16711680,
+            author: { name: charId }
+          }]);
+
+          RetroToast.warning(`[EMPREGO] ${charId} recusou o trabalho!`);
+
+          useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+        }
+
         if (data.action === "PAY_WORKERS" && targetEvent.type === "JOB") {
-          const workers = Object.keys(targetEvent.payload.limboTransactions || {});
+          const adjustments = data.adjustments as Record<string, { baseSalary: number, bonus: number, discount: number, finalAmount: number }>;
+          const workers = Object.keys(adjustments);
+
+          let newEvent = { ...targetEvent };
 
           if (workers.length > 0) {
-
             workers.forEach(workerId => {
-              const salaryItem = {
-                id: nanoid(),
-                name: `Salário: ${targetEvent.payload.employerName}`,
-                type: "EQUIPABLE",
-                quantity: 1,
-                slots: 0,
-                isCarried: true,
-                isEquipped: false,
-                parentId: null,
-                drawer: null,
-                effects: [],
-                description: "",
-                svgId: "wallet",
-                price: 0,
-                wallet: {
-                  type: targetEvent.payload.currency as "CC" | "FCC",
-                  value: targetEvent.payload.salary,
-                  max: null,
-                },
-              };
+              const adj = adjustments[workerId];
+              if (!adj) return;
 
-              useNetworkStore.getState().sendPayload(workerId, "INVENTORY_UPSERT", salaryItem);
+              const workerData = targetEvent.payload.hiredWorkers[workerId];
+              if (!workerData) return;
 
-              const msg = `Recebeu pagamento de ${targetEvent.payload.salary} ${targetEvent.payload.currency}.`;
+              const transferId = generateTransferId();
+
+              // Update history if recurring
+              if (newEvent.payload.isRecurring) {
+                newEvent.payload = {
+                  ...newEvent.payload,
+                  paymentHistory: [
+                    ...(newEvent.payload.paymentHistory || []),
+                    {
+                      transferId,
+                      timestamp: Date.now(),
+                      workerId,
+                      walletId: workerData.walletId,
+                      baseSalary: adj.baseSalary,
+                      bonus: adj.bonus,
+                      discount: adj.discount,
+                      finalAmount: adj.finalAmount
+                    }
+                  ]
+                };
+              }
+
+              useNetworkStore.getState().sendPayload(workerId, "JOB_PAYMENT_RECEIPT", {
+                transferId,
+                employerName: targetEvent.payload.employerName,
+                currency: targetEvent.payload.currency,
+                walletId: workerData.walletId,
+                baseSalary: adj.baseSalary,
+                bonus: adj.bonus,
+                discount: adj.discount,
+                finalAmount: adj.finalAmount
+              });
+
+              const msg = `Recebeu pagamento de ${adj.finalAmount} ${targetEvent.payload.currency}. ID: ${transferId}`;
               mEventsStore.addLog({
                 eventId: targetEvent.id,
                 characterId: workerId,
                 message: msg
               });
-              dispatchDiscordLog("PLAYER", "Painel de Eventos", msg, [{
+              dispatchDiscordLog("PLAYER", "Painel de Eventos", "", [{
                 title: targetEvent.title,
-                description: msg,
+                description: `O empregador **${targetEvent.payload.employerName}** efetuou um pagamento.`,
                 color: 1752220,
-                author: { name: workerId }
+                author: { name: workerId },
+                fields: [
+                  { name: "Salário Base", value: `${adj.baseSalary} ${targetEvent.payload.currency}`, inline: true },
+                  { name: "Bônus", value: `+${adj.bonus} ${targetEvent.payload.currency}`, inline: true },
+                  { name: "Descontos", value: `-${adj.discount} ${targetEvent.payload.currency}`, inline: true },
+                  { name: "Total Recebido", value: `**${adj.finalAmount} ${targetEvent.payload.currency}**`, inline: false },
+                  { name: "ID de Transferência", value: `\`${transferId}\``, inline: false }
+                ]
               }]);
             });
 
-            RetroToast.success(`[EMPREGO] ${workers.length} trabalhador(es) pago(s)! Evento encerrado.`);
+            RetroToast.success(`[EMPREGO] ${workers.length} trabalhador(es) pago(s)!`);
           }
 
-          mEventsStore.removeEvent(targetEvent.id);
-          useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: targetEvent.id });
+          if (!newEvent.payload.isRecurring) {
+            newEvent = {
+              ...newEvent,
+              status: "PENDING",
+              payload: {
+                ...newEvent.payload,
+                hiredWorkers: {}
+              }
+            };
+            mEventsStore.updateEvent(newEvent.id, newEvent);
+            useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "DELETE", eventId: targetEvent.id, eventType: "JOB", wasRecurring: false, isCompleted: true });
+          } else {
+            mEventsStore.updateEvent(newEvent.id, newEvent);
+            useNetworkStore.getState().sendPayload("ALL", "EVENT_SYNC", { action: "UPSERT", event: newEvent });
+          }
         }
 
         if (data.action === "BUY_ITEM" && targetEvent.type === "MARKET") {

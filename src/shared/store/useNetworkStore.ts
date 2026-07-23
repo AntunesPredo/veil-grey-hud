@@ -260,6 +260,11 @@ export const useNetworkStore = create<NetworkState>()(
                 });
                 // RetroToast.info("PACOTE DE ATUALIZAÇÃO DO MESTRE RECEBIDO.");
               }
+              if (payload.command === "CANCEL_OVERRIDE") {
+                set((state) => ({
+                  queue: state.queue.filter((q) => q.type !== "FULL_OVERRIDE"),
+                }));
+              }
               if (payload.command === "FORCE_UPDATE_ITEM") {
                 useCharacterStore
                   .getState()

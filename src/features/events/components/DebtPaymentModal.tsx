@@ -18,10 +18,10 @@ export function DebtPaymentModal({ isOpen, onClose, event }: DebtPaymentModalPro
   const characterId = useCharacterStore((state: CharacterStore) => state.name);
   const overwriteInventoryItem = useCharacterStore((state: CharacterStore) => state.overwriteInventoryItem);
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
-  
+
   // Calculate remaining debt
   const myOwed = event.payload.debts[characterId] || 0;
-  
+
   const [paymentAmount, setPaymentAmount] = useState<number>(myOwed);
 
 
@@ -31,7 +31,7 @@ export function DebtPaymentModal({ isOpen, onClose, event }: DebtPaymentModalPro
 
   const handlePay = () => {
     if (!selectedWalletId || !selectedWallet || !selectedWallet.wallet) return;
-    
+
     const amount = Math.min(paymentAmount, myOwed, maxAvailable);
     if (amount <= 0) return;
 
@@ -60,7 +60,7 @@ export function DebtPaymentModal({ isOpen, onClose, event }: DebtPaymentModalPro
   return (
     <Modal title="PAGAMENTO DE DÍVIDA" onClose={onClose} isOpen={isOpen}>
       <div className="p-4 w-full min-w-[600px] flex flex-col gap-6">
-        
+
         {/* INFO PANEL */}
         <div className="bg-slate-900 border-2 border-red-500/50 p-4 relative">
           <div className="flex justify-between items-start mb-2">

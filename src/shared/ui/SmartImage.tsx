@@ -19,7 +19,6 @@ export function SmartImage({ image, className = "" }: SmartImageProps) {
     );
   }
 
-  // Utilizando porcentagens do crop para recriar o frame exato via position absolute e overflow hidden
   return (
     <div className={`relative overflow-hidden aspect-[4/3] w-full ${className}`}>
       <img

@@ -9,6 +9,50 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+
+export interface NumberInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+  value: string | number;
+  onChangeText: (value: string) => void;
+  step?: number;
+}
+
+export function NumberInput({ value, onChangeText, step = 1, className = "", ...props }: NumberInputProps) {
+  const handleDecrement = () => {
+    const num = Number(value);
+    if (!isNaN(num)) onChangeText(String(num - step));
+  };
+  const handleIncrement = () => {
+    const num = Number(value);
+    if (!isNaN(num)) onChangeText(String(num + step));
+  };
+
+  return (
+    <div className={`flex items-stretch group ${className}`}>
+      <button
+        type="button"
+        onClick={handleDecrement}
+        className="px-3 border-2 border-r-0 border-[var(--theme-accent)]/50 text-[var(--theme-accent)]/50 hover:bg-[var(--theme-accent)] hover:text-black hover:border-[var(--theme-accent)] transition-colors flex items-center justify-center font-bold"
+      >
+        -
+      </button>
+      <input
+        {...props}
+        type="number"
+        value={value}
+        onChange={(e) => onChangeText(e.target.value)}
+        className="w-full bg-[var(--theme-background)] border-y-2 border-[var(--theme-accent)]/50 text-[var(--theme-accent)] px-3 py-2 outline-none focus:border-[var(--theme-accent)] focus:bg-[var(--theme-accent)]/10 transition-colors placeholder-[var(--theme-accent)]/30 font-mono tracking-wider text-center text-2xl font-black [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none shadow-inner"
+      />
+      <button
+        type="button"
+        onClick={handleIncrement}
+        className="px-3 border-2 border-l-0 border-[var(--theme-accent)]/50 text-[var(--theme-accent)]/50 hover:bg-[var(--theme-accent)] hover:text-black hover:border-[var(--theme-accent)] transition-colors flex items-center justify-center font-bold"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 export function Checkbox({
   label,
   checked,
@@ -34,8 +78,8 @@ export function Checkbox({
     >
       <div
         className={`flex items-center justify-center border-2 border-current rotate-45 transition-all duration-300 ${checked
-            ? "bg-current shadow-[0_0_12px_currentColor] scale-110"
-            : "bg-black"
+          ? "bg-current shadow-[0_0_12px_currentColor] scale-110"
+          : "bg-black"
           } ${fluid ? "w-4 h-4" : "w-3.5 h-3.5"}`}
       >
         {checked && (
@@ -265,18 +309,15 @@ export function Slider({
           {title}
         </span>
       )}
-      
+
       <div className="relative w-full h-8 flex items-center group">
-        {/* Track Background */}
         <div className="absolute w-full h-1 bg-black border border-[var(--theme-accent)]/30 top-1/2 -translate-y-1/2" />
-        
-        {/* Track Fill */}
-        <div 
-          className="absolute h-1 bg-[var(--theme-accent)] top-1/2 -translate-y-1/2 shadow-[0_0_8px_var(--theme-accent)] transition-all duration-300" 
+
+        <div
+          className="absolute h-1 bg-[var(--theme-accent)] top-1/2 -translate-y-1/2 shadow-[0_0_8px_var(--theme-accent)] transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
 
-        {/* Input element placed over */}
         <input
           type="range"
           min={min}
@@ -287,8 +328,7 @@ export function Slider({
           className="absolute w-full h-full opacity-0 cursor-pointer z-10"
         />
 
-        {/* Thumb Indicator */}
-        <div 
+        <div
           className="absolute w-4 h-4 bg-black border-2 border-[var(--theme-accent)] rotate-45 top-1/2 -translate-y-1/2 shadow-[0_0_10px_var(--theme-accent)] transition-all duration-300 pointer-events-none group-hover:scale-125 group-hover:bg-[var(--theme-accent)]"
           style={{ left: `calc(${percentage}% - 8px)` }}
         />

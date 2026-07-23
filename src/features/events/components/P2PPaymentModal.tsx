@@ -27,10 +27,10 @@ export function P2PPaymentModal({ isOpen, onClose, event }: P2PPaymentModalProps
   const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
-    const isTargeted = event.targets.includes(characterId) || event.targets.length === 0 || event.targets.includes("ALL");
+    const isTargeted = event.targets.includes(characterId) || event.targets.includes("ALL");
     if (event.status !== "ACTIVE" || !isTargeted) {
-       RetroToast.warning("Você foi removido do evento.");
-       onClose();
+      RetroToast.warning("Você foi removido do evento.");
+      onClose();
     }
   }, [event.status, event.targets, characterId, onClose]);
 
@@ -70,7 +70,7 @@ export function P2PPaymentModal({ isOpen, onClose, event }: P2PPaymentModalProps
           <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           <h2 className="text-xl font-bold text-indigo-400 tracking-widest uppercase animate-pulse text-center">Aguardando o Host iniciar a conexão...</h2>
           <p className="text-slate-500 font-mono text-sm text-center">
-            Sua carteira já foi sincronizada.<br/>
+            Sua carteira já foi sincronizada.<br />
             Por favor aguarde a abertura do terminal pelo Host.
           </p>
           <Button variant="danger" onClick={handleCancelWallet} className="mt-4 px-8 tracking-widest text-xs font-bold">
@@ -91,12 +91,10 @@ export function P2PPaymentModal({ isOpen, onClose, event }: P2PPaymentModalProps
     );
   }
 
-  // Step 1: Selecting wallet
   return (
     <Modal title="CONECTAR CARTEIRA" onClose={onClose} isOpen={isOpen}>
       <div className="p-4 w-full min-w-[600px] flex flex-col gap-6">
-        
-        {/* INFO PANEL */}
+
         <div className="bg-slate-900 border-2 border-indigo-500/50 p-4 relative">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-bold text-white text-lg tracking-widest uppercase">{event.title}</h3>
@@ -107,7 +105,6 @@ export function P2PPaymentModal({ isOpen, onClose, event }: P2PPaymentModalProps
           </div>
         </div>
 
-        {/* WALLET SELECTION */}
         <div className="flex flex-col gap-2">
           <h4 className="text-[var(--theme-accent)] font-bold tracking-widest text-sm mb-1">
             SELECIONE A CARTEIRA
@@ -121,7 +118,6 @@ export function P2PPaymentModal({ isOpen, onClose, event }: P2PPaymentModalProps
           />
         </div>
 
-        {/* ACTION BUTTON */}
         <div className="flex justify-end mt-4">
           <Button
             variant="success"

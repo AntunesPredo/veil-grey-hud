@@ -79,10 +79,10 @@ export function SkillDrawer() {
     searchQuery.trim() === ""
       ? []
       : allSkillsFlat.filter(
-          (s) =>
-            s.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.id.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+        (s) =>
+          s.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.id.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
 
   const handleSkillChange = (
     skillKey: Skill,
@@ -111,7 +111,6 @@ export function SkillDrawer() {
 
     if (targetVal < VG_CONFIG.rules.skillMin) return;
 
-    // TODO: Toasts will be tooltips
     if (delta > 0 && targetVal > actualSkillCap) {
       RetroToast.warning(
         `CAP ATINGIDO. LIMITADO PELO NÍVEL OU ATRIBUTO BASE (${actualSkillCap}).`,

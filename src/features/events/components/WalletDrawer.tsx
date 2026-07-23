@@ -24,13 +24,12 @@ function DraggableWalletItem({ item, disabled }: { item: BaseItem; disabled: boo
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-3 rounded-none flex justify-between items-center border mb-2 ${
-        disabled
+      className={`p-3 rounded-none flex justify-between items-center border mb-2 ${disabled
           ? "bg-slate-800 border-slate-700 opacity-50 cursor-not-allowed"
           : isDragging
-          ? "bg-indigo-900 border-indigo-500 shadow-lg z-50 opacity-90 cursor-grabbing"
-          : "bg-slate-700 border-slate-600 hover:bg-slate-600 cursor-grab"
-      }`}
+            ? "bg-indigo-900 border-indigo-500 shadow-lg z-50 opacity-90 cursor-grabbing"
+            : "bg-slate-700 border-slate-600 hover:bg-slate-600 cursor-grab"
+        }`}
     >
       <div className="flex items-center gap-2">
         <FiCreditCard className="text-slate-400" />
@@ -45,8 +44,7 @@ function DraggableWalletItem({ item, disabled }: { item: BaseItem; disabled: boo
 
 export function WalletDrawer({ isOpen, onClose, onOpen }: WalletDrawerProps) {
   const inventory = useCharacterStore((state) => state.inventory);
-  
-  // Apenas itens carteira
+
   const walletItems = inventory.filter((i) => i.wallet);
 
   const ccWallets = walletItems.filter((i) => i.wallet?.type === "CC");

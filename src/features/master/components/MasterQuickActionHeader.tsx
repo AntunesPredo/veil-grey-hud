@@ -13,7 +13,6 @@ export function MasterQuickActionHeader() {
 
   const npc = npcs.find((n) => n.id === activeNpcId);
 
-  // We read from characterStore because it's the live data while in Quick Actions
   const currentHp = useCharacterStore((state) => state.hp.current);
   const maxHp = useCharacterStore((state) => state.hp.baseMax);
 
@@ -22,13 +21,11 @@ export function MasterQuickActionHeader() {
   const handleDisconnect = () => {
     const charStore = useCharacterStore.getState();
 
-    // Salvar apenas se for não-humano
     if (npc.type === "NON_HUMAN") {
       updateNpcData(npc.id, extractCharacterData(charStore) as any);
       RetroToast.success("EDIÇÕES DO NPC (NÃO-HUMANO) SALVAS.");
     }
 
-    // Restaurar o Mestre
     if (masterBackup) {
       charStore.importCharacterData(masterBackup);
       setMasterBackup(null);
@@ -59,8 +56,8 @@ export function MasterQuickActionHeader() {
             HP: {currentHp || 0} / {maxHp || 0}
           </span>
           <div className="flex-1 h-3 bg-black border border-[var(--theme-border)]">
-            <div 
-              className="h-full bg-[var(--theme-accent)] transition-all" 
+            <div
+              className="h-full bg-[var(--theme-accent)] transition-all"
               style={{ width: `${Math.min(((currentHp || 0) / Math.max(1, maxHp || 1)) * 100, 100)}%` }}
             />
           </div>

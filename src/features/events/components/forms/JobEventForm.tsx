@@ -1,4 +1,4 @@
-﻿import { Input } from "../../../../shared/ui/Form";
+import { Input } from "../../../../shared/ui/Form";
 import type { JobEvent } from "../../../../shared/types/events";
 
 interface JobEventFormProps {
@@ -27,8 +27,8 @@ export function JobEventForm({ payload, onChange }: JobEventFormProps) {
               type="button"
               onClick={() => onChange({ ...payload, currency: curr as any })}
               className={"p-2 border-2 text-xs font-bold font-mono transition-colors rounded-none " + (
-                (payload.currency || "CC") === curr 
-                  ? "bg-[var(--theme-accent)]/20 border-[var(--theme-accent)] text-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]" 
+                (payload.currency || "CC") === curr
+                  ? "bg-[var(--theme-accent)]/20 border-[var(--theme-accent)] text-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]"
                   : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
               )}
             >
@@ -39,13 +39,42 @@ export function JobEventForm({ payload, onChange }: JobEventFormProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-bold text-slate-400">Salário (Recompensa)</label>
+        <label className="text-xs font-bold text-slate-400">Salário Base</label>
         <Input
           type="number"
           value={payload.salary || ""}
           onChange={(e) => onChange({ ...payload, salary: parseInt(e.target.value) || 0 })}
           placeholder="Ex: 500"
         />
+      </div>
+
+      <div className="flex flex-col gap-2 mt-2">
+        <label className="text-xs font-bold text-slate-400">Comportamento do Evento</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onChange({ ...payload, isRecurring: false })}
+            className={`flex-1 p-2 border-2 text-xs font-bold font-mono transition-colors rounded-none ${!payload.isRecurring
+                ? "bg-[var(--theme-accent)]/20 border-[var(--theme-accent)] text-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]"
+                : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
+              }`}
+          >
+            EVENTO ÚNICO
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ ...payload, isRecurring: true })}
+            className={`flex-1 p-2 border-2 text-xs font-bold font-mono transition-colors rounded-none ${payload.isRecurring
+                ? "bg-[var(--theme-accent)]/20 border-[var(--theme-accent)] text-[var(--theme-accent)] shadow-[0_0_10px_var(--theme-accent)]"
+                : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500"
+              }`}
+          >
+            RECORRENTE
+          </button>
+        </div>
+        <span className="text-[10px] text-slate-500 font-mono">
+          Eventos únicos são encerrados após o pagamento. Eventos recorrentes mantêm o contrato e o histórico de pagamentos.
+        </span>
       </div>
     </div>
   );

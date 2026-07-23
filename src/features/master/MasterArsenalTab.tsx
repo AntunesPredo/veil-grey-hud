@@ -28,6 +28,7 @@ import { ArsenalRow } from "./components/ArsenalRow";
 import { ArsenalSearchModal } from "./components/ArsenalSearchModal";
 import { PreSendConfigModal } from "./components/PreSendConfigModal";
 
+
 interface SelectedPayload {
   id: string | number;
   type: "ITEM" | "EFFECT";
@@ -347,10 +348,9 @@ export function MasterArsenalTab() {
 
   return (
     <div className="flex flex-col h-full gap-4">
-      <div className="flex justify-between items-center border-b border-[var(--theme-border)] pb-2 shrink-0">
-        <span className="text-xs font-bold text-[var(--theme-accent)] tracking-widest uppercase">
-          ARSENAL E DIRETRIZES ({store.globalItems.length} MATS |{" "}
-          {store.globalEffects.length} EFFS)
+      <div className="flex justify-between items-center border-b-4 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 p-3 shrink-0 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+        <span className="text-sm font-black text-[var(--theme-accent)] tracking-widest uppercase">
+          ARSENAL E DIRETRIZES <span className="text-xs font-mono opacity-60">[{store.globalItems.length} MATS | {store.globalEffects.length} EFFS]</span>
         </span>
         <div className="flex gap-2 items-center">
           {selectedPayloads.length > 0 && (
@@ -403,25 +403,25 @@ export function MasterArsenalTab() {
         onDragEnd={handleDragEnd}
         collisionDetection={closestCenter}
       >
-        <div className="grid grid-cols-2 gap-6 overflow-y-auto custom-scrollbar flex-1 pr-2">
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center bg-[var(--theme-accent)]/10 p-2 border border-[var(--theme-accent)]">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-accent)]">
+        <div className="grid grid-cols-2 gap-6 overflow-y-auto custom-scrollbar flex-1 pr-2 pb-4">
+          <div className="flex flex-col gap-2 h-max p-2 border-l-2 border-[var(--theme-accent)] bg-black/40">
+            <div className="flex justify-between items-center bg-[var(--theme-accent)] text-black p-2 shadow-[0_0_10px_var(--theme-accent)]/50">
+              <span className="text-[11px] font-black uppercase tracking-widest">
                 ITENS: /ROOT
               </span>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="success"
-                  className=" px-2 py-0 text-[8px] border-dashed"
+                  className="rounded-none bg-[var(--theme-success)]/80 shadow-lg"
                   onClick={handleImportInventory}
                 >
                   SYNC INV
                 </Button>
                 <Button
                   size="sm"
-                  variant="primary"
-                  className="px-2 py-0 text-[8px]"
+                  variant="success"
+                  className="rounded-none bg-[var(--theme-success)]/80 shadow-lg"
                   onClick={() => {
                     setItemToEdit(null);
                     setItemModalOpen(true);
@@ -435,7 +435,7 @@ export function MasterArsenalTab() {
             <div className="flex gap-1 mt-1">
               <Input
                 placeholder="NOVA PASTA..."
-                className="h-7 text-[10px] flex-1 bg-[var(--theme-background)]"
+                className="h-8 text-[10px] flex-1 bg-[var(--theme-background)] border-b-2 border-[var(--theme-border)] border-t-0 border-r-0 border-l-0 rounded-none focus:border-[var(--theme-accent)] transition-colors"
                 value={newFolderNameItem}
                 onChange={(e) => setNewFolderNameItem(e.target.value)}
                 onKeyDown={(e) =>
@@ -444,7 +444,8 @@ export function MasterArsenalTab() {
               />
               <Button
                 size="sm"
-                className="h-7 px-2 text-[10px]"
+                variant="primary"
+                className="rounded-none"
                 onClick={() => handleCreateFolder("ITEM")}
               >
                 + DIR
@@ -482,15 +483,15 @@ export function MasterArsenalTab() {
             </SortableContext>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center bg-[var(--theme-danger)]/10 p-2 border border-[var(--theme-danger)]">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-danger)]">
+          <div className="flex flex-col gap-2 h-max p-2 border-l-2 border-[var(--theme-danger)] bg-black/40">
+            <div className="flex justify-between items-center bg-[var(--theme-danger)] text-black p-2 shadow-[0_0_10px_var(--theme-danger)]/50">
+              <span className="text-[11px] font-black uppercase tracking-widest">
                 EFEITOS: /ROOT
               </span>
               <Button
                 size="sm"
                 variant="danger"
-                className="px-2 py-0 text-[8px]"
+                className="rounded-none bg-[var(--theme-background)] shadow-lg"
                 onClick={() => {
                   setEffectToEdit(null);
                   effectModal.onOpen();
@@ -503,7 +504,7 @@ export function MasterArsenalTab() {
             <div className="flex gap-1 mt-1">
               <Input
                 placeholder="NOVA PASTA..."
-                className="h-7 text-[10px] flex-1 bg-[var(--theme-background)]"
+                className="h-8 text-[10px] flex-1 bg-[var(--theme-background)] border-b-2 border-[var(--theme-border)] border-t-0 border-r-0 border-l-0 rounded-none focus:border-[var(--theme-danger)] transition-colors"
                 value={newFolderNameEff}
                 onChange={(e) => setNewFolderNameEff(e.target.value)}
                 onKeyDown={(e) =>
@@ -513,7 +514,7 @@ export function MasterArsenalTab() {
               <Button
                 size="sm"
                 variant="danger"
-                className="h-7 px-2 text-[10px]"
+                className="rounded-none"
                 onClick={() => handleCreateFolder("EFFECT")}
               >
                 + DIR
@@ -557,7 +558,7 @@ export function MasterArsenalTab() {
             <div className="flex items-center gap-2 border border-[var(--theme-accent)] bg-[var(--theme-background)] p-1.5 opacity-95 scale-105 shadow-2xl max-w-[300px]">
               <span className="text-[10px] font-bold uppercase truncate flex-1 leading-tight text-[var(--theme-accent)]">
                 {activeDragItem.type === "EFFECT" &&
-                "mode" in activeDragItem.payload
+                  "mode" in activeDragItem.payload
                   ? `[${activeDragItem.payload.mode}] ${activeDragItem.payload.description}`
                   : activeDragItem.type === "EFFECT"
                     ? (activeDragItem.payload as CustomEffect).description
